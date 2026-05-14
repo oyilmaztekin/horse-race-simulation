@@ -179,6 +179,55 @@ Exit: ready to ship.
 
 ---
 
+### Phase 11 — Deployment (Fly.io + nginx + Docker + GitHub Actions)
+Status: `pending`
+
+Reviewer-facing artifact. Runs only after Phase 9 (Playwright happy path) is green — E2E is the acceptance gate; deploy is downstream.
+
+**Locked decisions** (from 2026-05-14 discussion; see `findings.md` Deployment section):
+- Host: **Fly.io** free allowance. Single region. 1GB persistent volume for `prisma/dev.db`.
+- Container: **single multi-stage Docker image**. nginx + node (Hono) inside, run by `supervisord`.
+- nginx role: serves `/dist` (Vue build) AND reverse-proxies `/api/*` → `127.0.0.1:3001` (Hono). Two upstreams, one process.
+- TLS: terminated at **Fly edge**; nginx speaks plain HTTP inside the VM.
+- Hono binds **`127.0.0.1:3001`**, not `0.0.0.0` — nginx is sole ingress.
+- IaC: **`fly.toml` is the IaC artifact**. No Terraform (community fly provider adds flakiness; fly.toml is declarative and reviewer-recognizable).
+- CI/CD: GitHub Actions. Push-to-main → test → build → `flyctl deploy --remote-only`.
+
+#### Sub-phase 11.1 — Container build (local smoke test only, no deploy yet)
+- [ ] `Dockerfile` — multi-stage: `web-build` (Vue → `/dist`), `server-build` (tsc over `server/` + `src/domain/` + `prisma/seed.ts` → `/server-dist`), `runtime` (alpine + nginx + nodejs + supervisor; copies dist + server-dist + `prisma/schema.prisma` + `prisma/horseNames.json`; runs `prisma generate`; exposes :80).
+- [ ] `nginx.conf`: SPA fallback at `/`; `proxy_pass` for `/api/`.
+- [ ] `supervisord.conf` — two services: nginx + node.
+- [ ] Patch `server/index.ts` to bind `127.0.0.1:3001` via `HOST` env var (default `127.0.0.1`).
+- [ ] `.dockerignore` excludes `node_modules`, `dev.db`, `dist`, `.git`, `tests/`, `*.md`.
+- [ ] Local verify: `docker build`, `docker run -p 8080:80 -v $(pwd)/_data:/app/prisma`; browser walks Generate → Start → FINISHED; restart container → `dev.db` survives.
+
+Exit: container boots, SPA loads, `/api/horses` returns 20 rows, volume persists.
+
+#### Sub-phase 11.2 — Fly.io deploy (manual, first push)
+- [ ] User: `flyctl auth login` (one-time, documented in DEPLOYMENT.md).
+- [ ] `flyctl launch --no-deploy --copy-config` to scaffold `fly.toml`.
+- [ ] Edit `fly.toml`: app name + `primary_region` (e.g., `fra`); `[build] dockerfile`; `[[mounts]]` data → `/app/prisma`; `[http_service]` `internal_port=80`, `force_https=true`, `auto_stop_machines="stop"`, `min_machines_running=0`; `[deploy] release_command` runs migrate + seed; `[checks]` HTTP on `/api/horses`.
+- [ ] `flyctl volumes create data --size 1 --region fra`.
+- [ ] `flyctl deploy` from local — first push.
+- [ ] Browser smoke at `https://beygir-yarisi.fly.dev`.
+
+Exit: app live, TLS green, persists across machine restarts.
+
+#### Sub-phase 11.3 — GitHub Actions CI/CD
+- [ ] `.github/workflows/ci.yml` — PR + push to main: lint, typecheck, vitest, playwright (with `--with-deps chromium`).
+- [ ] `.github/workflows/deploy.yml` — `workflow_run` on ci success, main only: `superfly/flyctl-actions/setup-flyctl` → `flyctl deploy --remote-only`. Uses `secrets.FLY_API_TOKEN`.
+- [ ] User adds `FLY_API_TOKEN` to repo secrets (`flyctl auth token`).
+- [ ] Verify: dummy PR → CI green → merge → deploy fires → live URL updated within ~3 min.
+
+Exit: push-to-main is the only deploy path.
+
+#### Sub-phase 11.4 — `DEPLOYMENT.md` (reviewer-facing doc)
+- [ ] One-paragraph architecture summary; ASCII flow diagram (Fly edge → nginx → static OR Hono); per-file artifact inventory; five-command "deploy from scratch"; three-sentence "how CI/CD works"; live URL; cost note (free under Fly's allowance).
+
+Exit: reviewer reads `DEPLOYMENT.md` in under 5 minutes and grasps the deploy story.
+
+---
+
 ## Errors encountered
 
 | Phase | Error | Attempt | Resolution |

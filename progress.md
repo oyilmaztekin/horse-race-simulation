@@ -63,6 +63,29 @@ Wait for user approval / direction. Plan does not start Phase 0 until user confi
 ### Test count
 - 27 tests across 4 files, all green. Typecheck clean.
 
+## 2026-05-14 — Session 3: deployment planning (no code)
+
+Planning-only session. No tests, no production code touched. Current implementation state unchanged (mid-Phase 2; simulation.ts is next).
+
+### What was decided
+- Deployment will be **Phase 11**, gated on Phase 9 (Playwright happy path) green.
+- Stack: **Fly.io + single multi-stage Docker image + nginx + Hono via supervisord + 1GB volume for SQLite**.
+- IaC artifact: **`fly.toml`** (no Terraform — community fly provider is third-party and flaky).
+- CI/CD: **GitHub Actions** — push-to-main triggers test → build → `flyctl deploy --remote-only`.
+
+### Discussion trail (for the record)
+- User initially asked about Supabase and GCP. Discarded both: Supabase replaces the backend (invalidates `ARCHITECTURE.md`); GCP works but underuses the platform for a SQLite app.
+- nginx role clarified: serves Vue `/dist` AND reverse-proxies `/api/*` to Hono on `127.0.0.1:3001`. Two upstreams, one process.
+- Hono will be patched (in 11.1) to bind `127.0.0.1` via `HOST` env var so nginx is the only public ingress.
+
+### Files modified
+- `task_plan.md` — appended Phase 11 (sub-phases 11.1 container build / 11.2 manual Fly deploy / 11.3 GitHub Actions / 11.4 DEPLOYMENT.md).
+- `findings.md` — added "Deployment (locked 2026-05-14)" section with request-flow diagram, gotchas, and the "why Fly over alternatives" rationale.
+- `progress.md` — this entry.
+
+### Next action
+Resume implementation at Phase 2 (`simulation.ts`). Deployment is documented and queued; not started until Phase 9 green.
+
 ### Simulation design pinned (2026-05-14)
 - Snapshot shape locked per `ARCHITECTURE.md` §6 (`LanePosition`, `SimulationSnapshot`).
 - Speed-formula constants tuned: `BASE_SPEED_MPS_MIN = 14`, `BASE_SPEED_MPS_MAX = 18`,

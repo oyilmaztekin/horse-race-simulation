@@ -50,3 +50,35 @@ Inside-out: domain → server → stores → composables → presentationals →
 - Lane visual styling, track layout, finish-line graphic — Phase 8.
 - Curated horse-name list — Phase 2.
 - Error banner concrete copy/styling — Phase 7.
+
+## Deployment (locked 2026-05-14, Phase 11)
+
+User-stated requirements: static webpage, SQLite, nginx, Docker, GitHub Actions. Zero-budget homework showcase for a reviewer. Discussed Supabase (wrong fit — replaces backend), GCP (works but underuses the platform for SQLite), Fly.io (chosen).
+
+**Stack**: Fly.io host, single multi-stage Docker image, nginx + Hono in one container via supervisord, 1GB persistent volume for `prisma/dev.db`, GitHub Actions for CI/CD, `fly.toml` as the IaC artifact (no Terraform).
+
+**Request flow** (verbatim for DEPLOYMENT.md):
+```
+Fly edge ──:80──▶ nginx
+                  ├─ location /        → /app/dist/  (Vue build, static)
+                  └─ location /api/    → 127.0.0.1:3001  (Hono via reverse_proxy)
+                                          └─ prisma → /app/prisma/dev.db ◄── fly volume
+```
+
+**Key constraints / gotchas to remember when implementing Phase 11**:
+- Hono **must** bind `127.0.0.1`, not `0.0.0.0`. nginx is the only public-facing process. Use `HOST` env var to keep code env-agnostic.
+- Fly edge terminates TLS — nginx in-container runs plain HTTP (`listen 80`).
+- nginx `/api/` location must mirror the Vite dev proxy in `ARCHITECTURE.md` §7 exactly so client `fetch('/api/...')` works identically in dev and prod.
+- `fly.toml` `[deploy] release_command` does `prisma migrate deploy && prisma db seed` on every release. Seed is destructive (`deleteMany + createMany`) — acceptable for this homework demo; resets the meeting on every deploy.
+- `auto_stop_machines = "stop"` + `min_machines_running = 0` is mandatory to stay inside free allowance. First request after idle pays a ~2s cold-start.
+- CI runs Playwright (`--with-deps chromium`) — Phase 9 must be green before Phase 11 starts.
+- `FLY_API_TOKEN` GitHub secret = `flyctl auth token` output. User adds it manually; don't bake it into code.
+
+**Why Fly.io over alternatives** (so reviewer questions are answerable):
+- vs. **Render / Railway**: free tiers either sleep aggressively (Render) or are time-limited (Railway). Fly's free allowance is generous and persistent.
+- vs. **Oracle Cloud Always Free**: more capable VM, but Oracle is known for arbitrary free-tier account suspensions — risk of dying mid-review.
+- vs. **Hetzner ~$4/mo**: cheapest reliable paid VM with a clean Terraform story, but user constraint was zero-budget.
+- vs. **Supabase**: replaces backend with managed Postgres; would invalidate `ARCHITECTURE.md`.
+- vs. **GCP free e2-micro**: works, but heavy IAM/project setup ceremony and the impressive GCP primitives (Cloud Run, Cloud SQL) don't apply to a SQLite app — would underuse the platform.
+
+**Why no Terraform**: `fly.toml` IS declarative IaC in the Fly ecosystem. Community Terraform fly provider exists but is third-party and unstable; reviewer would (rightly) question why we added a flaky abstraction over a tool that already has first-class config.
