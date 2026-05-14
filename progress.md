@@ -45,8 +45,8 @@ Wait for user approval / direction. Plan does not start Phase 0 until user confi
 | `simulation.ts`       | SIM-A1 `computeSpeed(condition, jitter)` — pure additive linear interpolation (decision #12) | ✅ committed `fc21a3d` | 3 (happy/edge/sad) |
 | `simulation.ts`       | SIM-A2 `drawJitter(rng)` — one rng draw → uniform sample in [-JITTER_MPS, +JITTER_MPS), anchored at rng()=0.5 → 0 | ✅ committed `0d638c8` | 3 (happy/edge/sad) |
 | `simulation.ts`       | SIM-A3 `advanceLane(lane, speedMps, dtMs, distance, elapsedMsBeforeTick)` — per-tick position update + sub-tick finish interpolation (decision #14); already-finished lanes returned untouched | ✅ committed `191ed13` | 3 (happy/edge/sad) |
-| `simulation.ts`       | SIM-A4 `createSnapshot(round, roundNumber)` — zeroed initial snapshot; lanes 1-indexed in lane-order, horseIds wired through, elapsedMs=0, finishedAtMs=null | ✅ next commit | 3 (happy/edge/sad) |
-| `simulation.ts`       | SIM-A5 `step(...)` — orchestrator, lane-order jitter draw (decision #13), elapsedMs accumulation | ⏳ pending | — |
+| `simulation.ts`       | SIM-A4 `createSnapshot(round, roundNumber)` — zeroed initial snapshot; lanes 1-indexed in lane-order, horseIds wired through, elapsedMs=0, finishedAtMs=null | ✅ committed `e5fda6e` | 3 (happy/edge/sad) |
+| `simulation.ts`       | SIM-A5 `step(snapshot, dtMs, conditionLookup, rng)` — orchestrator; processes lanes in lane-order 1→10 (decision #13); already-finished lanes skip jitter draw + movement; `elapsedMs += dtMs` | ✅ next commit | 3 (happy/edge/sad) |
 | `conditionMutation.ts`| fatigue + recovery per round | ⏳ Phase 2 cont. | — |
 | `wait.ts`             | inter-round delay | ⏳ Phase 2 cont. | — |
 | `errors.ts`           | `InvalidTransitionError`, `ApiError` | ⏳ Phase 2 cont. | — |
@@ -61,7 +61,9 @@ Wait for user approval / direction. Plan does not start Phase 0 until user confi
 - `CLAUDE.md` §3 adds the three-flavor coverage floor (happy + edge + sad).
 
 ### Test count
-- 33 tests across 4 files, all green. Typecheck clean.
+- 36 tests across 4 files, all green. Typecheck clean.
+- `simulation.ts` is now feature-complete for the inner-loop math (A1–A5).
+  `conditionMutation.ts` is next in Phase 2.
 
 ## 2026-05-14 — Session 3: deployment planning (no code)
 

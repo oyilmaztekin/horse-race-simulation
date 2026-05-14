@@ -1,5 +1,7 @@
 import { BASE_SPEED_MPS_MAX, BASE_SPEED_MPS_MIN, CONDITION_MAX, JITTER_MPS } from './constants'
-import type { LanePosition, Rng, Round, SimulationSnapshot } from './types'
+import type { HorseId, LanePosition, Rng, Round, SimulationSnapshot } from './types'
+
+type ConditionLookup = (horseId: HorseId) => number
 
 const MS_PER_SECOND = 1000
 
@@ -50,4 +52,23 @@ export function createSnapshot(round: Round, roundNumber: number): SimulationSna
     finishedAtMs: null,
   }))
   return { roundNumber, distance: round.distance, elapsedMs: 0, lanes }
+}
+
+// One simulation tick. Lanes are processed in lane-order 1→10 so the rng
+// consumption order is deterministic (decision #13). Already-finished lanes
+// skip both the jitter draw and the movement update — preserving rng order
+// for finished lanes would waste entropy and isn't what the model needs.
+export function step(
+  snapshot: SimulationSnapshot,
+  dtMs: number,
+  conditionLookup: ConditionLookup,
+  rng: Rng,
+): SimulationSnapshot {
+  const lanes = snapshot.lanes.map((lane) => {
+    if (lane.finishedAtMs !== null) return lane
+    const jitter = drawJitter(rng)
+    const speed = computeSpeed(conditionLookup(lane.horseId), jitter)
+    return advanceLane(lane, speed, dtMs, snapshot.distance, snapshot.elapsedMs)
+  })
+  return { ...snapshot, elapsedMs: snapshot.elapsedMs + dtMs, lanes }
 }
