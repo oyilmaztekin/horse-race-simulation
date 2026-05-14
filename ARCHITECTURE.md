@@ -50,7 +50,8 @@ beygir-yarisi/
 │   │
 │   ├── composables/
 │   │   ├── useRaceSimulation.ts  # per-round rAF loop + positions + finish detection
-│   │   └── useRaceApi.ts         # thin fetch wrapper
+│   │   ├── useRaceApi.ts         # thin fetch wrapper
+│   │   └── useRestPolling.ts     # 1s GET /api/horses poll while RESTING (BUSINESS_LOGIC.md §3.8 / §4.7)
 │   │
 │   ├── stores/
 │   │   ├── horses.ts             # cached server snapshot
@@ -64,7 +65,7 @@ beygir-yarisi/
 │   │   ├── horseFactory.ts       # generateRoster (used by SERVER seed)
 │   │   ├── programGenerator.ts   # generateProgram (used by CLIENT)
 │   │   ├── simulation.ts         # step(snapshot, dtMs, conditionLookup, rng)
-│   │   ├── conditionMutation.ts  # applyRoundEffects (used by SERVER)
+│   │   ├── conditionMutation.ts  # applyRoundEffects + applyRestEffects + isFit (used by SERVER and client)
 │   │   └── wait.ts               # wait(ms): Promise<void>
 │   │
 │   ├── styles/
@@ -162,7 +163,13 @@ export const useHorsesStore = defineStore('horses', () => {
     isLoading.value = true
     error.value = null
     try {
-      horses.value = await api.getHorses()
+      const env = await api.getHorses()                    // envelope per §7
+      horses.value = env.horses
+      // If restingUntil is non-null here, App.vue's onMounted handler reads it from the race store
+      // and transitions to RESTING — see §11 boot sequence step 3.
+      if (env.restingUntil !== null) {
+        useRaceStore().resumeRestFromBoot(env.restingUntil)   // see §4.2 store action
+      }
     } catch (e) {
       error.value = e as Error
     } finally {
@@ -197,6 +204,7 @@ export const useHorsesStore = defineStore('horses', () => {
 // src/stores/race.ts
 type RaceState =
   | { kind: 'INITIAL' }
+  | { kind: 'RESTING';  restingUntil: number }                                                         // BUSINESS_LOGIC.md §3.8 / §4.7
   | { kind: 'READY';    program: Program; rng: Rng; seed: number }
   | { kind: 'RACING';   program: Program; rng: Rng; seed: number; currentRoundIndex: number; results: RoundResult[] }
   | { kind: 'FINISHED'; program: Program; seed: number; results: RoundResult[] }
@@ -208,12 +216,47 @@ export const useRaceStore = defineStore('race', () => {
   const api    = useRaceApi()
 
   function generateProgram(seed: number = Date.now()) {           // BUSINESS_LOGIC.md decision #25
-    if (state.value.kind === 'RACING') {
+    if (state.value.kind === 'RACING' || state.value.kind === 'RESTING') {
       throw new InvalidTransitionError(state.value.kind, 'generateProgram')
+    }
+    const fitCount = horses.horses.filter(isFit).length           // BUSINESS_LOGIC.md §3.8 fit-gate
+    if (fitCount < MIN_FIT_HORSES_FOR_PROGRAM) {
+      throw new NotEnoughFitHorsesError(fitCount, MIN_FIT_HORSES_FOR_PROGRAM)
     }
     const meetingRng = createRng(seed)                            // fresh RNG per meeting
     const program    = generateProgramFn(horses.horses, meetingRng)
     state.value = { kind: 'READY', program, rng: meetingRng, seed }
+  }
+
+  async function rest() {                                          // BUSINESS_LOGIC.md §3.8 / §4.7
+    if (state.value.kind !== 'INITIAL') {
+      throw new InvalidTransitionError(state.value.kind, 'rest')
+    }
+    const envelope = await api.startRest()                         // POST /api/horses/rest — idempotent
+    horses.applyServerUpdate(envelope.horses)
+    if (envelope.restingUntil === null) {
+      // server already cleared the rest (clock skew or very-late call); stay at INITIAL with fresh roster.
+      return
+    }
+    state.value = { kind: 'RESTING', restingUntil: envelope.restingUntil }
+    // useRestPolling (composable) watches state.kind === 'RESTING' and polls GET /api/horses every
+    // REST_POLL_INTERVAL_MS. When the envelope returns restingUntil === null, it calls completeRest().
+  }
+
+  function completeRest(updated: Horse[]) {
+    if (state.value.kind !== 'RESTING') {
+      throw new InvalidTransitionError(state.value.kind, 'completeRest')
+    }
+    horses.applyServerUpdate(updated)
+    state.value = { kind: 'INITIAL' }
+  }
+
+  // Called from the horses-store boot path if the initial envelope shows restingUntil != null
+  // (i.e., a rest was in progress when the page was reloaded — refresh resilience per §4.7).
+  function resumeRestFromBoot(restingUntil: number) {
+    if (state.value.kind !== 'INITIAL') return                 // only resume into a clean INITIAL
+    if (restingUntil <= Date.now()) return                     // already elapsed; next poll lazy-bumps
+    state.value = { kind: 'RESTING', restingUntil }
   }
 
   function start() {
@@ -279,11 +322,24 @@ export const useRaceStore = defineStore('race', () => {
   const currentRoundIndex = computed(() => state.value.kind === 'RACING' ? state.value.currentRoundIndex : -1)
   const results           = computed(() => 'results' in state.value ? state.value.results : [])
   const canGenerate       = computed(() =>
-    state.value.kind !== 'RACING'
+    (state.value.kind === 'INITIAL' || state.value.kind === 'READY' || state.value.kind === 'FINISHED')
     && !horses.isLoading
     && horses.horses.length === HORSE_COUNT     // per BUSINESS_LOGIC.md decision #20
   )
   const canStart          = computed(() => state.value.kind === 'READY')
+  // BUSINESS_LOGIC.md §3.8: Rest is available only at INITIAL (or FINISHED, after a meeting fatigued the roster).
+  // It is "available" in the rule-sense — the *visibility* in the UI is gated by whether the warning is active
+  // (see decision #30 below). Two separate concerns; the store owns the rule, the container owns the reveal.
+  const canRest           = computed(() =>
+    (state.value.kind === 'INITIAL' || state.value.kind === 'FINISHED')
+    && !horses.isLoading
+    && horses.horses.length === HORSE_COUNT
+    && horses.horses.filter(isFit).length < MIN_FIT_HORSES_FOR_PROGRAM
+  )
+  const restingUntil      = computed<number | null>(() =>
+    state.value.kind === 'RESTING' ? state.value.restingUntil : null
+  )
+  const fitCount          = computed(() => horses.horses.filter(isFit).length)
   const currentRng        = computed<Rng | null>(() =>
     state.value.kind === 'RACING' ? state.value.rng : null
   )
@@ -292,9 +348,10 @@ export const useRaceStore = defineStore('race', () => {
   )
 
   return {
-    state, phase, program, currentRound, currentRoundIndex, results, canGenerate, canStart,
+    state, phase, program, currentRound, currentRoundIndex, results,
+    canGenerate, canStart, canRest, restingUntil, fitCount,
     currentRng, seed,                      // RaceTrack reads currentRng; seed is for logging/debug
-    generateProgram, start, completeRound,
+    generateProgram, start, completeRound, rest, completeRest, resumeRestFromBoot,
   }
 })
 ```
@@ -311,9 +368,13 @@ export const useRaceStore = defineStore('race', () => {
 ## 5. The state machine
 
 ```
-    INITIAL                          (page load — roster fetched into `horses`)
+    INITIAL ◄──────────┐               (page load — roster fetched into `horses`)
+       │   ▲           │
+       │   │ completeRest()  (poll observed restingUntil === null)
+       │   │           │
+       │   └─── RESTING                (rest() — only when count(fit) < MIN_FIT_HORSES_FOR_PROGRAM)
        │
-       │ generateProgram()
+       │ generateProgram()             (throws NotEnoughFitHorsesError if fit-gate fails)
        ▼
     READY ◄────────────┐
        │               │
@@ -328,10 +389,11 @@ export const useRaceStore = defineStore('race', () => {
 
 | Phase | Allowed transitions | Trigger | Carries |
 |---|---|---|---|
-| `INITIAL` | → `READY` | `generateProgram()` | — |
+| `INITIAL` | → `READY` (fit-gate passes), → `RESTING` (fit-gate fails, user clicks Rest) | `generateProgram()`, `rest()` | — |
+| `RESTING` | → `INITIAL` | `completeRest()` (driven by `useRestPolling` when envelope returns `restingUntil === null`) | `restingUntil` |
 | `READY` | → `READY` (re-roll), → `RACING` | `generateProgram()`, `start()` | `program` |
 | `RACING` | → `FINISHED` | last round completes inside `completeRound()` | `program`, `currentRoundIndex`, `results` |
-| `FINISHED` | → `READY` | `generateProgram()` | `program`, `results` |
+| `FINISHED` | → `READY` (fit-gate passes), → `RESTING` (fit-gate fails after fatigued meeting) | `generateProgram()`, `rest()` | `program`, `results` |
 
 **Compile-time invariants** (from the union shape):
 - `currentRoundIndex` exists *only* in `RACING`.
@@ -352,12 +414,18 @@ export const useRaceStore = defineStore('race', () => {
 
 export type HorseId = number   // a horse's number, 1..HORSE_COUNT — the only identifier
 
-export type Phase = 'INITIAL' | 'READY' | 'RACING' | 'FINISHED'
+export type Phase = 'INITIAL' | 'RESTING' | 'READY' | 'RACING' | 'FINISHED'
 
 export interface Horse {
   number: HorseId         // 1..HORSE_COUNT, primary key
   name: string
   condition: number       // CONDITION_MIN..CONDITION_MAX
+}
+
+// BUSINESS_LOGIC.md §3.8 / decision #29 — GET /api/horses and POST /api/horses/rest both return this shape.
+export interface HorsesEnvelope {
+  horses: Horse[]
+  restingUntil: number | null     // epoch millis; null when no rest is active
 }
 
 export interface Round {
@@ -407,12 +475,14 @@ Base URL: `/api`. Vite dev server proxies `/api/*` to the Hono port (e.g., `3001
 
 | Method | Path | Body | Response | Purpose |
 |---|---|---|---|---|
-| `GET` | `/api/horses` | — | `Horse[]` | Read current roster (current conditions included). |
+| `GET` | `/api/horses` | — | `HorsesEnvelope` | Read current roster + rest state. **Lazy-bumps** unfit horses if `restingUntil ≤ now` (see §8). |
 | `POST` | `/api/rounds/complete` | `{ raced: HorseId[] }` | `Horse[]` (full updated roster) | Apply fatigue + recovery server-side per `BUSINESS_LOGIC.md` §3.7. |
+| `POST` | `/api/horses/rest` | — | `HorsesEnvelope` | Start a rest session per `BUSINESS_LOGIC.md` §3.8. Idempotent: if already resting, returns the existing envelope unchanged (no double-rest, no timer reset). |
 
 **Rationale notes:**
 - `raced` is what the server actually needs (rested = `roster \ raced`). No `ranking` in the body — per `CLAUDE.md` §2 we don't ship for hypothetical-future requirements; add it back when an actual feature needs it.
-- Response always returns the **full** roster, not a delta — premature optimization at 20 rows.
+- `GET /api/horses` returns an **envelope** (object) rather than a flat array, because both the roster snapshot AND the rest-in-progress flag must travel together on every poll (decision #29). The envelope shape is the canonical state — there is no separate `/api/rest-status` endpoint.
+- `/api/rounds/complete` continues to return a flat `Horse[]` rather than the envelope: a round completion never happens while resting, so the rest flag is structurally irrelevant on that response.
 - All bodies/responses are JSON. **No auth, no pagination, no API versioning** in MVP.
 - **No reset endpoint over HTTP.** Reseeding the DB happens via the `prisma db seed` CLI; no privileged HTTP surface to protect.
 
@@ -438,12 +508,54 @@ serve({ fetch: app.fetch, port: 3001 })
 // server/routes/horses.ts
 import { Hono } from 'hono'
 import { db } from '../db'
+import { applyRestEffects } from '../../src/domain/conditionMutation'
+import { REST_DURATION_MS } from '../../src/domain/constants'
 
 export const horses = new Hono()
 
-horses.get('/', async (c) =>
-  c.json(await db.horse.findMany({ orderBy: { number: 'asc' } }))
-)
+// GET /api/horses — returns envelope; lazy-bumps unfit horses if restingUntil has elapsed (decision #29).
+horses.get('/', async (c) => c.json(await readEnvelopeAndMaybeBump()))
+
+// POST /api/horses/rest — idempotent. Starts a rest if none is active; otherwise returns the existing envelope.
+horses.post('/rest', async (c) => c.json(await startRestIfIdle()))
+
+async function readEnvelopeAndMaybeBump(): Promise<HorsesEnvelope> {
+  return db.$transaction(async (tx) => {
+    const meta = await tx.appState.findUnique({ where: { id: 1 } })
+    const now = Date.now()
+    if (meta?.restingUntil && meta.restingUntil.getTime() <= now) {
+      const current = await tx.horse.findMany({ orderBy: { number: 'asc' } })
+      const bumped  = applyRestEffects(current)              // pure domain fn — bumps unfit to MIN_RACEABLE_CONDITION
+      await Promise.all(bumped.map((h) =>
+        tx.horse.update({ where: { number: h.number }, data: { condition: h.condition } })
+      ))
+      await tx.appState.update({ where: { id: 1 }, data: { restingUntil: null } })
+      return { horses: bumped, restingUntil: null }
+    }
+    const horses = await tx.horse.findMany({ orderBy: { number: 'asc' } })
+    return { horses, restingUntil: meta?.restingUntil?.getTime() ?? null }
+  })
+}
+
+async function startRestIfIdle(): Promise<HorsesEnvelope> {
+  return db.$transaction(async (tx) => {
+    const meta = await tx.appState.findUnique({ where: { id: 1 } })
+    const now  = Date.now()
+    if (meta?.restingUntil && meta.restingUntil.getTime() > now) {
+      // Already resting — idempotent return.
+      const horses = await tx.horse.findMany({ orderBy: { number: 'asc' } })
+      return { horses, restingUntil: meta.restingUntil.getTime() }
+    }
+    const restingUntil = new Date(now + REST_DURATION_MS)
+    await tx.appState.upsert({
+      where:  { id: 1 },
+      update: { restingUntil },
+      create: { id: 1, restingUntil },
+    })
+    const horses = await tx.horse.findMany({ orderBy: { number: 'asc' } })
+    return { horses, restingUntil: restingUntil.getTime() }
+  })
+}
 ```
 
 ```ts
@@ -477,6 +589,14 @@ model Horse {
   name      String
   condition Int
 }
+
+// BUSINESS_LOGIC.md §3.8 / decision #29 — single-row meta table holding global rest state.
+// Seeded with id=1 alongside the roster; restingUntil is nullable and toggled by /api/horses/rest
+// and by the lazy-bump path on GET /api/horses.
+model AppState {
+  id           Int       @id @default(1)
+  restingUntil DateTime?
+}
 ```
 
 ```ts
@@ -503,6 +623,8 @@ async function main() {
   await db.horse.deleteMany()
   const rng = createRng(0xDECAF)              // deterministic seed for reproducibility
   await db.horse.createMany({ data: generateRoster(rng, lookupName) })
+  // Single-row AppState — decision #29. restingUntil=null on a fresh seed; no rest in progress.
+  await db.appState.upsert({ where: { id: 1 }, update: { restingUntil: null }, create: { id: 1, restingUntil: null } })
 }
 
 main().finally(() => db.$disconnect())
@@ -607,8 +729,14 @@ export function useRaceSimulation(
 ```ts
 // src/composables/useRaceApi.ts
 export function useRaceApi() {
-  async function getHorses(): Promise<Horse[]> {
+  async function getHorses(): Promise<HorsesEnvelope> {       // envelope per §7
     const res = await fetch('/api/horses')
+    if (!res.ok) throw new ApiError(res.status, await res.text())
+    return res.json()
+  }
+
+  async function startRest(): Promise<HorsesEnvelope> {       // POST /api/horses/rest — idempotent
+    const res = await fetch('/api/horses/rest', { method: 'POST' })
     if (!res.ok) throw new ApiError(res.status, await res.text())
     return res.json()
   }
@@ -623,9 +751,58 @@ export function useRaceApi() {
     return res.json()
   }
 
-  return { getHorses, completeRound }
+  return { getHorses, startRest, completeRound }
 }
 ```
+
+### `useRestPolling`
+
+```ts
+// src/composables/useRestPolling.ts — BUSINESS_LOGIC.md §3.8 / §4.7
+// Bounded poll: starts when race.phase becomes 'RESTING', stops when it leaves.
+// Polls GET /api/horses every REST_POLL_INTERVAL_MS; when the envelope returns
+// restingUntil === null, calls race.completeRest(envelope.horses).
+export function useRestPolling() {
+  const race    = useRaceStore()
+  const horses  = useHorsesStore()
+  const api     = useRaceApi()
+  let handle: ReturnType<typeof setInterval> | null = null
+
+  async function tick() {
+    try {
+      const env = await api.getHorses()
+      if (env.restingUntil === null) {
+        race.completeRest(env.horses)                          // store transitions RESTING → INITIAL
+        return                                                  // tick stops naturally on next watch flush
+      }
+      horses.applyServerUpdate(env.horses)                      // keep roster fresh during the wait
+    } catch (e) {
+      // Polling failures are non-fatal — keep the interval running; next tick will retry.
+      // A persistent failure surfaces via horses.error on the next GET that succeeds.
+    }
+  }
+
+  watch(
+    () => race.phase,
+    (phase) => {
+      if (phase === 'RESTING' && handle === null) {
+        handle = setInterval(tick, REST_POLL_INTERVAL_MS)
+        void tick()                                             // first poll immediately; don't wait 1s
+      } else if (phase !== 'RESTING' && handle !== null) {
+        clearInterval(handle)
+        handle = null
+      }
+    },
+    { immediate: true },
+  )
+
+  onUnmounted(() => { if (handle !== null) { clearInterval(handle); handle = null } })
+}
+```
+
+- **Lifetime = single mount of the host container (`App.vue`).** The watch handles entering and leaving `RESTING` repeatedly without reinstantiating the composable.
+- **Tested with `vi.useFakeTimers()`:** `vi.advanceTimersByTimeAsync(REST_POLL_INTERVAL_MS)` drives each poll deterministically; stubbed `fetch` returns the envelope.
+- **No backoff, no jitter, no cap on retries** — at 1 Hz over a 10s window, worst case is 10 failed polls; the next successful GET writes the truth back into `horses`.
 
 - Thin wrapper. No caching, no retry, no abort controllers in MVP.
 - `ApiError` is thrown on non-2xx; consumers capture it into `horses.error` or surface in component error UI.
@@ -648,13 +825,19 @@ export function wait(ms: number): Promise<void> {
 ## 11. Boot sequence
 
 1. `main.ts` creates the Vue app, installs Pinia, mounts `App.vue`.
-2. `App.vue` in `onMounted`: calls `horses.fetchAll()` → `GET /api/horses` → roster cached.
-3. `App.vue` renders all panels regardless of fetch state — `HorseList` shows a skeleton while `isLoading`.
-4. User clicks `Generate Program` → `race.generateProgram()` → `state = READY` (program assigned).
-5. User clicks `Start` → `race.start()` → `state = RACING` → orchestration loop runs.
-6. Per round: `App` renders `<RaceTrack :key="race.currentRoundIndex">` → `RaceTrack` instantiates `useRaceSimulation(currentRound, conditionLookup, rng)` → rAF loop advances `positions` and appends to `finishOrder` → `done` flips true → `RaceTrack` calls `race.completeRound(finishOrder)` → store pushes result to `state.results` (UI updates instantly), POSTs to `/api/rounds/complete`, applies the fresh roster via `horses.applyServerUpdate`, awaits `wait(INTER_ROUND_DELAY_MS)`, then increments `currentRoundIndex` → `RaceTrack` re-keys → fresh `useRaceSimulation` instance for the next round.
-7. After round 6 → `state = FINISHED`.
-8. User clicks `Generate Program` again → state → `READY` (results cleared, new program drawn against current conditions — which reflect the previous meeting's fatigue/recovery).
+2. `App.vue` in `onMounted`: calls `horses.fetchAll()` → `GET /api/horses` → envelope `{ horses, restingUntil }`. The store writes `horses.value`; if `restingUntil !== null`, it also calls `race.resumeRestFromBoot(restingUntil)` so a rest that was already in flight when the page was loaded continues to count down (BUSINESS_LOGIC.md §4.7 refresh resilience).
+3. `App.vue` instantiates `useRestPolling()` once (lifetime = app lifetime). The composable's internal `watch` is dormant until `race.phase === 'RESTING'`.
+4. `App.vue` renders all panels regardless of fetch state — `HorseList` shows a skeleton while `isLoading`.
+5. User clicks `Generate Program` → `race.generateProgram()`:
+   - **Happy path**: fit-gate passes → `state = READY` (program assigned).
+   - **Sad path**: fit-gate fails → throws `NotEnoughFitHorsesError(fitCount, required)`. `RaceControls` catches the error, sets a local `lastWarning` ref ("Cannot generate: only N of 15 horses are fit to race"), and renders the **Rest the horses** button. State stays `INITIAL`.
+6. User clicks `Rest` → `race.rest()` → `POST /api/horses/rest` → envelope returned → `state = RESTING` with `restingUntil`. `useRestPolling`'s watcher fires and begins polling.
+7. Each 1s poll: `GET /api/horses`. As long as `restingUntil !== null`, the composable updates `horses.horses` and continues polling. When the server lazy-bumps and clears `restingUntil`, the envelope returns `restingUntil: null` → composable calls `race.completeRest(envelope.horses)` → `state = INITIAL` with the bumped roster. Polling halts.
+8. User clicks `Generate Program` again → now `fitCount === HORSE_COUNT (20) ≥ MIN_FIT_HORSES_FOR_PROGRAM (15)` → fit-gate passes → `state = READY`.
+9. User clicks `Start` → `race.start()` → `state = RACING` → orchestration loop runs.
+10. Per round: `App` renders `<RaceTrack :key="race.currentRoundIndex">` → `RaceTrack` instantiates `useRaceSimulation(currentRound, conditionLookup, rng)` → rAF loop advances `positions` and appends to `finishOrder` → `done` flips true → `RaceTrack` calls `race.completeRound(finishOrder)` → store pushes result to `state.results` (UI updates instantly), POSTs to `/api/rounds/complete`, applies the fresh roster via `horses.applyServerUpdate`, awaits `wait(INTER_ROUND_DELAY_MS)`, then increments `currentRoundIndex` → `RaceTrack` re-keys → fresh `useRaceSimulation` instance for the next round.
+11. After round 6 → `state = FINISHED`.
+12. User clicks `Generate Program` again → fit-gate re-applies; either `state = READY` (clears results, new program) or the Rest reveal flow re-triggers (per step 5 sad path) if the prior meeting's fatigue dropped the roster below 15 fit horses.
 
 ---
 
@@ -686,6 +869,12 @@ export function wait(ms: number): Promise<void> {
 | 22 | **`RaceTrack` mounts only during RACING; re-keys on `currentRoundIndex`** | Component lifetime exactly matches the simulation's. Round advance = new key = new `useRaceSimulation` instance = fresh positions. No manual reset code. |
 | 23 | **Hybrid phase-based visibility** | Header + `HorseList` + `ResultsPanel` always mounted (the last pre-scaffolds six round headers from `ROUND_DISTANCES` per `BUSINESS_LOGIC.md` §3.6 — the meeting structure is visible from page load). `ProgramPanel` mounts once a program exists. `RaceTrack` only during RACING. No placeholder UI for MVP. |
 | 24 | **Name list is a JSON fixture (`prisma/horseNames.json`), never a TS module.** Frontend ships zero name strings. `generateRoster(rng, lookupName)` takes the name resolver as a DI argument; the seed script reads the JSON and supplies the lookup at the boundary. | Names are server-owned persisted data, same class as `number` and `condition`. Storing them as JSON keeps editorial content out of code entirely — a rename is a JSON edit + reseed, not a code change. The only path from a horse number to a name on the client is `GET /api/horses`; there is no fallback list bundled anywhere. Keeps `src/domain/` behavior-only and DI-friendly (the test passes a stub `lookupName`). Recorded in `BUSINESS_LOGIC.md` decision #18 (2026-05-14 amendment). |
+| 25 | **Fit-gate as a `NotEnoughFitHorsesError` thrown from `race.generateProgram()`; `RaceControls` catches and surfaces the warning.** Errors-as-control-flow inside the store; container owns the UX response. | Returning a discriminated result from `generateProgram()` (e.g., `{ kind: 'OK' } \| { kind: 'NEEDS_REST' }`) — diverges from the existing `InvalidTransitionError` pattern in the same store, two error idioms side-by-side. Pre-check inside the container — duplicates the rule in two places. Storing a `lastWarning` ref in the store — mixes view-layer concerns into the store. Cementing the existing throw idiom keeps one error pattern across the store and one place that knows the rule. Mirrors `BUSINESS_LOGIC.md` decision #26. |
+| 26 | **Rest as an action on the race store + a watcher in `useRestPolling`.** The store action posts to `/api/horses/rest` and transitions to `RESTING`; the composable owns the polling loop and calls `completeRest` when the envelope clears. | Polling inside the store action (mixes async I/O with reactive state — hard to test, no clean teardown). Polling inside a component (couples the rest loop to that component's lifetime). Polling in `App.vue` directly (over-stuffs the root). Composable-with-watch isolates the polling lifecycle (start on phase, stop on phase) and is unit-testable with fake timers like `useRaceSimulation`. Mirrors `BUSINESS_LOGIC.md` decision #27. |
+| 27 | **In-race condition: numeric text rendered inside `HorseSprite.vue` as a sibling `<span>` to the SVG.** Prop: `condition: number`. No threshold logic in the sprite. | Render the text in `RaceLane` so the sprite stays pure — pushes the prop one layer up; saves nothing. Render in a separate `ConditionLabel` component — premature factoring for one `<span>`. Threshold-aware sprite (binary fit/tired) — rejected by `BUSINESS_LOGIC.md` decision #28. Keeping the text inside `HorseSprite` keeps the whole horse rendering (icon + label) co-located; styling can position the label relative to the SVG without lifting state. |
+| 28 | **`AppState` single-row Prisma table; lazy-bump-on-poll inside `db.$transaction`.** Both `GET /api/horses` and `POST /api/horses/rest` route through a shared transactional read. | In-memory module variable (lost on restart). `RestSession` audit table (overkill). Per-horse `restingUntil` column (20 copies). Background job / cron-style scheduler (extra moving parts; not justified). Single-row meta-table is restart-safe, observable via Prisma Studio, and extensible if a future global flag is needed. Mirrors `BUSINESS_LOGIC.md` decision #29. |
+| 29 | **Envelope shape: `GET /api/horses` returns `{ horses, restingUntil }` (object) instead of `Horse[]` (array).** Breaking change to the contract; not yet shipped to any consumer. | Add a sibling `/api/rest-status` endpoint — two GETs per poll; coordination logic on the client. Encode rest state in an HTTP header — fragile across proxies / tests. Keep the flat array and store `restingUntil` only on the client — server is no longer the source of truth. The envelope makes rest state a first-class part of the roster snapshot; one endpoint, one source of truth. Mirrors `BUSINESS_LOGIC.md` decision #29. |
+| 30 | **The Rest button is rendered by `RaceControls`, not by a new `RestButton.vue` container.** The warning banner + Rest button + `lastWarning` ref all live in `RaceControls`. | Separate `RestButton.vue` (and possibly `RestWarning.vue`) — splits two pieces of one UX moment into two files; raises the file count without earning anything. Keeping them in `RaceControls` matches the "two-button surface" framing of `BUSINESS_LOGIC.md` §4.1 (the Rest button only exists when the warning is active; co-locating keeps the conditional reveal tight). |
 
 ---
 
@@ -750,7 +939,7 @@ ColorSwatch.vue            (shared)
 |---|---|---|---|---|
 | **container** | `App` | `race.phase` (for `RaceTrack` `v-if`) | – | `horses.fetchAll()` in `onMounted` |
 | **container** | `AppHeader` | `race.phase` | – | – |
-| **container** | `RaceControls` | `race.canGenerate`, `race.canStart` | – | `race.generateProgram()`, `race.start()` |
+| **container** | `RaceControls` | `race.canGenerate`, `race.canStart`, `race.canRest`, `race.phase`, `race.restingUntil`, `race.fitCount` | – | `race.generateProgram()`, `race.start()`, `race.rest()` |
 | **container** | `HorseList` | `horses.horses`, `horses.isLoading` | – | – |
 | **container** | `RaceTrack` | `race.currentRound`, `race.currentRng`, `horses.conditionLookup`, `horses.byId` | `useRaceSimulation` | `race.completeRound(rankings)` |
 | **container** | `ProgramPanel` | `race.program`, `race.currentRoundIndex`, `horses.byId` | – | – |
@@ -779,10 +968,11 @@ defineProps<{ color: string }>()
 defineProps<{ horse: Horse }>()
 // renders: name + condition
 
-// HorseSprite.vue — pure SVG
+// HorseSprite.vue — pure SVG + condition label (BUSINESS_LOGIC.md §3.9 / decision #27)
 defineProps<{
   color: string
   progress: number       // 0..1 — RaceLane does the meters→fraction conversion
+  condition: number      // CONDITION_MIN..CONDITION_MAX — rendered as plain text above the SVG
 }>()
 
 // RaceLane.vue
@@ -792,6 +982,8 @@ defineProps<{
   positionM: number
   distanceM: number      // round distance — for progress = positionM / distanceM
 }>()
+// RaceLane reads horse.condition and passes it through to HorseSprite. The lane itself does no
+// threshold logic — the label is condition-as-text regardless of value.
 
 // ProgramRoundCard.vue
 defineProps<{
@@ -820,13 +1012,13 @@ defineProps<{
 
 ### 14.4 Phase-based visibility (hybrid)
 
-| Component | INITIAL | READY | RACING | FINISHED |
-|---|:---:|:---:|:---:|:---:|
-| `AppHeader` / `RaceControls` | ✓ | ✓ | ✓ | ✓ |
-| `HorseList` | ✓ | ✓ | ✓ | ✓ |
-| `ProgramPanel` | – | ✓ | ✓ | ✓ |
-| `RaceTrack` | – | – | ✓ | – |
-| `ResultsPanel` | ✓ (headers only) | ✓ (headers only) | ✓ (filling) | ✓ |
+| Component | INITIAL | RESTING | READY | RACING | FINISHED |
+|---|:---:|:---:|:---:|:---:|:---:|
+| `AppHeader` / `RaceControls` | ✓ | ✓ (countdown shown, buttons disabled) | ✓ | ✓ | ✓ |
+| `HorseList` | ✓ | ✓ | ✓ | ✓ | ✓ |
+| `ProgramPanel` | – | – | ✓ | ✓ | ✓ |
+| `RaceTrack` | – | – | – | ✓ | – |
+| `ResultsPanel` | ✓ (headers only) | ✓ (headers only) | ✓ (headers only) | ✓ (filling) | ✓ |
 
 - **Header + `HorseList`** anchor the layout at all times.
 - **`ProgramPanel`** mounts when a program exists (`v-if="race.phase !== 'INITIAL'"`).
@@ -910,7 +1102,9 @@ src/domain/__tests__/
 ├── horseFactory.test.ts        # generateRoster: HORSE_COUNT entries; conditions in [MIN..MAX]; unique numbers
 ├── programGenerator.test.ts    # ROUND_COUNT rounds × LANE_COUNT picks; rest rule; cap rule; deterministic from seed
 ├── simulation.test.ts          # step() advances positions; finishedAtMs set on crossing; jitter bounded; deterministic
-├── conditionMutation.test.ts   # raced lose FATIGUE_PER_RACE; rested gain RECOVERY_PER_REST; clamped to [MIN..MAX]
+├── conditionMutation.test.ts   # applyRoundEffects (fatigue/recovery, clamp);
+                                #   applyRestEffects (bump unfit to MIN_RACEABLE_CONDITION, fit horses untouched);
+                                #   isFit (boundary at MIN_RACEABLE_CONDITION)
 ├── wait.test.ts                # resolves after N ms (fake timers)
 └── errors.test.ts              # InvalidTransitionError carries kind + action
 
@@ -918,18 +1112,24 @@ src/stores/__tests__/
 ├── horses.test.ts              # fetchAll wires error/loading; applyServerUpdate replaces; byId / conditionLookup
 └── race.test.ts                # every illegal transition throws InvalidTransitionError;
                                 # generateProgram allowed from INITIAL/READY/FINISHED (re-roll);
+                                # generateProgram throws NotEnoughFitHorsesError when fitCount < threshold;
+                                # rest() POSTs and transitions to RESTING with restingUntil;
+                                # completeRest applies updated roster and returns to INITIAL;
+                                # resumeRestFromBoot only fires when state is INITIAL and timestamp is in the future;
                                 # start only from READY → RACING with currentRoundIndex=0, results=[];
                                 # completeRound pushes result, awaits api, advances index, FINISHED on last round
 
 src/composables/__tests__/
 ├── useRaceSimulation.test.ts   # fake-timer rAF; advance time → positions grow; finishOrder fills; done flips; deterministic
-└── useRaceApi.test.ts          # stubbed fetch; correct URL/method/body; ApiError on non-2xx
+├── useRaceApi.test.ts          # stubbed fetch; correct URL/method/body; ApiError on non-2xx; envelope shape for getHorses & startRest
+└── useRestPolling.test.ts      # fake timers; enters polling when phase becomes RESTING; calls completeRest when envelope clears;
+                                # stops polling when phase leaves RESTING; tolerates a failed GET without crashing
 
 src/components/__tests__/
 # Presentationals — mount({props}), assert rendered output (one test each):
 ├── ColorSwatch.test.ts
 ├── HorseListItem.test.ts
-├── HorseSprite.test.ts
+├── HorseSprite.test.ts         # renders SVG with color; renders condition text; condition text scales with prop
 ├── RaceLane.test.ts
 ├── ProgramRoundCard.test.ts
 ├── ResultRoundCard.test.ts
@@ -937,14 +1137,21 @@ src/components/__tests__/
 # Containers — createTestingPinia(), assert dispatched actions + rendered store slice:
 ├── App.test.ts                 # fetchAll called on mount; RaceTrack v-if respects race.phase
 ├── AppHeader.test.ts           # phase rendered from store
-├── RaceControls.test.ts        # buttons disabled state matches canGenerate/canStart; click dispatches action
+├── RaceControls.test.ts        # buttons disabled state matches canGenerate/canStart/canRest;
+                                # generate click dispatches generateProgram; on NotEnoughFitHorsesError catches
+                                #   and renders warning + Rest button reveal; rest click dispatches race.rest;
+                                #   RESTING phase renders countdown and disables all three buttons
 ├── HorseList.test.ts           # iterates horses; loading state visible when isLoading
 ├── RaceTrack.test.ts           # useRaceSimulation mocked; when done flips, race.completeRound called with finishOrder
 ├── ProgramPanel.test.ts        # iterates rounds; resolves IDs to names; isCurrent on currentRoundIndex
 └── ResultsPanel.test.ts        # iterates results; resolves IDs to names; cards reveal as results array grows
 
 server/__tests__/
-├── horses.test.ts              # GET /api/horses returns rows; in-memory SQLite fixture
+├── horses.test.ts              # GET /api/horses returns envelope (horses + restingUntil); in-memory SQLite fixture;
+                                #   lazy-bump-on-poll: when restingUntil <= now, applyRestEffects runs in a transaction
+                                #     and the response clears restingUntil;
+                                #   POST /api/horses/rest sets restingUntil = now + REST_DURATION_MS;
+                                #   POST /api/horses/rest while already resting returns existing envelope unchanged (idempotent)
 └── rounds.test.ts              # POST /api/rounds/complete applies conditionMutation; persists; returns full roster
 
 tests/e2e/
@@ -1013,6 +1220,21 @@ Implementation work that surfaces during TDD but isn't a *design* decision — c
 ### 16.1 RNG injection seam *(resolved 2026-05-13)*
 
 **Resolved by `BUSINESS_LOGIC.md` decision #25 (per-meeting timestamped seed).** The seed is now an optional parameter on `generateProgram(seed?: number)`; production defaults to `Date.now()`, tests pass an explicit `KNOWN_SEED`. The seed becomes a meeting-local value carried on the `RaceState` union — no module-level globals, no test-only setters, no factory-argument trickery. See §4.2 store code and §9 for the locked pattern.
+
+### 16.1b Rest-mechanism constants and errors *(blocker for Phase 1)*
+
+Surfaced by the 2026-05-14 brainstorm (`BUSINESS_LOGIC.md` decisions #26–#29). Required exports:
+
+- `src/domain/constants.ts`:
+  - `MIN_RACEABLE_CONDITION = 40`
+  - `MIN_FIT_HORSES_FOR_PROGRAM` — **derived**: `(LANE_COUNT * ROUND_COUNT) / MAX_RACES_PER_HORSE`. No parallel literal.
+  - `REST_DURATION_MS = 10_000`
+  - `REST_POLL_INTERVAL_MS = 1_000`
+- `src/domain/errors.ts`:
+  - `NotEnoughFitHorsesError(fitCount: number, required: number)` — thrown from `race.generateProgram()` per decision #25.
+- `src/domain/conditionMutation.ts`:
+  - `applyRestEffects(horses: Horse[]): Horse[]` — pure; bumps every horse with `condition < MIN_RACEABLE_CONDITION` to exactly `MIN_RACEABLE_CONDITION`. Identity (number, name) preserved.
+  - `isFit(horse: Horse): boolean` — predicate; `horse.condition >= MIN_RACEABLE_CONDITION`.
 
 ### 16.2 Speed-formula tuning constants *(blocker)*
 

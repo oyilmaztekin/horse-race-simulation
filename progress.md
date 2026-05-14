@@ -107,3 +107,50 @@ Resume implementation at Phase 2 (`simulation.ts`). Deployment is documented and
   `computeSpeed` (pure math), `drawJitter` (rng→sample), `advanceLane`
   (position + sub-tick finish), `createSnapshot` (factory), `step`
   (orchestrator that pulls them together).
+
+## 2026-05-14 — Session 4: Fit-gate + Rest mechanism brainstorm (doc-only)
+
+Triggered by `prisma/dev.db` inspection: the seeded roster (`createRng(0xDECAF)`)
+rolled 10 of 20 horses below condition 40. A meeting generated against this
+roster produces visually broken low-condition rounds. The current rules
+(rest=1, cap=4, weighted selection) handle this *probabilistically* but
+without a structural gate.
+
+10-question brainstorm in this session pinned the design (see `BUSINESS_LOGIC.md`
+decisions #26–#29 and `ARCHITECTURE.md` decisions #25–#30 for the full record).
+Summary:
+
+- **Fit-gate** at `INITIAL` only: program generation requires ≥ `MIN_FIT_HORSES_FOR_PROGRAM = 15`
+  fit horses (derived from `LANE_COUNT × ROUND_COUNT / MAX_RACES_PER_HORSE`).
+- **Rest mechanism**: 10-second real-time timer; server bumps every horse with
+  `condition < MIN_RACEABLE_CONDITION (40)` to exactly 40. One click guarantees
+  re-fit roster.
+- **State machine**: new `RESTING` phase between `INITIAL` and itself. No mid-meeting rest.
+- **API**: `GET /api/horses` returns `{ horses, restingUntil }` envelope (breaking
+  change, not yet shipped); new `POST /api/horses/rest`; lazy-bump-on-poll
+  inside `db.$transaction`. New `AppState` Prisma model holds `restingUntil`.
+- **UX**: Generate stays clickable; on fit-gate failure surfaces a warning and
+  reveals the Rest button. No disabled-by-default control.
+- **In-race condition display**: plain numeric text above each sprite during
+  RACING. No SVG variants — explicitly rejected.
+
+### Files modified
+- `BUSINESS_LOGIC.md` — §3.8 + §3.9 added, §4.2 + §4.3 amended, §4.7 added,
+  §5 decisions #26–#29 appended, §6 non-goals extended.
+- `ARCHITECTURE.md` — §2 layout updated, §4.1/§4.2 store extended, §5 state
+  machine extended, §6 types extended (envelope), §7 API contract extended,
+  §8 server + Prisma schema extended, §10 useRaceApi/useRestPolling, §11
+  boot sequence rewritten, §12 decisions #25–#30 appended, §14
+  components/visibility/props extended, §15 test inventory extended,
+  §16.1b new constants/errors section.
+- `task_plan.md` — Phase 1 constants list extended, Phase 2 conditionMutation
+  amendment, Phase 3 AppState + envelope + rest endpoint, Phase 4 race store
+  RESTING + rest actions, Phase 5 useRestPolling composable, Phase 6 HorseSprite
+  condition prop, Phase 7 RaceControls Rest button + warning + countdown,
+  Phase 9 E2E rest-flow inclusion, decision-log entry appended.
+
+### Next action
+Doc-only commit (no code). After commit, resume implementation by adding the
+four new constants + `NotEnoughFitHorsesError` to Phase 1, then write the
+red test for `applyRestEffects` / `isFit` in Phase 2 (`CLAUDE.md` §3 — one
+failing test per behavior).

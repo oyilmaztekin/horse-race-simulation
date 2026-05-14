@@ -125,6 +125,41 @@ A heavily-used horse therefore becomes **both less likely to be picked AND slowe
 - A horse at `condition = CONDITION_MIN` (1) loses nothing from further racing (clamp), but the cap rule (§3.3) still prevents over-racing.
 - The eligibility rules (§3.3) remain unchanged: rest = 1 round, cap = 4 races per meeting. The cap is intentionally kept as a hard safety rail — though **rest=1 alone** makes it structurally redundant in 6 rounds (max possible races = `ceil(ROUND_COUNT/2) = 3`, below the cap of 4). Fatigue is an additional probabilistic disincentive on top, not the structural reason for redundancy.
 
+### 3.8 Fit-gate and the Rest mechanism
+
+A horse is **fit to race** when `condition ≥ MIN_RACEABLE_CONDITION` (= **40**). Fitness is a property of the **current** roster, not a property of individual rounds — it is checked once, at the moment the user clicks **Generate Program**, against the live roster snapshot. Once the program is generated, fitness no longer gates anything; the simulation runs the committed lanes regardless of in-race condition drift.
+
+**The fit-gate.** Program generation requires at least `MIN_FIT_HORSES_FOR_PROGRAM` fit horses in the roster. The threshold is **derived**, not hand-tuned:
+
+```
+MIN_FIT_HORSES_FOR_PROGRAM = (LANE_COUNT × ROUND_COUNT) / MAX_RACES_PER_HORSE
+                           = (10 × 6) / 4
+                           = 15
+```
+
+With fewer than 15 fit horses, a program cannot be assembled without violating the cap rule (§3.3) — every fit horse would have to race more than 4 times to cover the 60 lane-slots.
+
+**The Rest mechanism.** When the fit-gate fails, the application offers the user a single global action: **Rest the horses**.
+
+1. The user clicks Generate Program. If `count(fit horses) < MIN_FIT_HORSES_FOR_PROGRAM`, the click fails with an inline warning (e.g., "Cannot generate: only 10 of 15 horses are fit to race") and reveals a **Rest the horses** button.
+2. The user clicks Rest. The application transitions to a new phase `RESTING` (see §4.2) for `REST_DURATION_MS = 10_000 ms` (10 seconds).
+3. On rest completion (server-side, lazy-bumped on the next poll — see §4.7), **every horse with `condition < MIN_RACEABLE_CONDITION` is bumped to exactly `MIN_RACEABLE_CONDITION`**. Horses already at or above the threshold are unchanged. The application returns to `INITIAL`.
+4. The user clicks Generate Program again. With every horse now at ≥ 40 condition, the fit-gate passes (20 ≥ 15) and a program is generated.
+
+**Authority.** The fit-bump is **server-authoritative**, like fatigue and recovery (§3.7). The client never mutates conditions; it polls and observes.
+
+**Idempotency.** A `POST /api/horses/rest` call while a rest is already in flight is a no-op — the server returns the existing rest state without resetting the timer or creating a second rest. There is no way to start two concurrent rests or to chain rests in flight.
+
+**Scope.** Rest is **only available at the `INITIAL` phase**. It cannot be triggered mid-meeting (between rounds), during a race, or from `READY` / `RACING` / `FINISHED`. A meeting once started runs to completion regardless of how tired its horses become. The per-horse identity of "tired" is communicated visually (see §3.9) but is not a control surface.
+
+**Why this shape.** The fit-gate prevents the visible failure mode where a generated meeting is mostly low-condition horses crawling to the finish line. The bump-to-floor (not bump-by-delta) guarantees that **one** rest click always re-fits every horse — the user never needs to click Rest twice. The threshold of 15 is derived from `LANE_COUNT × ROUND_COUNT / MAX_RACES_PER_HORSE`, not an arbitrary tuning knob, so it stays correct if those constants ever change.
+
+### 3.9 In-race condition display
+
+While a round is running, each horse's **current condition** (the value the horse is racing with — fatigue/recovery applies between rounds per §3.7, not during a race) is shown as **plain numeric text** above its sprite on the track. No sprite variants, no opacity tricks, no condition bars — just the number.
+
+This is the user's signal that a low-condition horse is going to lag visibly. It appears only during `RACING`; the roster panel continues to show condition in its own way (see `HorseListItem`, `ARCHITECTURE.md` §14).
+
 ---
 
 ## 4. Application Flow
@@ -133,27 +168,31 @@ A heavily-used horse therefore becomes **both less likely to be picked AND slowe
 The control surface is exactly **two buttons**: `Generate Program` and `Start`. No pause, restart, cancel, or other controls exist in the MVP.
 
 ### 4.2 Phases
-The application moves through four phases:
+The application moves through five phases:
 
 | Phase | Description |
 |---|---|
 | **INITIAL** | Roster fetched (`horses.horses.length === HORSE_COUNT`). No program yet. Before the initial fetch resolves, the application is in an orthogonal *loading* substate owned by the `horses` store — not a phase. |
+| **RESTING** | The user clicked **Rest the horses** (§3.8). A 10-second timer (`REST_DURATION_MS`) is running server-side; the roster is locked. On timer elapse the server bumps every unfit horse to `MIN_RACEABLE_CONDITION` and the application returns to `INITIAL`. Reachable **only** from `INITIAL`; exits **only** back to `INITIAL`. |
 | **READY** | A program has been generated. The race has not yet started. |
 | **RACING** | Auto-chaining through rounds 1–6. |
 | **FINISHED** | All 6 rounds have completed; the results panel is fully populated. |
 
 ### 4.3 Button enablement matrix
 
-| Phase | `Generate Program` | `Start` |
-|---|---|---|
-| INITIAL | ✅ → READY | ❌ |
-| READY | ✅ → READY (re-rolls program in place) | ✅ → RACING |
-| RACING | ❌ | ❌ |
-| FINISHED | ✅ → READY (clears results, generates new program) | ❌ |
+| Phase | `Generate Program` | `Start` | `Rest the horses` |
+|---|---|---|---|
+| INITIAL | ✅ click always allowed; on `count(fit) < MIN_FIT_HORSES_FOR_PROGRAM` the click surfaces a warning and reveals the Rest button rather than transitioning | ❌ | 🔓 **conditional** — hidden by default; revealed once a Generate click has surfaced the warning, or whenever the warning is still active. Click → RESTING |
+| RESTING | ❌ | ❌ | ❌ (rest already in progress) |
+| READY | ✅ → READY (re-rolls program in place) | ✅ → RACING | ❌ |
+| RACING | ❌ | ❌ | ❌ |
+| FINISHED | ✅ → READY (clears results, generates new program; fit-gate re-applies — if the prior meeting's fatigue dropped `count(fit) < MIN_FIT_HORSES_FOR_PROGRAM`, the same warning + Rest reveal flow runs here) | ❌ | 🔓 conditional, same rule as INITIAL |
 
 Disabled means **visibly disabled** (not silently no-op). A user never clicks a button that does nothing.
 
-Both buttons are additionally gated on **roster readiness** — disabled while `horses.isLoading` or `horses.horses.length !== HORSE_COUNT`, regardless of phase. This guards against clicks before the boot-time fetch resolves or after it errors.
+All three buttons are additionally gated on **roster readiness** — disabled while `horses.isLoading` or `horses.horses.length !== HORSE_COUNT`, regardless of phase. This guards against clicks before the boot-time fetch resolves or after it errors.
+
+The Rest button is a *contextual reveal*, not a phase-controlled action: even at `INITIAL` it stays hidden until something demonstrates that rest is needed (a failed Generate click). This keeps the controls minimal in the common case (most random rosters have ≥ 15 fit horses on first load and never surface Rest at all) while remaining discoverable on demand.
 
 ### 4.4 RACING flow
 On entering RACING:
@@ -187,6 +226,20 @@ If `POST /api/rounds/complete` fails mid-meeting, the meeting is **ended in plac
 
 This is symmetric with §6's "no reload-resume" non-goal — an API failure produces the same observable outcome as a page reload, but explicitly rather than silently.
 
+### 4.7 RESTING flow
+
+On entering `RESTING`:
+
+1. The race store records `restingUntil` (the server-returned epoch-millis timestamp at which the rest completes — `serverNow + REST_DURATION_MS`).
+2. The client begins polling `GET /api/horses` every `REST_POLL_INTERVAL_MS` (= **1000 ms**). The polling is owned by a dedicated composable (`useRestPolling`, see `ARCHITECTURE.md` §10); it is bounded — it starts on entering `RESTING` and stops on exiting it.
+3. The UI displays a countdown derived from `restingUntil − Date.now()`. Generate, Start, and Rest are all disabled. There is no Cancel.
+4. On any poll where the server detects `restingUntil ≤ now`, the server handler lazy-bumps every horse with `condition < MIN_RACEABLE_CONDITION` to exactly `MIN_RACEABLE_CONDITION`, clears `restingUntil`, and returns the fresh roster envelope. The bump + clear runs in a single Prisma transaction so it is atomic with respect to any other request.
+5. The client observes `restingUntil === null` in the envelope, stops polling, and transitions back to `INITIAL`. The fit count is now 20 (all horses ≥ 40).
+
+**Refresh resilience.** A page reload during `RESTING` returns the user to `INITIAL` (the meeting hasn't started; nothing to lose). The server-side `restingUntil` is unaffected by the reload — if the user clicks Generate before the timer elapses, the next `GET /api/horses` will still report `restingUntil != null`, and the client transitions back into `RESTING` with the remaining countdown. If the user does nothing, the next page load that lands after `restingUntil` will lazy-bump conditions on its first GET and present a fresh roster.
+
+**Double-click protection.** `POST /api/horses/rest` is idempotent: if `restingUntil != null && now < restingUntil`, the handler returns the existing envelope unchanged. The user can mash the button — only the first click sets the timer.
+
 ---
 
 ## 5. Decision Log
@@ -218,6 +271,10 @@ This is symmetric with §6's "no reload-resume" non-goal — an API failure prod
 | 23 | **Mid-meeting `completeRound` failure = end the meeting in place; transition `state` → `INITIAL`; surface banner.** Server-confirmed condition mutations from earlier rounds persist; the locally-pushed round-N result evaporates with the state transition. | Halt-and-reload-only (brittle); optimistic-with-rollback + retry button (most complex; new "stuck in RACING with retry" sub-state); silent best-effort (bad UX, conditions drift cosmetically) | Local state ends up exactly equal to server state with no bookkeeping. Symmetric with the no-reload-resume non-goal (decision #21) — an API failure produces the same observable outcome as an explicit reload. Reuses the C3 banner component. |
 | 24 | **Client trusts server response wholesale; no runtime guard on `applyServerUpdate`.** The no-roster-mutation rule (§6) is a server-side invariant; the client replaces its cache as given. | Runtime guard on the client (defense-in-depth against an invariant we'd only violate by breaking our own server); conditions-delta API (`Record<HorseId, condition>` — tighter contract, more code on both sides) | At 20 rows over one route, defense-in-depth and tight delta contracts are premature. Server tests are the right place to catch contract violations. |
 | 25 | **Per-meeting RNG: fresh seed per Generate Program click, carried on the `RaceState` union.** `generateProgram(seed?: number)` defaults to `Date.now()`; tests pass `KNOWN_SEED` explicitly. Seed + RNG travel READY → RACING; FINISHED keeps the seed for logging and drops the RNG. | Single boot RNG (re-roll click-sensitivity; needs both boot time and click history to reproduce); per-meeting counter seed (still click-sensitive within a meeting); split streams (over-engineered) | Each meeting becomes self-reproducible from one seed — matches §3.4's "same seed reproduces the same race outcome" literally. Provides the OPEN_DECISIONS #7 injection seam at the meeting boundary without test-only API surface. |
+| 26 | **Fit-gate at meeting-start: `MIN_RACEABLE_CONDITION = 40`, `MIN_FIT_HORSES_FOR_PROGRAM = (LANE_COUNT × ROUND_COUNT) / MAX_RACES_PER_HORSE = 15`.** Generate Program fails if the live roster has fewer than 15 fit horses. | Lower threshold (e.g., 20): leaves many random rosters where the gate never triggers; gameplay still produces visually broken low-condition rounds. Higher threshold (e.g., 60): triggers on most rosters, creates a frustrating click-pattern. No fit-gate at all: status quo — visible failure mode on lopsided seeds. Hand-picked count not tied to existing constants: drifts if cap or round count change. | Threshold of 40 triggers reliably on the current seeded roster (10 of 20 below 40) without firing on healthy random rosters. The 15-horse count is **derived**, not hand-tuned — it remains correct if `LANE_COUNT`, `ROUND_COUNT`, or `MAX_RACES_PER_HORSE` change. Required by `CLAUDE.md` §1: derived constant, no parallel literal. |
+| 27 | **Rest mechanism: 10-second real-time timer; bump every horse with `condition < MIN_RACEABLE_CONDITION` to exactly `MIN_RACEABLE_CONDITION`; pre-meeting only.** New phase `RESTING` between `INITIAL` and itself. | Instant bump (no timer): "rest" becomes a misnomer — it is just a button that pads conditions. Bump-by-delta (+X to every horse): may need multiple clicks; introduces a retry loop. Mid-meeting rest (between rounds): doubles the state-machine surface; conflicts with the locked "no pause" non-goal. Auto-rest (no user click): removes user agency. Per-horse rest UI: scope creep. | Real-time timer makes rest observable in the UX (10s countdown). Bump-to-floor guarantees **one** click always re-fits the whole roster — no retry, no "rest more" affordance. Pre-meeting only keeps the state machine flat: one new phase, no transitions out of `RACING`. Server-authoritative bump matches §3.7. |
+| 28 | **In-race condition display: plain numeric text above each horse sprite during `RACING`. No SVG variants, no condition bars, no opacity tricks.** | Binary SVG swap (fit/tired): two assets, two code paths, threshold-aware sprite layer. Three-tier SVG: same problems, more assets. CSS desaturation / opacity: looks "broken" not "tired". Condition bar: extra DOM, extra prop, extra styling. | The condition value is already in the store; rendering it as `<span>` is one prop and one line of Vue template. Zero new assets. The race itself already encodes "tired" — low-condition horses run slower because of the speed formula; the text just **labels** what the user is already seeing. |
+| 29 | **Server stores rest state in a single-row `AppState` Prisma model (`restingUntil DateTime?`); `GET /api/horses` returns an envelope `{ horses, restingUntil }`; lazy-bump-on-poll applies inside a transaction.** | In-memory module variable on the server: lost on restart, breaks multi-process. Per-horse `restingUntil` column: 20 copies of the same value, leaks rest semantics into the horse aggregate. Dedicated `RestSession` audit table: overkill for one button. Separate `/api/rest-status` endpoint: two-call coordination dance for the same fact. | Single source of truth for both roster and rest state in one envelope, one poll, one endpoint. `AppState` is restart-safe, observable in DB, and trivially extensible if a future feature needs another global flag. Lazy-bump-on-poll keeps the timer logic in one place (the GET handler) — no scheduled job, no separate worker. |
 
 ---
 
@@ -235,6 +292,9 @@ The following are deliberately **not** part of MVP:
 - **Betting / odds / wager UI.**
 - **Multi-user or multi-device** experiences. (Persistence across page reloads is now **in scope** — see §3.7.)
 - **Resume after reload during RACING.** A page reload mid-meeting discards the local program and results. Condition mutations from already-completed rounds persist server-side (per §3.7), so the user returns to `INITIAL` with a roster that reflects the partial meeting, but the in-flight meeting itself is lost. Restarting via Generate Program is the only path forward.
+- **Mid-meeting rest.** Once a meeting starts (`READY` → `RACING`), the Rest mechanism (§3.8) is unavailable until the meeting ends. A meeting in flight runs to completion regardless of in-race condition drift; rest exists only to *prevent* a broken meeting from starting, not to repair one in progress.
+- **Per-horse manual rest.** The user cannot select which horses rest. The Rest mechanism (§3.8) always operates on the whole roster — every horse below `MIN_RACEABLE_CONDITION` is bumped to exactly that value, and horses already above the threshold are unchanged. There is no UI to "rest horse #3 specifically."
+- **Sprite variants for tired horses.** No fit/tired SVG swap, no opacity desaturation, no condition bar. The only in-race signal is the plain numeric condition text above each sprite (§3.9). Explicitly rejected during the 2026-05-14 brainstorm in favor of zero new assets.
 
 ---
 

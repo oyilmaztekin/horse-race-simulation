@@ -39,10 +39,11 @@ The vocabulary every later layer imports. No tests yet — these are pure declar
 
 - [x] `src/domain/constants.ts` — `HORSE_COUNT`, `CONDITION_MIN`, `CONDITION_MAX`, `ROUND_DISTANCES`, `ROUND_COUNT` (derived), `LANE_COUNT`, `FATIGUE_PER_RACE=8`, `RECOVERY_PER_REST=3`, `SIM_TICK_MS=1000/60`. Still pending: `MIN_REST_ROUNDS`, `MAX_RACES_PER_HORSE`, `INTER_ROUND_DELAY_MS=1500`.
 - [x] Speed-formula tuning constants (§16.2): `BASE_SPEED_MPS_MIN=14`, `BASE_SPEED_MPS_MAX=18`, `JITTER_MPS=1.5`. Believability rationale documented inline.
+- [ ] **Rest-mechanism constants** (`ARCHITECTURE.md` §16.1b): `MIN_RACEABLE_CONDITION=40`, `MIN_FIT_HORSES_FOR_PROGRAM = (LANE_COUNT * ROUND_COUNT) / MAX_RACES_PER_HORSE` (derived — no parallel literal), `REST_DURATION_MS=10_000`, `REST_POLL_INTERVAL_MS=1_000`.
 - [ ] `LANE_COLORS` array — exactly `LANE_COUNT` hex strings. Use Wong / Okabe-Ito palette extended to 10 (§16.3). Runtime assertion: `LANE_COLORS.length === LANE_COUNT`.
-- [x] Phase string-literal union `'INITIAL'|'READY'|'RACING'|'FINISHED'` (§4.2 phase names) — exported as `RacePhase` from `types.ts`.
-- [x] `src/domain/types.ts` — `Rng`, `HorseId`, `Horse`, `Round`, `Program`. Still pending: `Ranking`, `RoundResult`, `LanePosition`, `SimulationSnapshot`.
-- [x] `src/domain/errors.ts` — `InvalidTransitionError(kind, action)`, `ApiError(status, body)`.
+- [ ] Phase string-literal union `'INITIAL'|'READY'|'RACING'|'FINISHED'` (§4.2 phase names) — exported as `RacePhase` from `types.ts`. **Will be extended to include `'RESTING'`** when the rest mechanism lands (`BUSINESS_LOGIC.md` §4.2 amendment 2026-05-14).
+- [x] `src/domain/types.ts` — `Rng`, `HorseId`, `Horse`, `Round`, `Program`. Still pending: `Ranking`, `RoundResult`, `LanePosition`, `SimulationSnapshot`, `HorsesEnvelope`.
+- [x] `src/domain/errors.ts` — `InvalidTransitionError(kind, action)`, `ApiError(status, body)`. **Pending:** `NotEnoughFitHorsesError(fitCount, required)` (`ARCHITECTURE.md` decision #25).
 
 Exit: `npm run typecheck` green.
 
@@ -64,6 +65,7 @@ Each module: red test → green impl → refactor. Test files live in `src/domai
   - [x] SIM-A4 `createSnapshot(round, roundNumber)` — zeroed initial snapshot factory; lanes 1-indexed in lane-order, horseIds wired through, `elapsedMs=0`, `finishedAtMs=null` (committed `e5fda6e`).
   - [x] SIM-A5 `step(snapshot, dtMs, conditionLookup, rng)` — orchestrator; lane-order jitter draw (decision #13); already-finished lanes skip jitter and movement; `elapsedMs += dtMs`.
 - [x] **`conditionMutation.ts`** — `applyRoundEffects(horses, raced)`: raced lose `FATIGUE_PER_RACE`, rested gain `RECOVERY_PER_REST`, clamped to `[CONDITION_MIN, CONDITION_MAX]`; roster identity preserved (committed `141840e`).
+- [ ] **`conditionMutation.ts` (amendment, 2026-05-14):** add `applyRestEffects(horses)` — bumps every horse with `condition < MIN_RACEABLE_CONDITION` to exactly `MIN_RACEABLE_CONDITION`; horses already at/above the threshold are unchanged; identity preserved. Add `isFit(horse): boolean` predicate. TDD per `CLAUDE.md` §3 (happy/edge/sad) — happy: a roster of half-fit, half-unfit horses; edge: exactly at the threshold (no change); sad: stub `return horses` would fail the bump assertion.
 - [x] **`wait.ts`** — `wait(ms)` Promise wrapper over `setTimeout`; driven with fake timers (ARCHITECTURE §16.7).
 
 Exit: `npm test` green for all `src/domain/**`.
@@ -76,13 +78,15 @@ Status: `pending`
 Backend runnable end-to-end before the frontend exists.
 
 - [ ] **`server/db.ts`** — Prisma client singleton.
+- [ ] **`prisma/schema.prisma` amendment (2026-05-14):** add `AppState { id Int @id @default(1), restingUntil DateTime? }` model per `ARCHITECTURE.md` decision #28. New migration required.
 - [x] **`prisma/seed.ts`** — imports `generateRoster` with `createRng(0xDECAF)`; reads `horseNames.json`; deletes + recreates rows. Migration `20260514124617_init` applied; 20 rows persisted.
-- [ ] **`server/routes/horses.ts`** — `GET /` → ordered `Horse[]`. Test (red first): GET returns seeded rows in number-asc order.
-- [ ] **`server/routes/rounds.ts`** — `POST /complete` with `{ raced }`, calls `applyRoundEffects`, persists via `$transaction`, returns full roster. Test: fatigue applied, rested recovered, response matches DB state.
+- [ ] **`prisma/seed.ts` amendment:** also upsert `AppState { id: 1, restingUntil: null }` so the meta row exists before the first GET.
+- [ ] **`server/routes/horses.ts`** — `GET /` → `HorsesEnvelope { horses, restingUntil }` per `ARCHITECTURE.md` §7. **Lazy-bump-on-poll** inside a `db.$transaction`: if `restingUntil <= now`, run `applyRestEffects`, clear `restingUntil`, return bumped envelope. `POST /rest` — idempotent: if already resting, return existing envelope; otherwise set `restingUntil = now + REST_DURATION_MS`, return envelope. Tests (red first): GET returns envelope shape; lazy-bump fires only when timer elapsed; POST /rest sets timer; POST /rest while resting is a no-op.
+- [ ] **`server/routes/rounds.ts`** — `POST /complete` with `{ raced }`, calls `applyRoundEffects`, persists via `$transaction`, returns full roster (flat `Horse[]`, NOT envelope — see `ARCHITECTURE.md` §7 rationale). Test: fatigue applied, rested recovered, response matches DB state.
 - [ ] **`server/index.ts`** — Hono app, mount routes, `serve` on 3001.
 - [ ] Server tests in `server/__tests__/` use an in-memory SQLite fixture or a per-test temp file.
 
-Exit: `tsx watch server/index.ts` boots; `curl localhost:3001/api/horses` returns 20 rows; server tests green.
+Exit: `tsx watch server/index.ts` boots; `curl localhost:3001/api/horses` returns envelope with 20 horses; `curl -X POST localhost:3001/api/horses/rest` returns envelope with future `restingUntil`; server tests green.
 
 ---
 
@@ -91,8 +95,8 @@ Status: `pending`
 
 Order: `horses` first, then `race` (race depends on horses + api).
 
-- [ ] **`src/stores/horses.ts`** — state (horses, isLoading, error); actions `fetchAll`, `applyServerUpdate`; getters `byId`, `conditionLookup`. Tests stub `useRaceApi`: fetchAll wires loading/error; applyServerUpdate replaces; byId / conditionLookup correct on hit and miss (miss → CONDITION_MIN).
-- [ ] **`src/stores/race.ts`** — `RaceState` discriminated union + `assertRacing` + `mutateRacing` (§16.10 ref impl). Actions: `generateProgram(seed?)`, `start()`, `completeRound(rankings)`. Computed: `phase`, `program`, `currentRound`, `currentRoundIndex`, `results`, `canGenerate`, `canStart`, `currentRng`, `seed`. Tests: every illegal transition throws `InvalidTransitionError`; legal paths land in the right kind; `completeRound` pushes result → POSTs → applies server update → either FINISHED or advances index after `wait`; `completeRound` failure transitions to INITIAL and surfaces banner (`BUSINESS_LOGIC.md` decision #23 / §16.8); `canGenerate` reflects roster readiness (§16.9, decision #20).
+- [ ] **`src/stores/horses.ts`** — state (horses, isLoading, error); actions `fetchAll`, `applyServerUpdate`; getters `byId`, `conditionLookup`. **`fetchAll` reads `HorsesEnvelope`** and calls `race.resumeRestFromBoot(restingUntil)` if non-null (`ARCHITECTURE.md` §11 step 2 — refresh resilience for the rest mechanism). Tests stub `useRaceApi`: fetchAll wires loading/error; envelope with non-null restingUntil triggers resumeRestFromBoot; applyServerUpdate replaces; byId / conditionLookup correct on hit and miss (miss → CONDITION_MIN).
+- [ ] **`src/stores/race.ts`** — `RaceState` discriminated union (now 5 variants: `INITIAL | RESTING | READY | RACING | FINISHED`) + `assertRacing` + `mutateRacing` (§16.10 ref impl). Actions: `generateProgram(seed?)`, `start()`, `completeRound(rankings)`, **`rest()`**, **`completeRest(updated)`**, **`resumeRestFromBoot(restingUntil)`**. Computed: `phase`, `program`, `currentRound`, `currentRoundIndex`, `results`, `canGenerate`, `canStart`, **`canRest`**, **`restingUntil`**, **`fitCount`**, `currentRng`, `seed`. Tests: every illegal transition throws `InvalidTransitionError`; legal paths land in the right kind; `generateProgram` throws `NotEnoughFitHorsesError` when `fitCount < MIN_FIT_HORSES_FOR_PROGRAM`; `rest()` only allowed from INITIAL/FINISHED, POSTs and transitions to RESTING; `completeRest` only allowed from RESTING, transitions to INITIAL with updated roster; `resumeRestFromBoot` no-ops if state ≠ INITIAL or timestamp is in the past; `canRest` reflects fit-gate + phase; `completeRound` pushes result → POSTs → applies server update → either FINISHED or advances index after `wait`; `completeRound` failure transitions to INITIAL and surfaces banner (`BUSINESS_LOGIC.md` decision #23 / §16.8); `canGenerate` reflects roster readiness (§16.9, decision #20).
 
 Exit: `src/stores/**` tests green.
 
@@ -101,8 +105,9 @@ Exit: `src/stores/**` tests green.
 ### Phase 5 — Composables
 Status: `pending`
 
-- [ ] **`src/composables/useRaceApi.ts`** — `getHorses`, `completeRound`. Tests stub `globalThis.fetch`: correct URL/method/body; throws `ApiError` on non-2xx.
+- [ ] **`src/composables/useRaceApi.ts`** — `getHorses` (returns `HorsesEnvelope`), **`startRest`** (returns `HorsesEnvelope`), `completeRound`. Tests stub `globalThis.fetch`: correct URL/method/body; throws `ApiError` on non-2xx; envelope-shape assertions for getHorses and startRest.
 - [ ] **`src/composables/useRaceSimulation.ts`** — accumulator-pattern rAF loop at fixed `SIM_TICK_MS`. Cleanup on unmount. Tests use the §15.5 fake-timer harness: advance time → positions grow; `finishOrder` fills as horses cross; `done` flips at LANE_COUNT; deterministic from seed; `cancelAnimationFrame` called on unmount.
+- [ ] **`src/composables/useRestPolling.ts` (NEW, `ARCHITECTURE.md` §10):** watches `race.phase`; when it enters `'RESTING'`, polls `GET /api/horses` every `REST_POLL_INTERVAL_MS`. On `restingUntil === null` envelope, calls `race.completeRest(envelope.horses)`. Stops polling when phase leaves RESTING. Tests use fake timers + stubbed `fetch`: starts on RESTING entry, calls `completeRest` when envelope clears, stops on RESTING exit, tolerates a failed GET without crashing.
 
 Exit: composables tests green.
 
@@ -115,7 +120,7 @@ All 7 pure-prop components. Each gets one `@vue/test-utils` mount test: prop in 
 
 - [ ] `ColorSwatch.vue` + test
 - [ ] `HorseListItem.vue` + test (name + condition; no swatch per decision #21)
-- [ ] `HorseSprite.vue` + test (SVG, `progress: 0..1`)
+- [ ] `HorseSprite.vue` + test (SVG, `progress: 0..1`, **`condition: number` rendered as plain text above the SVG** per `BUSINESS_LOGIC.md` §3.9 / `ARCHITECTURE.md` decision #27)
 - [ ] `RaceLane.vue` + test (derives color from `LANE_COLORS[laneIndex]`, converts meters→progress)
 - [ ] `ProgramRoundCard.vue` + test (lane order, `isCurrent` highlight)
 - [ ] `ResultRoundCard.vue` + test (finish order, swatch from `laneIndex`)
@@ -130,9 +135,9 @@ Status: `pending`
 
 Each container uses `createTestingPinia()` for store mocks. `RaceTrack` test mocks `useRaceSimulation`.
 
-- [ ] `App.vue` + test (`fetchAll` on mount; `<RaceTrack v-if="phase==='RACING'" :key="currentRoundIndex">`)
+- [ ] `App.vue` + test (`fetchAll` on mount; `useRestPolling()` instantiated once at app lifetime per `ARCHITECTURE.md` §11 step 3; `<RaceTrack v-if="phase==='RACING'" :key="currentRoundIndex">`)
 - [ ] `AppHeader.vue` + test
-- [ ] `RaceControls.vue` + test (disabled state from `canGenerate`/`canStart`; clicks dispatch actions)
+- [ ] `RaceControls.vue` + test — three controls per `BUSINESS_LOGIC.md` §4.3: Generate Program, Start, Rest the horses. Rest is contextual-reveal (hidden until a Generate click surfaces `NotEnoughFitHorsesError`). Test cases: disabled state matches `canGenerate`/`canStart`/`canRest`; generate click dispatches `race.generateProgram`; on `NotEnoughFitHorsesError` the warning banner appears + Rest button reveals; rest click dispatches `race.rest`; RESTING phase renders countdown derived from `race.restingUntil − Date.now()` and disables all three buttons.
 - [ ] `HorseList.vue` + test (iterate `horses.horses`; loading skeleton)
 - [ ] `ProgramPanel.vue` + test (mount when phase ≠ INITIAL; resolve IDs via `byId`; `isCurrent` reflects `currentRoundIndex`)
 - [ ] `ResultsPanel.vue` + test (pre-render 6 headers from `ROUND_DISTANCES`; cards fill as `results` grows)
@@ -160,7 +165,8 @@ Exit: visually matches the mockup; no console errors; no Vue warnings.
 ### Phase 9 — Playwright happy path
 Status: `pending`
 
-- [ ] `tests/e2e/happy-path.spec.ts` — load page → roster visible → click Generate → ProgramPanel renders → click Start → wait until 6 result cards visible → assert FINISHED phase indicator.
+- [ ] `tests/e2e/happy-path.spec.ts` — load page → roster visible → click Generate. With the current seed (`0xDECAF`), only 10 horses are ≥ 40 condition, so the click surfaces the warning + reveals Rest. Click Rest → wait 10s for countdown to elapse → assert roster reflects bumped conditions → click Generate again → ProgramPanel renders → click Start → wait until 6 result cards visible → assert FINISHED phase indicator. This single happy-path naturally exercises both the rest mechanism and the race loop because the seeded roster forces it.
+- [ ] **Alternative rest-skip path** (only if seed changes): if `count(fit) ≥ 15` on a future seed, the first Generate succeeds without needing rest. Test should branch on the visible "fit horses" warning rather than asserting it always appears.
 - [ ] Playwright config: webServer command runs `npm run dev`; baseURL `http://localhost:5173`.
 
 Exit: `npm run test:e2e` green. This is the acceptance gate (§15.7).
@@ -237,6 +243,7 @@ Exit: reviewer reads `DEPLOYMENT.md` in under 5 minutes and grasps the deploy st
 
 | Date | Decision | Rationale |
 |---|---|---|
+| 2026-05-14 | **Fit-gate + Rest mechanism + in-race condition text added between Phase 2 and Phase 3.** New phase `RESTING`, new domain helpers `applyRestEffects` / `isFit`, new error `NotEnoughFitHorsesError`, new constants `MIN_RACEABLE_CONDITION` / `MIN_FIT_HORSES_FOR_PROGRAM` / `REST_DURATION_MS` / `REST_POLL_INTERVAL_MS`, new Prisma model `AppState`, envelope shape for `GET /api/horses`, new endpoint `POST /api/horses/rest`, new composable `useRestPolling`, new component additions to `RaceControls` (Rest + warning + countdown) and `HorseSprite` (condition text). | Smoke against seed `0xDECAF` showed 10 of 20 horses below condition 40 — meetings generated against this roster produced visually broken low-condition races. The fit-gate prevents the failure mode; the Rest button + bump-to-floor (`MIN_RACEABLE_CONDITION`) is the user's recovery path. In-race condition text gives the user a per-horse "this is going to crawl" signal without sprite variants. All 10 decisions recorded in `BUSINESS_LOGIC.md` decisions #26-#29 and `ARCHITECTURE.md` decisions #25-#30. Brainstorm transcript: 2026-05-14 session 4. |
 
 ## Open questions (raise to user)
 
