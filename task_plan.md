@@ -15,20 +15,20 @@ Inside-out per `ARCHITECTURE.md` §15.4. Each phase ends with all of its tests g
 ---
 
 ### Phase 0 — Bootstrap & prerequisites (`ARCHITECTURE.md` §16 blockers)
-Status: `complete`
+Status: `complete` ✓
 
 Everything needed before `vitest run` is meaningful.
 
-- [ ] `package.json` with the 12 scripts from §16.4 and the locked deps from §1.
-- [ ] `tsconfig.json` (root) + `server/tsconfig.json` extending it with `../src/domain/**/*` includes (§16.6, option (a) relative imports).
-- [ ] `vite.config.ts` — proxy `/api/*` → `http://localhost:3001`.
-- [ ] `vitest.config.ts` — `environment: 'jsdom'`, `globals: true`, `setupFiles: ['tests/setup.ts']`.
-- [ ] `tests/setup.ts` — `vi.useFakeTimers({ toFake: ['setTimeout','clearTimeout','requestAnimationFrame','cancelAnimationFrame','performance','Date'] })` in `beforeEach`; `useRealTimers` in `afterEach` (§16.7).
-- [ ] `prisma/schema.prisma` — `Horse { number @id, name, condition }` (§8). `prisma migrate dev` creates `dev.db`.
-- [ ] ESLint + Prettier configs; `vue-tsc` wired.
-- [ ] `.gitignore` covers `dev.db`, `node_modules`, `dist`.
+- [x] `package.json` with the 12 scripts from §16.4 and the locked deps from §1.
+- [x] `tsconfig.json` (root) + `server/tsconfig.json` extending it with `../src/domain/**/*` includes (§16.6, option (a) relative imports).
+- [x] `vite.config.ts` — proxy `/api/*` → `http://localhost:3001`.
+- [x] `vitest.config.ts` — `environment: 'jsdom'`, `globals: true`, `setupFiles: ['tests/setup.ts']`.
+- [x] `tests/setup.ts` — `vi.useFakeTimers({ toFake: ['setTimeout','clearTimeout','requestAnimationFrame','cancelAnimationFrame','performance','Date'] })` in `beforeEach`; `useRealTimers` in `afterEach` (§16.7).
+- [x] `prisma/schema.prisma` — `Horse { number @id, name, condition }` (§8). `prisma migrate dev` creates `dev.db`.
+- [x] ESLint + Prettier configs; `vue-tsc` wired.
+- [x] `.gitignore` covers `dev.db`, `node_modules`, `dist`.
 
-Exit: `npm test` runs (zero tests), `npm run typecheck` passes on empty src, `npm run dev` boots both processes.
+Exit: `npm test` runs (zero tests), `npm run typecheck` passes on empty src, `npm run dev` boots both processes. ✓
 
 ---
 
