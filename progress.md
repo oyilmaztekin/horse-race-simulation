@@ -47,7 +47,7 @@ Wait for user approval / direction. Plan does not start Phase 0 until user confi
 | `simulation.ts`       | SIM-A3 `advanceLane(lane, speedMps, dtMs, distance, elapsedMsBeforeTick)` — per-tick position update + sub-tick finish interpolation (decision #14); already-finished lanes returned untouched | ✅ committed `191ed13` | 3 (happy/edge/sad) |
 | `simulation.ts`       | SIM-A4 `createSnapshot(round, roundNumber)` — zeroed initial snapshot; lanes 1-indexed in lane-order, horseIds wired through, elapsedMs=0, finishedAtMs=null | ✅ committed `e5fda6e` | 3 (happy/edge/sad) |
 | `simulation.ts`       | SIM-A5 `step(snapshot, dtMs, conditionLookup, rng)` — orchestrator; processes lanes in lane-order 1→10 (decision #13); already-finished lanes skip jitter draw + movement; `elapsedMs += dtMs` | ✅ committed `3070be4` | 3 (happy/edge/sad) |
-| `conditionMutation.ts`| `applyRoundEffects(horses, raced)` — raced lose `FATIGUE_PER_RACE=8`, rested gain `RECOVERY_PER_REST=3`, clamped to `[CONDITION_MIN, CONDITION_MAX]`; identity (number, name) preserved | ✅ next commit | 3 (happy/edge/sad) |
+| `conditionMutation.ts`| `applyRoundEffects(horses, raced)` — raced lose `FATIGUE_PER_RACE=8`, rested gain `RECOVERY_PER_REST=3`, clamped to `[CONDITION_MIN, CONDITION_MAX]`; identity (number, name) preserved | ✅ committed `141840e` | 3 (happy/edge/sad) |
 | `wait.ts`             | inter-round delay | ⏳ Phase 2 cont. | — |
 | `errors.ts`           | `InvalidTransitionError`, `ApiError` | ⏳ Phase 2 cont. | — |
 

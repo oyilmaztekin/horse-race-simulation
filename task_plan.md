@@ -63,7 +63,7 @@ Each module: red test → green impl → refactor. Test files live in `src/domai
   - [x] SIM-A3 `advanceLane(lane, speedMps, dtMs, distance, elapsedMsBeforeTick)` — per-tick position update with sub-tick finish interpolation (decision #14) and clamp; already-finished lanes returned untouched (committed `191ed13`).
   - [x] SIM-A4 `createSnapshot(round, roundNumber)` — zeroed initial snapshot factory; lanes 1-indexed in lane-order, horseIds wired through, `elapsedMs=0`, `finishedAtMs=null` (committed `e5fda6e`).
   - [x] SIM-A5 `step(snapshot, dtMs, conditionLookup, rng)` — orchestrator; lane-order jitter draw (decision #13); already-finished lanes skip jitter and movement; `elapsedMs += dtMs`.
-- [x] **`conditionMutation.ts`** — `applyRoundEffects(horses, raced)`: raced lose `FATIGUE_PER_RACE`, rested gain `RECOVERY_PER_REST`, clamped to `[CONDITION_MIN, CONDITION_MAX]`; roster identity preserved (committed next).
+- [x] **`conditionMutation.ts`** — `applyRoundEffects(horses, raced)`: raced lose `FATIGUE_PER_RACE`, rested gain `RECOVERY_PER_REST`, clamped to `[CONDITION_MIN, CONDITION_MAX]`; roster identity preserved (committed `141840e`).
 - [ ] **`wait.ts`** — `wait(ms)`.
 
 Exit: `npm test` green for all `src/domain/**`.
