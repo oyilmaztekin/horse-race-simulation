@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { CONDITION_MAX, CONDITION_MIN, FATIGUE_PER_RACE, RECOVERY_PER_REST } from '../constants'
-import { applyRoundEffects } from '../conditionMutation'
+import {
+  CONDITION_MAX,
+  CONDITION_MIN,
+  FATIGUE_PER_RACE,
+  MIN_RACEABLE_CONDITION,
+  RECOVERY_PER_REST,
+} from '../constants'
+import { applyRoundEffects, isFit } from '../conditionMutation'
 import type { Horse } from '../types'
 
 const horse = (number: number, condition: number, name = `H${number}`): Horse => ({
@@ -51,5 +57,21 @@ describe('applyRoundEffects', () => {
     expect(next[0]?.condition).not.toBe(horses[0]?.condition)
     expect(next[1]?.condition).not.toBe(horses[1]?.condition)
     expect(next[2]?.condition).not.toBe(horses[2]?.condition)
+  })
+})
+
+describe('isFit', () => {
+  it('returns true for a horse at or above MIN_RACEABLE_CONDITION (happy)', () => {
+    expect(isFit(horse(1, MIN_RACEABLE_CONDITION + 10))).toBe(true)
+    expect(isFit(horse(2, CONDITION_MAX))).toBe(true)
+  })
+
+  it('treats exactly MIN_RACEABLE_CONDITION as fit (edge — boundary)', () => {
+    expect(isFit(horse(1, MIN_RACEABLE_CONDITION))).toBe(true)
+    expect(isFit(horse(2, MIN_RACEABLE_CONDITION - 1))).toBe(false)
+  })
+
+  it('returns false at CONDITION_MIN (sad — a stub `() => true` would fail)', () => {
+    expect(isFit(horse(1, CONDITION_MIN))).toBe(false)
   })
 })

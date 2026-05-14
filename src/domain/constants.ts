@@ -28,3 +28,8 @@ export const RECOVERY_PER_REST = 3
 // accumulator in useRaceSimulation calls simulation.step with this dt, so
 // the seeded RNG consumption pattern is reproducible across re-runs.
 export const SIM_TICK_MS = 1000 / 60
+
+// Fit-gate threshold (BUSINESS_LOGIC.md §3.8 / decision #26). A horse is fit
+// to race iff condition ≥ MIN_RACEABLE_CONDITION. Rest bumps every unfit horse
+// to exactly this value.
+export const MIN_RACEABLE_CONDITION = 40

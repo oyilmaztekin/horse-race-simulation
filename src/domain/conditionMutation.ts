@@ -1,5 +1,16 @@
-import { CONDITION_MAX, CONDITION_MIN, FATIGUE_PER_RACE, RECOVERY_PER_REST } from './constants'
+import {
+  CONDITION_MAX,
+  CONDITION_MIN,
+  FATIGUE_PER_RACE,
+  MIN_RACEABLE_CONDITION,
+  RECOVERY_PER_REST,
+} from './constants'
 import type { Horse, HorseId } from './types'
+
+// Per BUSINESS_LOGIC.md §3.8: a horse is fit when condition ≥ MIN_RACEABLE_CONDITION.
+export function isFit(horse: Horse): boolean {
+  return horse.condition >= MIN_RACEABLE_CONDITION
+}
 
 // Per BUSINESS_LOGIC.md §3.7 / decision #10: end-of-round fatigue + recovery.
 // Raced horses lose FATIGUE_PER_RACE; rested horses gain RECOVERY_PER_REST;
