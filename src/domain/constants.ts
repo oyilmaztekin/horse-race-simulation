@@ -11,3 +11,8 @@ export const ROUND_DISTANCES = [1200, 1400, 1600, 1800, 2000, 2200] as const
 export const ROUND_COUNT = ROUND_DISTANCES.length
 
 export const LANE_COUNT = 10
+
+// Speed-formula tuning (BUSINESS_LOGIC.md §3.4 / decision #12; ARCHITECTURE.md §16.2).
+// Tuned for "believable, not realistic" — a thoroughbred gallops ~16–18 m/s.
+export const BASE_SPEED_MPS_MIN = 14
+export const BASE_SPEED_MPS_MAX = 18
