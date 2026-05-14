@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ROUND_COUNT, ROUND_DISTANCES } from '../constants'
+import { HORSE_COUNT, LANE_COUNT, ROUND_COUNT, ROUND_DISTANCES } from '../constants'
 import { generateRoster } from '../horseFactory'
 import { generateProgram } from '../programGenerator'
 import { createRng } from '../rng'
@@ -39,5 +39,46 @@ describe('generateProgram', () => {
     for (const round of program) {
       expect(Array.isArray(round.lanes)).toBe(true)
     }
+  })
+
+  it('each round assigns LANE_COUNT horse numbers from [1, HORSE_COUNT] (happy)', () => {
+    const rng = createRng(ANY_SEED)
+    const horses = generateRoster(rng, stubName)
+
+    const program = generateProgram(horses, rng)
+
+    for (const round of program) {
+      expect(round.lanes).toHaveLength(LANE_COUNT)
+      for (const horseNumber of round.lanes) {
+        expect(horseNumber).toBeGreaterThanOrEqual(1)
+        expect(horseNumber).toBeLessThanOrEqual(HORSE_COUNT)
+      }
+    }
+  })
+
+  it('lane horse numbers within a single round are distinct (edge)', () => {
+    const rng = createRng(ANY_SEED)
+    const horses = generateRoster(rng, stubName)
+
+    const program = generateProgram(horses, rng)
+
+    for (const round of program) {
+      const distinct = new Set(round.lanes)
+      expect(distinct.size).toBe(round.lanes.length)
+    }
+  })
+
+  it('different rng seeds produce different lane assignments (negative)', () => {
+    const horses = generateRoster(createRng(0), stubName)
+
+    // a stub like `horses.slice(0, LANE_COUNT)` would produce identical lanes
+    const programA = generateProgram(horses, createRng(1))
+    const programB = generateProgram(horses, createRng(2))
+
+    const someRoundDiffers = programA.some((roundA, i) => {
+      const roundB = programB[i]!
+      return JSON.stringify(roundA.lanes) !== JSON.stringify(roundB.lanes)
+    })
+    expect(someRoundDiffers).toBe(true)
   })
 })

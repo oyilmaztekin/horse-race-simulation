@@ -9,3 +9,5 @@ export const CONDITION_MAX = 100
 // ROUND_COUNT is derived from this tuple so the two can never drift apart.
 export const ROUND_DISTANCES = [1200, 1400, 1600, 1800, 2000, 2200] as const
 export const ROUND_COUNT = ROUND_DISTANCES.length
+
+export const LANE_COUNT = 10
