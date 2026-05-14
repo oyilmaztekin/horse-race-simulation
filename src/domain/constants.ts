@@ -12,6 +12,33 @@ export const ROUND_COUNT = ROUND_DISTANCES.length
 
 export const LANE_COUNT = 10
 
+// Colorblind-safe lane palette (ARCHITECTURE.md §16.3). First 8 are Okabe-Ito
+// (Wong 2011, Nature Methods) minus pure black; last 2 are wine + teal from
+// Paul Tol's "muted" palette to extend to LANE_COUNT without sacrificing
+// distinguishability. Hex codes are sourced from those references — do not
+// hand-pick replacements without checking deuteranopia/protanopia contrast.
+export const LANE_COLORS = [
+  '#E69F00',
+  '#56B4E9',
+  '#009E73',
+  '#F0E442',
+  '#0072B2',
+  '#D55E00',
+  '#CC79A7',
+  '#999999',
+  '#882255',
+  '#44AA99',
+] as const
+
+// Runtime invariant: lane palette length must match LANE_COUNT. A typo here
+// would silently desync lane → color mapping; throwing at import time keeps
+// the failure mode obvious instead of "lane 10 has undefined color".
+if (LANE_COLORS.length !== LANE_COUNT) {
+  throw new Error(
+    `LANE_COLORS has ${LANE_COLORS.length} entries; expected ${LANE_COUNT}`,
+  )
+}
+
 // Speed-formula tuning (BUSINESS_LOGIC.md §3.4 / decision #12; ARCHITECTURE.md §16.2).
 // Tuned for "believable, not realistic" — a thoroughbred gallops ~16–18 m/s.
 export const BASE_SPEED_MPS_MIN = 14
