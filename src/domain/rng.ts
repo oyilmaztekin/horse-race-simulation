@@ -1,8 +1,14 @@
 import type { Rng } from './types'
 
+// RNG: Random Number Generator. A function that returns a pseudorandom number in [0, 1).
 // mulberry32 PRNG: deterministic, 32-bit state, returns [0, 1).
 // `>>> 0` keeps math in uint32; `Math.imul` is 32-bit integer multiply.
 // Required by BUSINESS_LOGIC.md §3.4 — no Math.random() in domain/server.
+// it implements a specific algorithm called mulberry32 — a fast, deterministic pseudo-random number generator
+// realistic rather than perfectly ordered.
+// The race simulation needs randomness to model horse speed jitter 
+// — each tick a horse's speed varies slightly, making races feel
+
 
 const MULBERRY32_INCREMENT = 0x6d2b79f5
 const FIRST_XORSHIFT_BITS = 15
