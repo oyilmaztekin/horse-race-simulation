@@ -38,11 +38,11 @@ Wait for user approval / direction. Plan does not start Phase 0 until user confi
 | `rng.ts`              | mulberry32 seed → deterministic stream | ✅ committed `1385808` | 3 (happy/edge/sad) |
 | `horseFactory.ts`     | `generateRoster(rng, lookupName)` + `pickConditionUniform(rng)` | ✅ committed `1f2e091` | 6 (3+3) |
 | `programGenerator.ts` | scaffold 6 rounds with locked distances | ✅ committed `16490e7` | 3 (happy/edge/sad) |
-| `programGenerator.ts` | lane assignments — LANE_COUNT distinct horses per round | ⏳ next | — |
-| `programGenerator.ts` | rest rule (`MIN_REST_ROUNDS`) | ⏳ later | — |
-| `programGenerator.ts` | cap rule (`MAX_RACES_PER_HORSE`) | ⏳ later | — |
-| `programGenerator.ts` | condition-weighted selection (decision #11) | ⏳ later | — |
-| `simulation.ts`       | step / closed-form speed / clamp | ⏳ Phase 2 cont. | — |
+| `programGenerator.ts` | lane assignments — LANE_COUNT distinct horses per round | ✅ committed `a5deff6` | 3 (happy/edge/sad) |
+| `programGenerator.ts` | rest rule (`MIN_REST_ROUNDS = 1`) | ✅ committed `7e964c3` | 3 (happy/edge/sad) |
+| `programGenerator.ts` | cap rule (`MAX_RACES_PER_HORSE`) | ⊘ skipped — structurally redundant per BUSINESS_LOGIC §3.3 ("Cap exhaustion is not a real concern in practice"). No observable behavior to drive via TDD. | n/a |
+| `programGenerator.ts` | condition-weighted selection (decision #11) | ✅ committed `4bf4881` | 3 (happy/edge/sad) |
+| `simulation.ts`       | step / closed-form speed / clamp | ⏳ next | — |
 | `conditionMutation.ts`| fatigue + recovery per round | ⏳ Phase 2 cont. | — |
 | `wait.ts`             | inter-round delay | ⏳ Phase 2 cont. | — |
 | `errors.ts`           | `InvalidTransitionError`, `ApiError` | ⏳ Phase 2 cont. | — |
@@ -57,4 +57,4 @@ Wait for user approval / direction. Plan does not start Phase 0 until user confi
 - `CLAUDE.md` §3 adds the three-flavor coverage floor (happy + edge + sad).
 
 ### Test count
-- 12 tests across 3 files, all green. Typecheck clean.
+- 21 tests across 3 files, all green. Typecheck clean.
