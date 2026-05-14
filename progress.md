@@ -48,7 +48,7 @@ Wait for user approval / direction. Plan does not start Phase 0 until user confi
 | `simulation.ts`       | SIM-A4 `createSnapshot(round, roundNumber)` — zeroed initial snapshot; lanes 1-indexed in lane-order, horseIds wired through, elapsedMs=0, finishedAtMs=null | ✅ committed `e5fda6e` | 3 (happy/edge/sad) |
 | `simulation.ts`       | SIM-A5 `step(snapshot, dtMs, conditionLookup, rng)` — orchestrator; processes lanes in lane-order 1→10 (decision #13); already-finished lanes skip jitter draw + movement; `elapsedMs += dtMs` | ✅ committed `3070be4` | 3 (happy/edge/sad) |
 | `conditionMutation.ts`| `applyRoundEffects(horses, raced)` — raced lose `FATIGUE_PER_RACE=8`, rested gain `RECOVERY_PER_REST=3`, clamped to `[CONDITION_MIN, CONDITION_MAX]`; identity (number, name) preserved | ✅ committed `141840e` | 3 (happy/edge/sad) |
-| `wait.ts`             | inter-round delay | ⏳ Phase 2 cont. | — |
+| `wait.ts`             | `wait(ms)` — Promise wrapper over `setTimeout`; driven with fake timers (ARCHITECTURE §16.7) | ✅ committed | 3 (happy/edge/sad) |
 | `errors.ts`           | `InvalidTransitionError`, `ApiError` | ⏳ Phase 2 cont. | — |
 
 ### Doc amendments along the way
@@ -61,10 +61,11 @@ Wait for user approval / direction. Plan does not start Phase 0 until user confi
 - `CLAUDE.md` §3 adds the three-flavor coverage floor (happy + edge + sad).
 
 ### Test count
-- 39 tests across 5 files, all green. Typecheck clean.
+- 42 tests across 6 files, all green. Typecheck clean.
 - `simulation.ts` feature-complete for the inner-loop math (A1–A5).
 - `conditionMutation.ts` added: end-of-round fatigue/recovery + clamp.
-  `wait.ts` and `errors.ts` are next in Phase 2.
+- `wait.ts` added: Promise wrapper over `setTimeout`, fake-timer-driven.
+  `errors.ts` is the last Phase 2 module before Phase 3 (Hono server).
 
 ## 2026-05-14 — Session 3: deployment planning (no code)
 
