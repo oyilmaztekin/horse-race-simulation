@@ -12,6 +12,15 @@ export function isFit(horse: Horse): boolean {
   return horse.condition >= MIN_RACEABLE_CONDITION
 }
 
+// Per BUSINESS_LOGIC.md §3.8 / decision #27: bump every unfit horse to exactly
+// MIN_RACEABLE_CONDITION; horses already at/above the threshold are unchanged.
+// Bump-to-floor (not bump-by-delta) guarantees one rest re-fits the whole roster.
+export function applyRestEffects(horses: Horse[]): Horse[] {
+  return horses.map((horse) =>
+    isFit(horse) ? horse : { ...horse, condition: MIN_RACEABLE_CONDITION },
+  )
+}
+
 // Per BUSINESS_LOGIC.md §3.7 / decision #10: end-of-round fatigue + recovery.
 // Raced horses lose FATIGUE_PER_RACE; rested horses gain RECOVERY_PER_REST;
 // condition is clamped to [CONDITION_MIN, CONDITION_MAX]. Identity fields

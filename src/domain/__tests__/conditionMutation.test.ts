@@ -6,7 +6,7 @@ import {
   MIN_RACEABLE_CONDITION,
   RECOVERY_PER_REST,
 } from '../constants'
-import { applyRoundEffects, isFit } from '../conditionMutation'
+import { applyRestEffects, applyRoundEffects, isFit } from '../conditionMutation'
 import type { Horse } from '../types'
 
 const horse = (number: number, condition: number, name = `H${number}`): Horse => ({
@@ -73,5 +73,40 @@ describe('isFit', () => {
 
   it('returns false at CONDITION_MIN (sad — a stub `() => true` would fail)', () => {
     expect(isFit(horse(1, CONDITION_MIN))).toBe(false)
+  })
+})
+
+describe('applyRestEffects', () => {
+  it('bumps every unfit horse to exactly MIN_RACEABLE_CONDITION; fit horses unchanged (happy)', () => {
+    const horses: Horse[] = [
+      horse(1, CONDITION_MIN),
+      horse(2, MIN_RACEABLE_CONDITION + 20),
+      horse(3, MIN_RACEABLE_CONDITION - 5),
+      horse(4, CONDITION_MAX),
+    ]
+    const next = applyRestEffects(horses)
+    expect(next[0]?.condition).toBe(MIN_RACEABLE_CONDITION)
+    expect(next[1]?.condition).toBe(MIN_RACEABLE_CONDITION + 20)
+    expect(next[2]?.condition).toBe(MIN_RACEABLE_CONDITION)
+    expect(next[3]?.condition).toBe(CONDITION_MAX)
+  })
+
+  it('leaves a horse exactly at MIN_RACEABLE_CONDITION unchanged (edge — boundary)', () => {
+    const horses: Horse[] = [horse(1, MIN_RACEABLE_CONDITION)]
+    const next = applyRestEffects(horses)
+    expect(next[0]?.condition).toBe(MIN_RACEABLE_CONDITION)
+  })
+
+  it('preserves roster identity — same length, number and name unchanged (sad — a stub `return horses` would fail the bump)', () => {
+    const horses: Horse[] = [horse(1, 10, 'Alfa'), horse(2, 80, 'Bravo')]
+    const next = applyRestEffects(horses)
+    expect(next).toHaveLength(horses.length)
+    next.forEach((mutated, index) => {
+      const original = horses[index] as Horse
+      expect(mutated.number).toBe(original.number)
+      expect(mutated.name).toBe(original.name)
+    })
+    expect(next[0]?.condition).toBe(MIN_RACEABLE_CONDITION)
+    expect(next[1]?.condition).toBe(80)
   })
 })

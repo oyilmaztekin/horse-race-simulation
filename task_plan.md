@@ -65,7 +65,7 @@ Each module: red test → green impl → refactor. Test files live in `src/domai
   - [x] SIM-A4 `createSnapshot(round, roundNumber)` — zeroed initial snapshot factory; lanes 1-indexed in lane-order, horseIds wired through, `elapsedMs=0`, `finishedAtMs=null` (committed `e5fda6e`).
   - [x] SIM-A5 `step(snapshot, dtMs, conditionLookup, rng)` — orchestrator; lane-order jitter draw (decision #13); already-finished lanes skip jitter and movement; `elapsedMs += dtMs`.
 - [x] **`conditionMutation.ts`** — `applyRoundEffects(horses, raced)`: raced lose `FATIGUE_PER_RACE`, rested gain `RECOVERY_PER_REST`, clamped to `[CONDITION_MIN, CONDITION_MAX]`; roster identity preserved (committed `141840e`).
-- [ ] **`conditionMutation.ts` (amendment, 2026-05-14):** add `applyRestEffects(horses)` — bumps every horse with `condition < MIN_RACEABLE_CONDITION` to exactly `MIN_RACEABLE_CONDITION`; horses already at/above the threshold are unchanged; identity preserved. Add `isFit(horse): boolean` predicate. TDD per `CLAUDE.md` §3 (happy/edge/sad) — happy: a roster of half-fit, half-unfit horses; edge: exactly at the threshold (no change); sad: stub `return horses` would fail the bump assertion.
+- [x] **`conditionMutation.ts` (amendment, 2026-05-14):** `isFit(horse)` ✓ and `applyRestEffects(horses)` ✓ — bumps every unfit horse to exactly `MIN_RACEABLE_CONDITION`; fit horses unchanged; identity preserved. 3-flavor TDD (happy/edge/sad).
 - [x] **`wait.ts`** — `wait(ms)` Promise wrapper over `setTimeout`; driven with fake timers (ARCHITECTURE §16.7).
 
 Exit: `npm test` green for all `src/domain/**`.
