@@ -1,12 +1,15 @@
 import { LANE_COUNT, ROUND_DISTANCES } from './constants'
-import type { Horse, HorseId, Program, Rng } from './types'
+import type { Horse, HorseId, Program, Rng, Round } from './types'
 
-// Builds the 6-round program. Distances are fixed by ROUND_DISTANCES; each
-// round draws LANE_COUNT distinct horses uniformly at random from the roster.
-// Rest/cap rules and condition-weighting follow in subsequent TDD cycles.
+// Builds the 6-round program. Each round draws LANE_COUNT distinct horses
+// uniformly at random, excluding any horse that raced in the immediately
+// previous round (rest rule, MIN_REST_ROUNDS = 1). Cap rule and condition-
+// weighting follow in subsequent TDD cycles.
 export function generateProgram(horses: Horse[], rng: Rng): Program {
-  return ROUND_DISTANCES.map((distance) => {
-    const pool = horses.map((h) => h.number)
+  const program: Round[] = []
+  for (const distance of ROUND_DISTANCES) {
+    const previousLanes = new Set(program[program.length - 1]?.lanes ?? [])
+    const pool = horses.map((h) => h.number).filter((n) => !previousLanes.has(n))
     const lanes: HorseId[] = []
     while (lanes.length < LANE_COUNT) {
       // idx is in [0, pool.length) by construction; non-null assertion is safe
@@ -14,6 +17,7 @@ export function generateProgram(horses: Horse[], rng: Rng): Program {
       lanes.push(pool[idx]!)
       pool.splice(idx, 1)
     }
-    return { distance, lanes }
-  })
+    program.push({ distance, lanes })
+  }
+  return program
 }

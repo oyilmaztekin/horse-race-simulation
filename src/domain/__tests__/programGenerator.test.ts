@@ -81,4 +81,48 @@ describe('generateProgram', () => {
     })
     expect(someRoundDiffers).toBe(true)
   })
+
+  it('no horse races in two consecutive rounds (happy — rest rule)', () => {
+    const rng = createRng(ANY_SEED)
+    const horses = generateRoster(rng, stubName)
+
+    const program = generateProgram(horses, rng)
+
+    for (let i = 1; i < program.length; i += 1) {
+      const previous = new Set(program[i - 1]!.lanes)
+      for (const horseNumber of program[i]!.lanes) {
+        expect(previous.has(horseNumber)).toBe(false)
+      }
+    }
+  })
+
+  it('with HORSE_COUNT === 2 * LANE_COUNT, rounds 1 and 3 share the full horse set (edge — alternation theorem)', () => {
+    const rng = createRng(ANY_SEED)
+    const horses = generateRoster(rng, stubName)
+
+    const program = generateProgram(horses, rng)
+
+    const round1Set = new Set(program[0]!.lanes)
+    const round3Set = new Set(program[2]!.lanes)
+    expect(round3Set).toEqual(round1Set)
+  })
+
+  it('rest invariant holds across many seeds (negative)', () => {
+    // a stub that picks at random without filtering the previous round would
+    // occasionally produce an overlap; testing many seeds makes that detectable
+    const seeds = [1, 7, 42, 99, 314, 2026]
+
+    for (const seed of seeds) {
+      const rng = createRng(seed)
+      const horses = generateRoster(rng, stubName)
+      const program = generateProgram(horses, rng)
+
+      for (let i = 1; i < program.length; i += 1) {
+        const previous = new Set(program[i - 1]!.lanes)
+        for (const horseNumber of program[i]!.lanes) {
+          expect(previous.has(horseNumber)).toBe(false)
+        }
+      }
+    }
+  })
 })
