@@ -83,7 +83,8 @@ beygir-yarisi/
 │
 ├── prisma/
 │   ├── schema.prisma             # Horse model
-│   ├── seed.ts                   # imports src/domain/horseFactory → seeds DB
+│   ├── horseNames.json           # server-side editorial seed data (NOT code; no TS module encodes names)
+│   ├── seed.ts                   # imports horseFactory, reads horseNames.json → seeds DB
 │   └── dev.db                    # SQLite file (gitignored)
 │
 └── tests/
@@ -480,20 +481,34 @@ model Horse {
 
 ```ts
 // prisma/seed.ts
+import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
 import { PrismaClient } from '@prisma/client'
 import { generateRoster } from '../src/domain/horseFactory'
 import { createRng } from '../src/domain/rng'
 
 const db = new PrismaClient()
 
+// JSON, not TS — no code module encodes the names. See decision #24.
+const NAMES_PATH = fileURLToPath(new URL('./horseNames.json', import.meta.url))
+const NAMES: readonly string[] = JSON.parse(readFileSync(NAMES_PATH, 'utf8'))
+
+const lookupName = (number: number): string => {
+  const name = NAMES[number - 1]
+  if (name === undefined) throw new Error(`No name configured for horse #${number}`)
+  return name
+}
+
 async function main() {
   await db.horse.deleteMany()
-  const rng = createRng(0xDECAF)             // deterministic seed for reproducibility
-  await db.horse.createMany({ data: generateRoster(rng) })
+  const rng = createRng(0xDECAF)              // deterministic seed for reproducibility
+  await db.horse.createMany({ data: generateRoster(rng, lookupName) })
 }
 
 main().finally(() => db.$disconnect())
 ```
+
+`horseFactory.generateRoster(rng, lookupName)` takes the name lookup as a DI argument so `domain/` carries no editorial content (per `CLAUDE.md` §1 and decision #24 below). The seed script reads `prisma/horseNames.json` once at startup and supplies the lookup at the boundary.
 
 **Why this shape works:**
 - Server is ~50 lines of routing — Hono's sweet spot. The substantive logic stays in the shared `domain/` layer.
@@ -670,6 +685,7 @@ export function wait(ms: number): Promise<void> {
 | 21 | **`HorseList` shows no color swatch** | Per `BUSINESS_LOGIC.md` A5, horses have no identity color — only per-round lane colors. A color in the roster would imply persistent identity the rules don't support. |
 | 22 | **`RaceTrack` mounts only during RACING; re-keys on `currentRoundIndex`** | Component lifetime exactly matches the simulation's. Round advance = new key = new `useRaceSimulation` instance = fresh positions. No manual reset code. |
 | 23 | **Hybrid phase-based visibility** | Header + `HorseList` + `ResultsPanel` always mounted (the last pre-scaffolds six round headers from `ROUND_DISTANCES` per `BUSINESS_LOGIC.md` §3.6 — the meeting structure is visible from page load). `ProgramPanel` mounts once a program exists. `RaceTrack` only during RACING. No placeholder UI for MVP. |
+| 24 | **Name list is a JSON fixture (`prisma/horseNames.json`), never a TS module.** Frontend ships zero name strings. `generateRoster(rng, lookupName)` takes the name resolver as a DI argument; the seed script reads the JSON and supplies the lookup at the boundary. | Names are server-owned persisted data, same class as `number` and `condition`. Storing them as JSON keeps editorial content out of code entirely — a rename is a JSON edit + reseed, not a code change. The only path from a horse number to a name on the client is `GET /api/horses`; there is no fallback list bundled anywhere. Keeps `src/domain/` behavior-only and DI-friendly (the test passes a stub `lookupName`). Recorded in `BUSINESS_LOGIC.md` decision #18 (2026-05-14 amendment). |
 
 ---
 
