@@ -1,5 +1,7 @@
 import { BASE_SPEED_MPS_MAX, BASE_SPEED_MPS_MIN, CONDITION_MAX, JITTER_MPS } from './constants'
-import type { Rng } from './types'
+import type { LanePosition, Rng } from './types'
+
+const MS_PER_SECOND = 1000
 
 // Per BUSINESS_LOGIC.md §3.4 / decision #12: additive linear interpolation
 // from MIN..MAX over condition, with a caller-supplied jitter perturbation.
@@ -15,4 +17,25 @@ export function computeSpeed(condition: number, jitter: number): number {
 // closed-form finish-time test (cond=MAX, jitter=0) feasible.
 export function drawJitter(rng: Rng): number {
   return (rng() - 0.5) * 2 * JITTER_MPS
+}
+
+// Per BUSINESS_LOGIC.md §3.4 / decision #14: advance one lane by speed*dt;
+// if the lane crosses the line on this tick, clamp meters and back-solve
+// the exact finishedAtMs via linear interpolation (sub-tick precision).
+// Already-finished lanes are returned untouched — no double-finishes.
+export function advanceLane(
+  lane: LanePosition,
+  speedMps: number,
+  dtMs: number,
+  distance: number,
+  elapsedMsBeforeTick: number,
+): LanePosition {
+  if (lane.finishedAtMs !== null) return lane
+  const advanced = lane.meters + speedMps * (dtMs / MS_PER_SECOND)
+  if (advanced < distance) {
+    return { ...lane, meters: advanced }
+  }
+  const remainingMeters = distance - lane.meters
+  const timeToFinishMs = (remainingMeters / speedMps) * MS_PER_SECOND
+  return { ...lane, meters: distance, finishedAtMs: elapsedMsBeforeTick + timeToFinishMs }
 }

@@ -7,7 +7,8 @@ import {
   JITTER_MPS,
 } from '../constants'
 import { createRng } from '../rng'
-import { computeSpeed, drawJitter } from '../simulation'
+import { advanceLane, computeSpeed, drawJitter } from '../simulation'
+import type { LanePosition } from '../types'
 
 describe('computeSpeed', () => {
   it('returns BASE_SPEED_MPS_MAX exactly when condition === CONDITION_MAX and jitter === 0 (happy — closed-form anchor)', () => {
@@ -62,5 +63,38 @@ describe('drawJitter', () => {
     const first = drawJitter(rng)
     const second = drawJitter(rng)
     expect(first).not.toBe(second)
+  })
+})
+
+describe('advanceLane', () => {
+  const runningLane = (meters: number): LanePosition => ({
+    horseId: 7,
+    lane: 3,
+    meters,
+    finishedAtMs: null,
+  })
+
+  it('advances meters by speed*dt for a not-finished, non-crossing lane (happy)', () => {
+    const lane = runningLane(100)
+    const next = advanceLane(lane, 18, 1000 / 60, 1200, 0)
+    expect(next.meters).toBeCloseTo(100 + 18 * (1000 / 60) / 1000, 10)
+    expect(next.finishedAtMs).toBeNull()
+    expect(next.horseId).toBe(lane.horseId)
+    expect(next.lane).toBe(lane.lane)
+  })
+
+  it('clamps meters and sets finishedAtMs via sub-tick interpolation when crossing the line (edge — closed-form anchor)', () => {
+    // prevMeters=0, distance=1200, speed=18 m/s, dt large enough to overshoot.
+    // 1200 / 18 = 66.666… s → 66_666.666… ms exactly.
+    const next = advanceLane(runningLane(0), 18, 200_000, 1200, 0)
+    expect(next.meters).toBe(1200)
+    expect(next.finishedAtMs).toBeCloseTo(66_666.666_666_666, 6)
+  })
+
+  it('returns an already-finished lane untouched (sad — no movement, no overwrite)', () => {
+    const finished: LanePosition = { horseId: 7, lane: 3, meters: 1200, finishedAtMs: 60_000 }
+    const next = advanceLane(finished, 18, 1000 / 60, 1200, 90_000)
+    expect(next.meters).toBe(1200)
+    expect(next.finishedAtMs).toBe(60_000)
   })
 })

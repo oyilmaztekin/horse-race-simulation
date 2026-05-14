@@ -14,3 +14,10 @@ export interface Round {
 }
 
 export type Program = Round[]
+
+export interface LanePosition {
+  horseId: HorseId
+  lane: number
+  meters: number
+  finishedAtMs: number | null
+}
