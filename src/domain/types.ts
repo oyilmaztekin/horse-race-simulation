@@ -21,3 +21,10 @@ export interface LanePosition {
   meters: number
   finishedAtMs: number | null
 }
+
+export interface SimulationSnapshot {
+  roundNumber: number
+  distance: number
+  elapsedMs: number
+  lanes: LanePosition[]
+}

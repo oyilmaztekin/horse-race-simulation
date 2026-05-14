@@ -60,8 +60,8 @@ Each module: red test → green impl → refactor. Test files live in `src/domai
 - [ ] **`simulation.ts`** — decomposed into independent unit-testable functions:
   - [x] SIM-A1 `computeSpeed(condition, jitter)` — additive linear interpolation, pure (committed `fc21a3d`).
   - [x] SIM-A2 `drawJitter(rng)` — uniform sample in `[-JITTER_MPS, +JITTER_MPS)`, anchored at `rng()=0.5 → 0` (committed `0d638c8`).
-  - [x] SIM-A3 `advanceLane(lane, speedMps, dtMs, distance, elapsedMsBeforeTick)` — per-tick position update with sub-tick finish interpolation (decision #14) and clamp; already-finished lanes returned untouched.
-  - [ ] SIM-A4 `createSnapshot(round, roundNumber)` — zeroed initial snapshot (factory).
+  - [x] SIM-A3 `advanceLane(lane, speedMps, dtMs, distance, elapsedMsBeforeTick)` — per-tick position update with sub-tick finish interpolation (decision #14) and clamp; already-finished lanes returned untouched (committed `191ed13`).
+  - [x] SIM-A4 `createSnapshot(round, roundNumber)` — zeroed initial snapshot factory; lanes 1-indexed in lane-order, horseIds wired through, `elapsedMs=0`, `finishedAtMs=null`.
   - [ ] SIM-A5 `step(snapshot, dtMs, conditionLookup, rng)` — orchestrator; lane-order jitter draw (decision #13); already-finished lanes skip jitter and movement; `elapsedMs += dtMs`.
 - [ ] **`conditionMutation.ts`** — `applyRoundEffects(horses, raced): Horse[]`.
 - [ ] **`wait.ts`** — `wait(ms)`.

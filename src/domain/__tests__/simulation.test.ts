@@ -6,9 +6,10 @@ import {
   CONDITION_MIN,
   JITTER_MPS,
 } from '../constants'
+import { LANE_COUNT, ROUND_DISTANCES } from '../constants'
 import { createRng } from '../rng'
-import { advanceLane, computeSpeed, drawJitter } from '../simulation'
-import type { LanePosition } from '../types'
+import { advanceLane, computeSpeed, createSnapshot, drawJitter } from '../simulation'
+import type { LanePosition, Round } from '../types'
 
 describe('computeSpeed', () => {
   it('returns BASE_SPEED_MPS_MAX exactly when condition === CONDITION_MAX and jitter === 0 (happy — closed-form anchor)', () => {
@@ -96,5 +97,36 @@ describe('advanceLane', () => {
     const next = advanceLane(finished, 18, 1000 / 60, 1200, 90_000)
     expect(next.meters).toBe(1200)
     expect(next.finishedAtMs).toBe(60_000)
+  })
+})
+
+describe('createSnapshot', () => {
+  const round: Round = {
+    distance: ROUND_DISTANCES[2],
+    lanes: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  }
+
+  it('returns a zeroed snapshot with distance + roundNumber wired through (happy)', () => {
+    const snap = createSnapshot(round, 3)
+    expect(snap.roundNumber).toBe(3)
+    expect(snap.distance).toBe(round.distance)
+    expect(snap.elapsedMs).toBe(0)
+    expect(snap.lanes).toHaveLength(LANE_COUNT)
+  })
+
+  it('numbers lanes 1..LANE_COUNT in lane-order and matches horseIds by index (edge — boundary)', () => {
+    const snap = createSnapshot(round, 3)
+    snap.lanes.forEach((lane, index) => {
+      expect(lane.lane).toBe(index + 1)
+      expect(lane.horseId).toBe(round.lanes[index])
+    })
+  })
+
+  it('every lane starts at meters=0 with finishedAtMs=null (sad — a stub returning distance/0 would fail)', () => {
+    const snap = createSnapshot(round, 3)
+    for (const lane of snap.lanes) {
+      expect(lane.meters).toBe(0)
+      expect(lane.finishedAtMs).toBeNull()
+    }
   })
 })

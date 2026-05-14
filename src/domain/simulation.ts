@@ -1,5 +1,5 @@
 import { BASE_SPEED_MPS_MAX, BASE_SPEED_MPS_MIN, CONDITION_MAX, JITTER_MPS } from './constants'
-import type { LanePosition, Rng } from './types'
+import type { LanePosition, Rng, Round, SimulationSnapshot } from './types'
 
 const MS_PER_SECOND = 1000
 
@@ -38,4 +38,16 @@ export function advanceLane(
   const remainingMeters = distance - lane.meters
   const timeToFinishMs = (remainingMeters / speedMps) * MS_PER_SECOND
   return { ...lane, meters: distance, finishedAtMs: elapsedMsBeforeTick + timeToFinishMs }
+}
+
+// Zeroed initial snapshot for a round. Lanes are 1-indexed in lane-order;
+// horseIds come from the round's lane assignments (decision #9).
+export function createSnapshot(round: Round, roundNumber: number): SimulationSnapshot {
+  const lanes: LanePosition[] = round.lanes.map((horseId, index) => ({
+    horseId,
+    lane: index + 1,
+    meters: 0,
+    finishedAtMs: null,
+  }))
+  return { roundNumber, distance: round.distance, elapsedMs: 0, lanes }
 }
