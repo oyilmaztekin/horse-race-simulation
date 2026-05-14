@@ -2,6 +2,10 @@ export type Rng = () => number
 
 export type HorseId = number
 
+// Race phase names — BUSINESS_LOGIC.md §4.2. Single source of truth for the
+// store's discriminated union and InvalidTransitionError's `kind` field.
+export type RacePhase = 'INITIAL' | 'READY' | 'RACING' | 'FINISHED'
+
 export interface Horse {
   number: HorseId
   name: string

@@ -40,16 +40,16 @@ The vocabulary every later layer imports. No tests yet — these are pure declar
 - [x] `src/domain/constants.ts` — `HORSE_COUNT`, `CONDITION_MIN`, `CONDITION_MAX`, `ROUND_DISTANCES`, `ROUND_COUNT` (derived), `LANE_COUNT`, `FATIGUE_PER_RACE=8`, `RECOVERY_PER_REST=3`. Still pending: `MIN_REST_ROUNDS`, `MAX_RACES_PER_HORSE`, `INTER_ROUND_DELAY_MS=1500`, `SIM_TICK_MS=1000/60`.
 - [x] Speed-formula tuning constants (§16.2): `BASE_SPEED_MPS_MIN=14`, `BASE_SPEED_MPS_MAX=18`, `JITTER_MPS=1.5`. Believability rationale documented inline.
 - [ ] `LANE_COLORS` array — exactly `LANE_COUNT` hex strings. Use Wong / Okabe-Ito palette extended to 10 (§16.3). Runtime assertion: `LANE_COLORS.length === LANE_COUNT`.
-- [ ] Phase string-literal union `'INITIAL'|'READY'|'RACING'|'FINISHED'` (§4.2 phase names).
+- [x] Phase string-literal union `'INITIAL'|'READY'|'RACING'|'FINISHED'` (§4.2 phase names) — exported as `RacePhase` from `types.ts`.
 - [x] `src/domain/types.ts` — `Rng`, `HorseId`, `Horse`, `Round`, `Program`. Still pending: `Ranking`, `RoundResult`, `LanePosition`, `SimulationSnapshot`.
-- [ ] `src/domain/errors.ts` — `InvalidTransitionError(kind, action)`, `ApiError(status, body)`.
+- [x] `src/domain/errors.ts` — `InvalidTransitionError(kind, action)`, `ApiError(status, body)`.
 
 Exit: `npm run typecheck` green.
 
 ---
 
 ### Phase 2 — Pure domain (TDD, in dependency order)
-Status: `in_progress`
+Status: `complete`
 
 Each module: red test → green impl → refactor. Test files live in `src/domain/__tests__/`.
 
