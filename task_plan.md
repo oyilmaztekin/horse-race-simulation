@@ -57,7 +57,7 @@ Each module: red test → green impl → refactor. Test files live in `src/domai
 - [x] **`horseFactory.ts`** — `generateRoster(rng, lookupName)` + `pickConditionUniform(rng)` (committed `1f2e091`).
 - [x] **Horse-name list** — backend-owned per decision #18; will arrive as `prisma/horseNames.json` in Phase 3. Frontend stays content-free.
 - [x] **`programGenerator.ts`** — scaffold + lanes + rest rule + condition-weighted selection (commits `16490e7`, `a5deff6`, `7e964c3`, `4bf4881`). Cap rule cycle deliberately skipped (alternation theorem makes it structurally redundant; logged in commit history).
-- [ ] **`simulation.ts`** — decomposed into independent unit-testable functions:
+- [x] **`simulation.ts`** — decomposed into independent unit-testable functions:
   - [x] SIM-A1 `computeSpeed(condition, jitter)` — additive linear interpolation, pure (committed `fc21a3d`).
   - [x] SIM-A2 `drawJitter(rng)` — uniform sample in `[-JITTER_MPS, +JITTER_MPS)`, anchored at `rng()=0.5 → 0` (committed `0d638c8`).
   - [x] SIM-A3 `advanceLane(lane, speedMps, dtMs, distance, elapsedMsBeforeTick)` — per-tick position update with sub-tick finish interpolation (decision #14) and clamp; already-finished lanes returned untouched (committed `191ed13`).
