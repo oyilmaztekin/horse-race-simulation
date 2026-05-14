@@ -22,6 +22,8 @@ This codebase is **MVP-scoped**. Pause, restart, mid-race regeneration, DNF, and
 - No parallel arrays describing the same thing in two places.
 - A second occurrence of the same literal in a PR is a blocker.
 
+**Rule (also — algorithm-internal magic literals):** even a *single-use* literal must be a named `const` if the reader can't tell what it means without decoding the math. This covers hex constants (`0x6d2b79f5`), bit-shift amounts (`>>> 15`), bit masks (`| 1`, `| 61`), prime-ish mixing constants, byte offsets, and mathematical constants like `2 ** 32`. Naming makes the algorithm self-documenting — the reader reads names, not bit patterns. Constants live at the top of the file (module scope or in the closure where they apply) with intention-revealing names like `MULBERRY32_INCREMENT`, `FIRST_XORSHIFT_BITS`, `UINT32_RANGE`. The same applies inside any test fixture that encodes algorithm-internal values.
+
 **Required named constants** (derived from `BUSINESS_LOGIC.md` — each must exist as a named export, no inline literals):
 
 - `HORSE_COUNT = 20` — roster size (§3.1)
@@ -50,6 +52,7 @@ Cross-references like `LANE_COUNT === LANE_COLORS.length` must be enforced by ty
 - No hidden side effects. Pure functions in `domain/`; state writes only via store actions.
 - No flag arguments. No `null` returned or passed — use `undefined` or a discriminated union.
 - Comments explain *why*, never *what*. No commented-out code, no section banners, no dead code.
+- Comments are **terse**: default is zero, max is **1–3 lines** when a comment is warranted (e.g. algorithm-internal magic literals per §1). No multi-paragraph docstrings, no `@param`/`@returns` JSDoc blocks — the type signature already conveys that. Link to a URL or doc section if more depth is genuinely needed. Reviewer time is the budget; assume they skip anything longer.
 - Law of Demeter: components never traverse more than one dot into a store.
 
 **SOLID (mapped to this codebase):**
@@ -68,6 +71,14 @@ No production code without a failing test that requires it. Tools: **Vitest + `@
 - **🔴 Red** — write the failing test first; confirm it fails for the *right reason* (not a typo or missing import). One behavior per test, named in business terms.
 - **🟢 Green** — minimum code to pass. Hardcoding is fine here. Run the full suite (`vitest run`) before declaring green.
 - **🛠️ Refactor** — only with a green bar. Apply §1 and §2. No new behavior — if a case is missing, go back to Red.
+
+**Three-flavor coverage floor.** Every behavior under test gets **at least** three cases — happy-only suites give false confidence. The three flavors:
+
+1. **Happy path** — canonical correct usage. What the function is *for*.
+2. **Edge case** — boundary input: empty / zero / max / duplicate / off-by-one zones where naive impls break.
+3. **Negative (sad) path** — either an error case (if the function can throw) OR a test that an "obvious wrong implementation" would still fail. For pure functions with no error path, this is the test that catches a stub like `return 0.5` / `return []`: e.g., "different inputs produce different outputs", "result depends on every argument", "two calls don't return identical values".
+
+Three is the **floor**, not a fixed count — add more when a behavior genuinely has more zones. Don't pad with redundant cases either.
 
 **Per layer:**
 - `domain/` — exhaustive unit tests with deterministic seeds.
