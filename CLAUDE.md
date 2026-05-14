@@ -2,6 +2,30 @@
 
 Guidance for Claude Code working in this repository.
 
+
+## Before Every Task
+
+1. **Orient with graphify** (`graphify-out/GRAPH_REPORT.md`, then `graphify query` / `graphify path` / `graphify explain`).
+2. **Read `ARCHITECTURE.md` and `BUSINESS_LOGIC.md`** — authoritative source for domain rules (BUSINESS_LOGIC §3), state stores (ARCHITECTURE §4), domain types (ARCHITECTURE §6), component inventory (ARCHITECTURE §14), and testing strategy (ARCHITECTURE §15).
+
+## Exploration: graphify-first, grep-last, find-last (MANDATORY)
+
+For any "where is X / what uses Y / how does Z connect" question, **you must use graphify before any grep, find, ripgrep, or Glob/Grep tool call.** Graphify is ~71x cheaper in tokens and surfaces relationships (node → prompt → output model → state field) that grep cannot.
+
+**Required workflow:**
+1. Start at run `graphify query "<concept>"`.
+2. Follow relations with `graphify path <a> <b>` and `graphify explain <node>`.
+3. Think in **communities and relations**, not file paths.
+
+**Grep/find is allowed only as a fallback for:**
+- Exact literal hunts (error strings, magic constants, specific config keys).
+- Files graphify hasn't indexed (state it explicitly when this happens).
+- Verifying a specific line/symbol after graphify has pointed you to the file.
+
+**Subagents must follow the same rule** — when delegating exploration (Explore, general-purpose, etc.), instruct them to use graphify first and treat grep as fallback. Do not let the default Explore agent reflexively grep this repo.
+
+If graphify output looks stale, surface that to the user instead of silently switching to grep.
+
 ## 0. Source of truth
 
 Domain rules and architecture decisions are split across two locked documents. Read both before writing any production code. If a rule or architectural decision needs to change, change the **document first** (with rationale in its decision log) — code follows the doc, never the reverse.
@@ -23,6 +47,8 @@ This codebase is **MVP-scoped**. Pause, restart, mid-race regeneration, DNF, and
 - A second occurrence of the same literal in a PR is a blocker.
 
 **Rule (also — algorithm-internal magic literals):** even a *single-use* literal must be a named `const` if the reader can't tell what it means without decoding the math. This covers hex constants (`0x6d2b79f5`), bit-shift amounts (`>>> 15`), bit masks (`| 1`, `| 61`), prime-ish mixing constants, byte offsets, and mathematical constants like `2 ** 32`. Naming makes the algorithm self-documenting — the reader reads names, not bit patterns. Constants live at the top of the file (module scope or in the closure where they apply) with intention-revealing names like `MULBERRY32_INCREMENT`, `FIRST_XORSHIFT_BITS`, `UINT32_RANGE`. The same applies inside any test fixture that encodes algorithm-internal values.
+
+**Rule (also — backend-owned data does NOT ship to the frontend).** Data that is persisted server-side and reaches the client via the API (horse names, conditions, anything stored in a row) is **not** allowed to also exist as a bundled list in shared `domain/` or in frontend code. The only path from a key to that data on the client is the API response. Editorial-but-persisted content (e.g., the horse name list) lives next to the persistence layer (`prisma/`), is consumed only by the seed script, and is passed into pure domain functions via a DI argument (e.g., `generateRoster(rng, lookupName)`). Two reasons: (1) it prevents the frontend bundle from carrying truth-state it doesn't need; (2) it keeps the editorial choice reversible at seed time without a frontend rebuild. Reference: `BUSINESS_LOGIC.md` decision #18, `ARCHITECTURE.md` decision #24.
 
 **Required named constants** (derived from `BUSINESS_LOGIC.md` — each must exist as a named export, no inline literals):
 

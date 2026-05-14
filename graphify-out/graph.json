@@ -1,0 +1,926 @@
+{
+  "directed": false,
+  "multigraph": false,
+  "graph": {
+    "hyperedges": [
+      {
+        "id": "core_game_flow_loop",
+        "label": "Core Game Flow - INITIAL \u2192 READY \u2192 RACING \u2192 FINISHED State Progression",
+        "nodes": [
+          "business_logic_state_machine",
+          "business_logic_program_schedule",
+          "business_logic_simulation_model",
+          "business_logic_condition_mutation",
+          "architecture_race_store"
+        ],
+        "relation": "participate_in",
+        "confidence": "EXTRACTED",
+        "confidence_score": 1.0,
+        "source_file": "BUSINESS_LOGIC.md"
+      },
+      {
+        "id": "deterministic_rng_architecture",
+        "label": "Deterministic RNG System - Seed Propagation Through Simulation",
+        "nodes": [
+          "business_logic_decision_25",
+          "architecture_use_race_simulation",
+          "architecture_decision_16",
+          "business_logic_simulation_model"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.9,
+        "source_file": "ARCHITECTURE.md"
+      },
+      {
+        "id": "store_component_separation",
+        "label": "Store and Component Layering - Clean Separation of Concerns",
+        "nodes": [
+          "architecture_horses_store",
+          "architecture_race_store",
+          "architecture_components_inventory",
+          "architecture_use_race_simulation"
+        ],
+        "relation": "participate_in",
+        "confidence": "INFERRED",
+        "confidence_score": 0.85,
+        "source_file": "ARCHITECTURE.md"
+      }
+    ]
+  },
+  "nodes": [
+    {
+      "label": "vitest.config.ts",
+      "file_type": "code",
+      "source_file": "vitest.config.ts",
+      "source_location": "L1",
+      "id": "vitest_config_ts",
+      "community": 5,
+      "norm_label": "vitest.config.ts"
+    },
+    {
+      "label": "vite.config.ts",
+      "file_type": "code",
+      "source_file": "vite.config.ts",
+      "source_location": "L1",
+      "id": "vite_config_ts",
+      "community": 6,
+      "norm_label": "vite.config.ts"
+    },
+    {
+      "label": "setup.ts",
+      "file_type": "code",
+      "source_file": "tests/setup.ts",
+      "source_location": "L1",
+      "id": "tests_setup_ts",
+      "community": 7,
+      "norm_label": "setup.ts"
+    },
+    {
+      "label": "horseNames.ts",
+      "file_type": "code",
+      "source_file": "src/domain/horseNames.ts",
+      "source_location": "L1",
+      "id": "src_domain_horsenames_ts",
+      "community": 1,
+      "norm_label": "horsenames.ts"
+    },
+    {
+      "label": "horseName()",
+      "file_type": "code",
+      "source_file": "src/domain/horseNames.ts",
+      "source_location": "L36",
+      "id": "domain_horsenames_horsename",
+      "community": 1,
+      "norm_label": "horsename()"
+    },
+    {
+      "label": "horseFactory.ts",
+      "file_type": "code",
+      "source_file": "src/domain/horseFactory.ts",
+      "source_location": "L1",
+      "id": "src_domain_horsefactory_ts",
+      "community": 1,
+      "norm_label": "horsefactory.ts"
+    },
+    {
+      "label": "generateRoster()",
+      "file_type": "code",
+      "source_file": "src/domain/horseFactory.ts",
+      "source_location": "L9",
+      "id": "domain_horsefactory_generateroster",
+      "community": 1,
+      "norm_label": "generateroster()"
+    },
+    {
+      "label": "pickConditionUniform()",
+      "file_type": "code",
+      "source_file": "src/domain/horseFactory.ts",
+      "source_location": "L20",
+      "id": "domain_horsefactory_pickconditionuniform",
+      "community": 1,
+      "norm_label": "pickconditionuniform()"
+    },
+    {
+      "label": "types.ts",
+      "file_type": "code",
+      "source_file": "src/domain/types.ts",
+      "source_location": "L1",
+      "id": "src_domain_types_ts",
+      "community": 8,
+      "norm_label": "types.ts"
+    },
+    {
+      "label": "rng.ts",
+      "file_type": "code",
+      "source_file": "src/domain/rng.ts",
+      "source_location": "L1",
+      "id": "src_domain_rng_ts",
+      "community": 1,
+      "norm_label": "rng.ts"
+    },
+    {
+      "label": "createRng()",
+      "file_type": "code",
+      "source_file": "src/domain/rng.ts",
+      "source_location": "L21",
+      "id": "domain_rng_createrng",
+      "community": 1,
+      "norm_label": "createrng()"
+    },
+    {
+      "label": "constants.ts",
+      "file_type": "code",
+      "source_file": "src/domain/constants.ts",
+      "source_location": "L1",
+      "id": "src_domain_constants_ts",
+      "community": 9,
+      "norm_label": "constants.ts"
+    },
+    {
+      "label": "rng.test.ts",
+      "file_type": "code",
+      "source_file": "src/domain/__tests__/rng.test.ts",
+      "source_location": "L1",
+      "id": "src_domain_tests_rng_test_ts",
+      "community": 1,
+      "norm_label": "rng.test.ts"
+    },
+    {
+      "label": "horseFactory.test.ts",
+      "file_type": "code",
+      "source_file": "src/domain/__tests__/horseFactory.test.ts",
+      "source_location": "L1",
+      "id": "src_domain_tests_horsefactory_test_ts",
+      "community": 1,
+      "norm_label": "horsefactory.test.ts"
+    },
+    {
+      "label": "Insider One - Software Developer Assessment Project",
+      "file_type": "document",
+      "source_file": "expectation.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "expectation_insider_one",
+      "community": 2,
+      "norm_label": "insider one - software developer assessment project"
+    },
+    {
+      "label": "Business Logic & Domain Decisions \u2014 Horse Racing",
+      "file_type": "document",
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "business_logic_horse_racing",
+      "community": 2,
+      "norm_label": "business logic & domain decisions \u2014 horse racing"
+    },
+    {
+      "label": "Architecture & Implementation Design \u2014 Horse Racing",
+      "file_type": "document",
+      "source_file": "ARCHITECTURE.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "architecture_horse_racing",
+      "community": 2,
+      "norm_label": "architecture & implementation design \u2014 horse racing"
+    },
+    {
+      "label": "CLAUDE.md - Project Engineering Discipline",
+      "file_type": "rationale",
+      "source_file": "CLAUDE.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "claude_md_project_guidance",
+      "community": 2,
+      "norm_label": "claude.md - project engineering discipline"
+    },
+    {
+      "label": "Implementation Plan \u2014 Horse Racing MVP",
+      "file_type": "document",
+      "source_file": "task_plan.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "task_plan_implementation",
+      "community": 2,
+      "norm_label": "implementation plan \u2014 horse racing mvp"
+    },
+    {
+      "label": "Progress Log",
+      "file_type": "document",
+      "source_file": "progress.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "progress_session_log",
+      "community": 10,
+      "norm_label": "progress log"
+    },
+    {
+      "label": "Findings \u2014 Horse Racing MVP",
+      "file_type": "document",
+      "source_file": "findings.md",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "findings_research_notes",
+      "community": 2,
+      "norm_label": "findings \u2014 horse racing mvp"
+    },
+    {
+      "label": "Example UI Layout - Horse Racing Simulation",
+      "file_type": "image",
+      "source_file": "image.png",
+      "source_location": null,
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "image_ui_mockup",
+      "community": 4,
+      "norm_label": "example ui layout - horse racing simulation"
+    },
+    {
+      "label": "The Roster - 20 Horses with Name, Number, and Condition",
+      "file_type": "rationale",
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a73.1",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "business_logic_roster_concept",
+      "community": 0,
+      "norm_label": "the roster - 20 horses with name, number, and condition"
+    },
+    {
+      "label": "The Program - 6 Rounds, 10 Horses per Round, Weighted Random Selection",
+      "file_type": "rationale",
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a73.2",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "business_logic_program_schedule",
+      "community": 0,
+      "norm_label": "the program - 6 rounds, 10 horses per round, weighted random selection"
+    },
+    {
+      "label": "Eligibility Rules - Rest (1 round) and Cap (4 races/meeting)",
+      "file_type": "rationale",
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a73.3",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "business_logic_eligibility_rules",
+      "community": 0,
+      "norm_label": "eligibility rules - rest (1 round) and cap (4 races/meeting)"
+    },
+    {
+      "label": "Race Simulation Model - Fixed Tick Cadence, Speed Formula, Jitter, Finish Detection",
+      "file_type": "rationale",
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a73.4",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "business_logic_simulation_model",
+      "community": 3,
+      "norm_label": "race simulation model - fixed tick cadence, speed formula, jitter, finish detection"
+    },
+    {
+      "label": "Condition Mutation - Fatigue (\u22128) and Recovery (+3), Server-Authoritative",
+      "file_type": "rationale",
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a73.7",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "business_logic_condition_mutation",
+      "community": 0,
+      "norm_label": "condition mutation - fatigue (\u22128) and recovery (+3), server-authoritative"
+    },
+    {
+      "label": "Four-Phase State Machine - INITIAL, READY, RACING, FINISHED",
+      "file_type": "rationale",
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a74.2",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "business_logic_state_machine",
+      "community": 0,
+      "norm_label": "four-phase state machine - initial, ready, racing, finished"
+    },
+    {
+      "label": "Decision #25 - Per-Meeting RNG with Fresh Seed per Generate Click",
+      "file_type": "rationale",
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a75 Decision #25",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "business_logic_decision_25",
+      "community": 0,
+      "norm_label": "decision #25 - per-meeting rng with fresh seed per generate click"
+    },
+    {
+      "label": "Tech Stack - Vue 3, TypeScript, Pinia, Vite, Hono, Prisma, SQLite",
+      "file_type": "rationale",
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a71",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "architecture_tech_stack",
+      "community": 0,
+      "norm_label": "tech stack - vue 3, typescript, pinia, vite, hono, prisma, sqlite"
+    },
+    {
+      "label": "Horses Store - Cached Server Snapshot with fetchAll and applyServerUpdate",
+      "file_type": "rationale",
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a74.1",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "architecture_horses_store",
+      "community": 0,
+      "norm_label": "horses store - cached server snapshot with fetchall and applyserverupdate"
+    },
+    {
+      "label": "Race Store - Orchestrator with Discriminated Union State Machine",
+      "file_type": "rationale",
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a74.2",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "architecture_race_store",
+      "community": 0,
+      "norm_label": "race store - orchestrator with discriminated union state machine"
+    },
+    {
+      "label": "Domain Types - Horse, Round, Program, Ranking, RoundResult, SimulationSnapshot",
+      "file_type": "rationale",
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a76",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "architecture_domain_types",
+      "community": 0,
+      "norm_label": "domain types - horse, round, program, ranking, roundresult, simulationsnapshot"
+    },
+    {
+      "label": "useRaceSimulation Composable - rAF Loop with Fixed Tick Accumulator",
+      "file_type": "rationale",
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a710",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "architecture_use_race_simulation",
+      "community": 3,
+      "norm_label": "useracesimulation composable - raf loop with fixed tick accumulator"
+    },
+    {
+      "label": "Component Inventory - 14 Components (7 Containers + 7 Presentationals)",
+      "file_type": "rationale",
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a714.1",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "architecture_components_inventory",
+      "community": 4,
+      "norm_label": "component inventory - 14 components (7 containers + 7 presentationals)"
+    },
+    {
+      "label": "Decision #16 - Fixed Simulation Cadence Decoupled from rAF via Accumulator",
+      "file_type": "rationale",
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a712 Decision #16",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "architecture_decision_16",
+      "community": 3,
+      "norm_label": "decision #16 - fixed simulation cadence decoupled from raf via accumulator"
+    },
+    {
+      "label": "Decision #17 - Positions in useRaceSimulation Composable, Not Store",
+      "file_type": "rationale",
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a712 Decision #17",
+      "source_url": null,
+      "captured_at": null,
+      "author": "\u00d6zer Y\u0131lmaztekin",
+      "contributor": null,
+      "id": "architecture_decision_17",
+      "community": 3,
+      "norm_label": "decision #17 - positions in useracesimulation composable, not store"
+    },
+    {
+      "label": "No Hardcoded Definitions - All Literals as Named Constants",
+      "file_type": "rationale",
+      "source_file": "CLAUDE.md",
+      "source_location": "\u00a71",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "claude_md_no_hardcoded_definitions",
+      "community": 2,
+      "norm_label": "no hardcoded definitions - all literals as named constants"
+    },
+    {
+      "label": "TDD Discipline - Red / Green / Refactor with Three-Flavor Test Coverage",
+      "file_type": "rationale",
+      "source_file": "CLAUDE.md",
+      "source_location": "\u00a73",
+      "source_url": null,
+      "captured_at": null,
+      "author": null,
+      "contributor": null,
+      "id": "claude_md_tdd_discipline",
+      "community": 2,
+      "norm_label": "tdd discipline - red / green / refactor with three-flavor test coverage"
+    }
+  ],
+  "links": [
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/domain/horseNames.ts",
+      "source_location": "L36",
+      "weight": 1.0,
+      "source": "src_domain_horsenames_ts",
+      "target": "domain_horsenames_horsename",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/domain/horseFactory.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_domain_horsefactory_ts",
+      "target": "domain_horsenames_horsename",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/domain/horseFactory.ts",
+      "source_location": "L9",
+      "weight": 1.0,
+      "source": "src_domain_horsefactory_ts",
+      "target": "domain_horsefactory_generateroster",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/domain/horseFactory.ts",
+      "source_location": "L20",
+      "weight": 1.0,
+      "source": "src_domain_horsefactory_ts",
+      "target": "domain_horsefactory_pickconditionuniform",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/domain/__tests__/horseFactory.test.ts",
+      "source_location": "L3",
+      "weight": 1.0,
+      "source": "src_domain_tests_horsefactory_test_ts",
+      "target": "domain_horsefactory_generateroster",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "contains",
+      "confidence": "EXTRACTED",
+      "source_file": "src/domain/rng.ts",
+      "source_location": "L21",
+      "weight": 1.0,
+      "source": "src_domain_rng_ts",
+      "target": "domain_rng_createrng",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/domain/__tests__/rng.test.ts",
+      "source_location": "L2",
+      "weight": 1.0,
+      "source": "src_domain_tests_rng_test_ts",
+      "target": "domain_rng_createrng",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "imports",
+      "context": "import",
+      "confidence": "EXTRACTED",
+      "source_file": "src/domain/__tests__/horseFactory.test.ts",
+      "source_location": "L4",
+      "weight": 1.0,
+      "source": "src_domain_tests_horsefactory_test_ts",
+      "target": "domain_rng_createrng",
+      "confidence_score": 1.0
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a72 Assumptions",
+      "weight": 1.0,
+      "source": "expectation_insider_one",
+      "target": "business_logic_horse_racing"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "\u00a70 Source of truth",
+      "weight": 1.0,
+      "source": "business_logic_horse_racing",
+      "target": "architecture_horse_racing"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "preamble",
+      "weight": 1.0,
+      "source": "business_logic_horse_racing",
+      "target": "claude_md_project_guidance"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "task_plan.md",
+      "source_location": "preamble",
+      "weight": 1.0,
+      "source": "task_plan_implementation",
+      "target": "business_logic_horse_racing"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "findings.md",
+      "source_location": "header",
+      "weight": 1.0,
+      "source": "findings_research_notes",
+      "target": "business_logic_horse_racing"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a73.1",
+      "weight": 1.0,
+      "source": "business_logic_roster_concept",
+      "target": "business_logic_horse_racing"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "preamble",
+      "weight": 1.0,
+      "source": "architecture_horse_racing",
+      "target": "claude_md_project_guidance"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "task_plan.md",
+      "source_location": "preamble",
+      "weight": 1.0,
+      "source": "task_plan_implementation",
+      "target": "architecture_horse_racing"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "findings.md",
+      "source_location": "header",
+      "weight": 1.0,
+      "source": "findings_research_notes",
+      "target": "architecture_horse_racing"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "preamble",
+      "weight": 1.0,
+      "source": "image_ui_mockup",
+      "target": "architecture_horse_racing"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a71",
+      "weight": 1.0,
+      "source": "architecture_tech_stack",
+      "target": "architecture_horse_racing"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "\u00a71",
+      "weight": 1.0,
+      "source": "claude_md_no_hardcoded_definitions",
+      "target": "claude_md_project_guidance"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "CLAUDE.md",
+      "source_location": "\u00a73",
+      "weight": 1.0,
+      "source": "claude_md_tdd_discipline",
+      "target": "claude_md_project_guidance"
+    },
+    {
+      "relation": "references",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "task_plan.md",
+      "source_location": "preamble",
+      "weight": 1.0,
+      "source": "task_plan_implementation",
+      "target": "claude_md_project_guidance"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a714.1",
+      "weight": 1.0,
+      "source": "architecture_components_inventory",
+      "target": "image_ui_mockup"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a73.2",
+      "weight": 1.0,
+      "source": "business_logic_program_schedule",
+      "target": "business_logic_roster_concept"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.8,
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a73.4",
+      "weight": 1.0,
+      "source": "business_logic_simulation_model",
+      "target": "business_logic_roster_concept"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a73.7",
+      "weight": 1.0,
+      "source": "business_logic_condition_mutation",
+      "target": "business_logic_roster_concept"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a76",
+      "weight": 1.0,
+      "source": "architecture_domain_types",
+      "target": "business_logic_roster_concept"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a73.3",
+      "weight": 1.0,
+      "source": "business_logic_eligibility_rules",
+      "target": "business_logic_program_schedule"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a74.2",
+      "weight": 1.0,
+      "source": "business_logic_state_machine",
+      "target": "business_logic_program_schedule"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "BUSINESS_LOGIC.md",
+      "source_location": "\u00a75 Decision #25",
+      "weight": 1.0,
+      "source": "business_logic_decision_25",
+      "target": "business_logic_program_schedule"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a710",
+      "weight": 1.0,
+      "source": "architecture_use_race_simulation",
+      "target": "business_logic_simulation_model"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a74.1",
+      "weight": 1.0,
+      "source": "architecture_horses_store",
+      "target": "business_logic_condition_mutation"
+    },
+    {
+      "relation": "implements",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a74.2",
+      "weight": 1.0,
+      "source": "architecture_race_store",
+      "target": "business_logic_state_machine"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a74.1",
+      "weight": 1.0,
+      "source": "architecture_horses_store",
+      "target": "architecture_tech_stack"
+    },
+    {
+      "relation": "conceptually_related_to",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a74.2",
+      "weight": 1.0,
+      "source": "architecture_race_store",
+      "target": "architecture_horses_store"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a712 Decision #16",
+      "weight": 1.0,
+      "source": "architecture_decision_16",
+      "target": "architecture_use_race_simulation"
+    },
+    {
+      "relation": "rationale_for",
+      "confidence": "INFERRED",
+      "confidence_score": 0.95,
+      "source_file": "ARCHITECTURE.md",
+      "source_location": "\u00a712 Decision #17",
+      "weight": 1.0,
+      "source": "architecture_decision_17",
+      "target": "architecture_use_race_simulation"
+    }
+  ],
+  "hyperedges": [
+    {
+      "id": "core_game_flow_loop",
+      "label": "Core Game Flow - INITIAL \u2192 READY \u2192 RACING \u2192 FINISHED State Progression",
+      "nodes": [
+        "business_logic_state_machine",
+        "business_logic_program_schedule",
+        "business_logic_simulation_model",
+        "business_logic_condition_mutation",
+        "architecture_race_store"
+      ],
+      "relation": "participate_in",
+      "confidence": "EXTRACTED",
+      "confidence_score": 1.0,
+      "source_file": "BUSINESS_LOGIC.md"
+    },
+    {
+      "id": "deterministic_rng_architecture",
+      "label": "Deterministic RNG System - Seed Propagation Through Simulation",
+      "nodes": [
+        "business_logic_decision_25",
+        "architecture_use_race_simulation",
+        "architecture_decision_16",
+        "business_logic_simulation_model"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.9,
+      "source_file": "ARCHITECTURE.md"
+    },
+    {
+      "id": "store_component_separation",
+      "label": "Store and Component Layering - Clean Separation of Concerns",
+      "nodes": [
+        "architecture_horses_store",
+        "architecture_race_store",
+        "architecture_components_inventory",
+        "architecture_use_race_simulation"
+      ],
+      "relation": "participate_in",
+      "confidence": "INFERRED",
+      "confidence_score": 0.85,
+      "source_file": "ARCHITECTURE.md"
+    }
+  ],
+  "built_at_commit": "0f6097e4e1ce5f437b8badbf6ee0da87f256a601"
+}
