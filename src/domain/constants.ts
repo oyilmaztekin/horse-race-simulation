@@ -23,3 +23,8 @@ export const JITTER_MPS = 1.5
 // [CONDITION_MIN, CONDITION_MAX] by `applyRoundEffects`.
 export const FATIGUE_PER_RACE = 8
 export const RECOVERY_PER_REST = 3
+
+// Fixed 60 Hz simulation tick (BUSINESS_LOGIC.md decision #16). The rAF
+// accumulator in useRaceSimulation calls simulation.step with this dt, so
+// the seeded RNG consumption pattern is reproducible across re-runs.
+export const SIM_TICK_MS = 1000 / 60

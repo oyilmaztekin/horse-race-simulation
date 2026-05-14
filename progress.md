@@ -64,8 +64,17 @@ Wait for user approval / direction. Plan does not start Phase 0 until user confi
 - 48 tests across 7 files, all green. Typecheck clean.
 - `simulation.ts` feature-complete for the inner-loop math (A1–A5).
 - `conditionMutation.ts`, `wait.ts`, `errors.ts` all landed.
-- **Phase 2 (pure domain) is COMPLETE.** Phase 3 (Hono + Prisma server) is next.
+- **Phase 2 (pure domain) is COMPLETE.**
 - `RacePhase` type added to `types.ts` so `InvalidTransitionError.kind` is type-safe.
+
+### Phase 2 → Phase 3 bridge: real-data smoke (2026-05-14)
+- **`prisma/seed.ts`** added: reads `prisma/horseNames.json` + `createRng(0xDECAF)` → `generateRoster` → `prisma.horse.createMany`.
+- **`prisma migrate dev --name init`** ran: creates `prisma/migrations/20260514124617_init/migration.sql` and `dev.db` (both gitignored per project convention).
+- **`prisma db seed`** ran (Prisma's `migrate dev` fired it automatically): 20 horses persisted.
+- **`scripts/smoke-phase2.ts`** added: reads DB → generates a 6-round program with `createRng(0xC0FFEE)` → simulates each round to completion via `step` → applies `applyRoundEffects` between rounds. Read-only against DB; reusable for future Phase 2 sanity checks.
+- **`SIM_TICK_MS = 1000 / 60`** named in `constants.ts` (its first-and-second consumer triggered §1's "no duplicate literals" rule). Refactored `simulation.test.ts` to import the constant instead of inlining `1000 / 60` (5 occurrences).
+- Smoke output validated by inspection: deterministic roster, weighted selection, rest rule, condition-driven finish ordering, sub-tick finish times, fatigue/clamp behavior across all 6 rounds. **Phase 2 modules compose correctly against real data.**
+- Migration files (`prisma/migrations/`) are gitignored per project convention — flagged to user as nonstandard for Prisma but defensible for a one-person MVP (schema.prisma + `migrate dev` reproduces).
 
 ## 2026-05-14 — Session 3: deployment planning (no code)
 

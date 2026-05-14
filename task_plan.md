@@ -37,7 +37,7 @@ Status: `in_progress` — constants and types are added as the TDD cycles that n
 
 The vocabulary every later layer imports. No tests yet — these are pure declarations consumed by Phase 2+ tests.
 
-- [x] `src/domain/constants.ts` — `HORSE_COUNT`, `CONDITION_MIN`, `CONDITION_MAX`, `ROUND_DISTANCES`, `ROUND_COUNT` (derived), `LANE_COUNT`, `FATIGUE_PER_RACE=8`, `RECOVERY_PER_REST=3`. Still pending: `MIN_REST_ROUNDS`, `MAX_RACES_PER_HORSE`, `INTER_ROUND_DELAY_MS=1500`, `SIM_TICK_MS=1000/60`.
+- [x] `src/domain/constants.ts` — `HORSE_COUNT`, `CONDITION_MIN`, `CONDITION_MAX`, `ROUND_DISTANCES`, `ROUND_COUNT` (derived), `LANE_COUNT`, `FATIGUE_PER_RACE=8`, `RECOVERY_PER_REST=3`, `SIM_TICK_MS=1000/60`. Still pending: `MIN_REST_ROUNDS`, `MAX_RACES_PER_HORSE`, `INTER_ROUND_DELAY_MS=1500`.
 - [x] Speed-formula tuning constants (§16.2): `BASE_SPEED_MPS_MIN=14`, `BASE_SPEED_MPS_MAX=18`, `JITTER_MPS=1.5`. Believability rationale documented inline.
 - [ ] `LANE_COLORS` array — exactly `LANE_COUNT` hex strings. Use Wong / Okabe-Ito palette extended to 10 (§16.3). Runtime assertion: `LANE_COLORS.length === LANE_COUNT`.
 - [x] Phase string-literal union `'INITIAL'|'READY'|'RACING'|'FINISHED'` (§4.2 phase names) — exported as `RacePhase` from `types.ts`.
@@ -76,7 +76,7 @@ Status: `pending`
 Backend runnable end-to-end before the frontend exists.
 
 - [ ] **`server/db.ts`** — Prisma client singleton.
-- [ ] **`prisma/seed.ts`** — imports `generateRoster` with `createRng(0xDECAF)`; deletes + recreates rows.
+- [x] **`prisma/seed.ts`** — imports `generateRoster` with `createRng(0xDECAF)`; reads `horseNames.json`; deletes + recreates rows. Migration `20260514124617_init` applied; 20 rows persisted.
 - [ ] **`server/routes/horses.ts`** — `GET /` → ordered `Horse[]`. Test (red first): GET returns seeded rows in number-asc order.
 - [ ] **`server/routes/rounds.ts`** — `POST /complete` with `{ raced }`, calls `applyRoundEffects`, persists via `$transaction`, returns full roster. Test: fatigue applied, rested recovered, response matches DB state.
 - [ ] **`server/index.ts`** — Hono app, mount routes, `serve` on 3001.

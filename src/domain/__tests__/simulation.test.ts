@@ -7,6 +7,7 @@ import {
   JITTER_MPS,
   LANE_COUNT,
   ROUND_DISTANCES,
+  SIM_TICK_MS,
 } from '../constants'
 import { createRng } from '../rng'
 import { advanceLane, computeSpeed, createSnapshot, drawJitter, step } from '../simulation'
@@ -78,8 +79,8 @@ describe('advanceLane', () => {
 
   it('advances meters by speed*dt for a not-finished, non-crossing lane (happy)', () => {
     const lane = runningLane(100)
-    const next = advanceLane(lane, 18, 1000 / 60, 1200, 0)
-    expect(next.meters).toBeCloseTo(100 + 18 * (1000 / 60) / 1000, 10)
+    const next = advanceLane(lane, 18, SIM_TICK_MS, 1200, 0)
+    expect(next.meters).toBeCloseTo(100 + (18 * SIM_TICK_MS) / 1000, 10)
     expect(next.finishedAtMs).toBeNull()
     expect(next.horseId).toBe(lane.horseId)
     expect(next.lane).toBe(lane.lane)
@@ -95,7 +96,7 @@ describe('advanceLane', () => {
 
   it('returns an already-finished lane untouched (sad — no movement, no overwrite)', () => {
     const finished: LanePosition = { horseId: 7, lane: 3, meters: 1200, finishedAtMs: 60_000 }
-    const next = advanceLane(finished, 18, 1000 / 60, 1200, 90_000)
+    const next = advanceLane(finished, 18, SIM_TICK_MS, 1200, 90_000)
     expect(next.meters).toBe(1200)
     expect(next.finishedAtMs).toBe(60_000)
   })
@@ -151,7 +152,7 @@ describe('step', () => {
 
   it('advances every lane by speed*dt and accumulates elapsedMs (happy — closed-form: cond=MAX, jitter=0)', () => {
     // rng() === 0.5 → jitter=0; condition=MAX → speed = BASE_SPEED_MPS_MAX exactly.
-    const dtMs = 1000 / 60
+    const dtMs = SIM_TICK_MS
     const next = step(startSnapshot(), dtMs, maxConditionLookup, half)
     expect(next.elapsedMs).toBe(dtMs)
     const expectedMeters = BASE_SPEED_MPS_MAX * (dtMs / 1000)
@@ -166,7 +167,7 @@ describe('step', () => {
     // values[0]=0 (most negative jitter) for lane 1, values[9]=1-eps (most positive) for lane 10.
     const epsilon = 1e-10
     const values = [0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1 - epsilon]
-    const next = step(startSnapshot(), 1000 / 60, maxConditionLookup, sequenceRng(values))
+    const next = step(startSnapshot(), SIM_TICK_MS, maxConditionLookup, sequenceRng(values))
     const lane1 = next.lanes[0] as LanePosition
     const lane10 = next.lanes[9] as LanePosition
     // lane 10 drew the larger jitter → larger speed → more meters this tick.
@@ -186,7 +187,7 @@ describe('step', () => {
     const seeded: SimulationSnapshot = { ...snap, lanes: [finishedLane, ...snap.lanes.slice(1)] }
     // Provide exactly LANE_COUNT - 1 rng values; an extra draw would overflow and throw.
     const values = Array.from({ length: LANE_COUNT - 1 }, () => 0.5)
-    const next = step(seeded, 1000 / 60, maxConditionLookup, sequenceRng(values))
+    const next = step(seeded, SIM_TICK_MS, maxConditionLookup, sequenceRng(values))
     const lane1 = next.lanes[0] as LanePosition
     expect(lane1.meters).toBe(snap.distance)
     expect(lane1.finishedAtMs).toBe(12_345)
