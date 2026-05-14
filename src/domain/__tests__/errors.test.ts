@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { ApiError, InvalidTransitionError } from '../errors'
+import { ApiError, InvalidTransitionError, NotEnoughFitHorsesError } from '../errors'
 
 describe('InvalidTransitionError', () => {
   it('stores kind and action on the instance (happy)', () => {
@@ -39,5 +39,26 @@ describe('ApiError', () => {
   it('message includes the status code (sad — a stub that only stored fields would leave message blank)', () => {
     const err = new ApiError(404, 'Not Found')
     expect(err.message).toContain('404')
+  })
+})
+
+describe('NotEnoughFitHorsesError', () => {
+  it('stores fitCount and required on the instance (happy)', () => {
+    const err = new NotEnoughFitHorsesError(10, 15)
+    expect(err.fitCount).toBe(10)
+    expect(err.required).toBe(15)
+  })
+
+  it('is an Error with name "NotEnoughFitHorsesError" (edge — instanceof + name)', () => {
+    const err = new NotEnoughFitHorsesError(0, 15)
+    expect(err).toBeInstanceOf(Error)
+    expect(err).toBeInstanceOf(NotEnoughFitHorsesError)
+    expect(err.name).toBe('NotEnoughFitHorsesError')
+  })
+
+  it('message includes both counts (sad — a stub that only stored fields would leave message blank)', () => {
+    const err = new NotEnoughFitHorsesError(7, 15)
+    expect(err.message).toContain('7')
+    expect(err.message).toContain('15')
   })
 })

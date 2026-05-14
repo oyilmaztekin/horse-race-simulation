@@ -43,7 +43,7 @@ The vocabulary every later layer imports. No tests yet — these are pure declar
 - [ ] `LANE_COLORS` array — exactly `LANE_COUNT` hex strings. Use Wong / Okabe-Ito palette extended to 10 (§16.3). Runtime assertion: `LANE_COLORS.length === LANE_COUNT`.
 - [ ] Phase string-literal union `'INITIAL'|'READY'|'RACING'|'FINISHED'` (§4.2 phase names) — exported as `RacePhase` from `types.ts`. **Will be extended to include `'RESTING'`** when the rest mechanism lands (`BUSINESS_LOGIC.md` §4.2 amendment 2026-05-14).
 - [x] `src/domain/types.ts` — `Rng`, `HorseId`, `Horse`, `Round`, `Program`. Still pending: `Ranking`, `RoundResult`, `LanePosition`, `SimulationSnapshot`, `HorsesEnvelope`.
-- [x] `src/domain/errors.ts` — `InvalidTransitionError(kind, action)`, `ApiError(status, body)`. **Pending:** `NotEnoughFitHorsesError(fitCount, required)` (`ARCHITECTURE.md` decision #25).
+- [x] `src/domain/errors.ts` — `InvalidTransitionError(kind, action)`, `ApiError(status, body)`, `NotEnoughFitHorsesError(fitCount, required)` (`ARCHITECTURE.md` decision #25).
 
 Exit: `npm run typecheck` green.
 

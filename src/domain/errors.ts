@@ -28,3 +28,18 @@ export class ApiError extends Error {
     this.body = body
   }
 }
+
+// Thrown by `race.generateProgram` when the fit-gate fails
+// (BUSINESS_LOGIC.md §3.8; ARCHITECTURE.md decision #25). The store catches it
+// and surfaces the inline warning + Rest button reveal.
+export class NotEnoughFitHorsesError extends Error {
+  public readonly fitCount: number
+  public readonly required: number
+
+  constructor(fitCount: number, required: number) {
+    super(`Cannot generate program: only ${fitCount} of ${required} horses are fit to race`)
+    this.name = 'NotEnoughFitHorsesError'
+    this.fitCount = fitCount
+    this.required = required
+  }
+}
