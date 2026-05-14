@@ -17,3 +17,9 @@ export const LANE_COUNT = 10
 export const BASE_SPEED_MPS_MIN = 14
 export const BASE_SPEED_MPS_MAX = 18
 export const JITTER_MPS = 1.5
+
+// Per BUSINESS_LOGIC.md §3.7 / decision #10: each raced horse loses
+// FATIGUE_PER_RACE; each rested horse gains RECOVERY_PER_REST. Clamped to
+// [CONDITION_MIN, CONDITION_MAX] by `applyRoundEffects`.
+export const FATIGUE_PER_RACE = 8
+export const RECOVERY_PER_REST = 3

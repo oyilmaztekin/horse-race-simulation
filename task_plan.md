@@ -37,7 +37,7 @@ Status: `in_progress` — constants and types are added as the TDD cycles that n
 
 The vocabulary every later layer imports. No tests yet — these are pure declarations consumed by Phase 2+ tests.
 
-- [x] `src/domain/constants.ts` — `HORSE_COUNT`, `CONDITION_MIN`, `CONDITION_MAX`, `ROUND_DISTANCES`, `ROUND_COUNT` (derived), `LANE_COUNT`. Still pending: `MIN_REST_ROUNDS`, `MAX_RACES_PER_HORSE`, `FATIGUE_PER_RACE=8`, `RECOVERY_PER_REST=3`, `INTER_ROUND_DELAY_MS=1500`, `SIM_TICK_MS=1000/60`.
+- [x] `src/domain/constants.ts` — `HORSE_COUNT`, `CONDITION_MIN`, `CONDITION_MAX`, `ROUND_DISTANCES`, `ROUND_COUNT` (derived), `LANE_COUNT`, `FATIGUE_PER_RACE=8`, `RECOVERY_PER_REST=3`. Still pending: `MIN_REST_ROUNDS`, `MAX_RACES_PER_HORSE`, `INTER_ROUND_DELAY_MS=1500`, `SIM_TICK_MS=1000/60`.
 - [x] Speed-formula tuning constants (§16.2): `BASE_SPEED_MPS_MIN=14`, `BASE_SPEED_MPS_MAX=18`, `JITTER_MPS=1.5`. Believability rationale documented inline.
 - [ ] `LANE_COLORS` array — exactly `LANE_COUNT` hex strings. Use Wong / Okabe-Ito palette extended to 10 (§16.3). Runtime assertion: `LANE_COLORS.length === LANE_COUNT`.
 - [ ] Phase string-literal union `'INITIAL'|'READY'|'RACING'|'FINISHED'` (§4.2 phase names).
@@ -63,7 +63,7 @@ Each module: red test → green impl → refactor. Test files live in `src/domai
   - [x] SIM-A3 `advanceLane(lane, speedMps, dtMs, distance, elapsedMsBeforeTick)` — per-tick position update with sub-tick finish interpolation (decision #14) and clamp; already-finished lanes returned untouched (committed `191ed13`).
   - [x] SIM-A4 `createSnapshot(round, roundNumber)` — zeroed initial snapshot factory; lanes 1-indexed in lane-order, horseIds wired through, `elapsedMs=0`, `finishedAtMs=null` (committed `e5fda6e`).
   - [x] SIM-A5 `step(snapshot, dtMs, conditionLookup, rng)` — orchestrator; lane-order jitter draw (decision #13); already-finished lanes skip jitter and movement; `elapsedMs += dtMs`.
-- [ ] **`conditionMutation.ts`** — `applyRoundEffects(horses, raced): Horse[]`.
+- [x] **`conditionMutation.ts`** — `applyRoundEffects(horses, raced)`: raced lose `FATIGUE_PER_RACE`, rested gain `RECOVERY_PER_REST`, clamped to `[CONDITION_MIN, CONDITION_MAX]`; roster identity preserved (committed next).
 - [ ] **`wait.ts`** — `wait(ms)`.
 
 Exit: `npm test` green for all `src/domain/**`.
