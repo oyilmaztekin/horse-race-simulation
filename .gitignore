@@ -1,0 +1,21 @@
+node_modules
+dist
+coverage
+.vite
+*.log
+
+# Prisma / SQLite
+prisma/dev.db
+prisma/dev.db-journal
+prisma/migrations/
+
+# Editor / OS
+.DS_Store
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# Playwright
+test-results
+playwright-report
+.playwright
