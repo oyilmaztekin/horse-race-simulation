@@ -6,10 +6,25 @@ An interactive horse racing simulation built with Vue 3, TypeScript, Pinia, and 
 
 ```bash
 npm install
+npm run db:migrate # Create dev.db, apply migrations, seed 20 horses (auto-runs db:seed)
 npm run dev        # Start Vite + Hono together
 npm run test       # Run Vitest
 npm run e2e        # Run Playwright
 ```
+
+`npm run db:migrate` is required before `npm run dev` — the API queries `dev.db`, which doesn't exist until the migration runs. The migration step automatically invokes `npm run db:seed` (configured under `"prisma": { "seed": ... }` in `package.json`), so 20 deterministic horses are inserted in one shot.
+
+To re-seed without re-migrating (e.g. to reset conditions to their initial seeded values mid-meeting), run `npm run db:seed` on its own. The seed is idempotent — it `deleteMany` before `createMany`, using `createRng(0xDECAF)` so the same 20 horses with the same starting conditions appear every time.
+
+### Verify the domain layer end-to-end (optional)
+
+A reusable diagnostic exercises the full Phase 2 stack against the seeded DB — generates a program, simulates all 6 rounds, and applies fatigue/recovery between rounds. Read-only against the DB.
+
+```bash
+npx tsx scripts/smoke-phase2.ts
+```
+
+Output is human-inspectable: program with conditions per lane, finish order per round, and condition deltas (R = raced, -8; . = rested, +3; clamped to `[1, 100]`).
 
 ## For Reviewers: Understanding the Codebase with Graphify
 
