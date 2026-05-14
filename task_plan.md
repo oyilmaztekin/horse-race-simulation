@@ -37,11 +37,11 @@ Status: `in_progress` — constants and types are added as the TDD cycles that n
 
 The vocabulary every later layer imports. No tests yet — these are pure declarations consumed by Phase 2+ tests.
 
-- [x] `src/domain/constants.ts` — `HORSE_COUNT`, `CONDITION_MIN`, `CONDITION_MAX`, `ROUND_DISTANCES`, `ROUND_COUNT` (derived), `LANE_COUNT`, `FATIGUE_PER_RACE=8`, `RECOVERY_PER_REST=3`, `SIM_TICK_MS=1000/60`. Still pending: `MIN_REST_ROUNDS`, `MAX_RACES_PER_HORSE`, `INTER_ROUND_DELAY_MS=1500`.
+- [x] `src/domain/constants.ts` — `HORSE_COUNT`, `CONDITION_MIN`, `CONDITION_MAX`, `ROUND_DISTANCES`, `ROUND_COUNT` (derived), `LANE_COUNT`, `FATIGUE_PER_RACE=8`, `RECOVERY_PER_REST=3`, `SIM_TICK_MS=1000/60`, `MIN_REST_ROUNDS=1`, `MAX_RACES_PER_HORSE=4`, `INTER_ROUND_DELAY_MS=1500`.
 - [x] Speed-formula tuning constants (§16.2): `BASE_SPEED_MPS_MIN=14`, `BASE_SPEED_MPS_MAX=18`, `JITTER_MPS=1.5`. Believability rationale documented inline.
-- [ ] **Rest-mechanism constants** (`ARCHITECTURE.md` §16.1b): `MIN_RACEABLE_CONDITION=40` ✓ (committed alongside `isFit`); still pending `MIN_FIT_HORSES_FOR_PROGRAM = (LANE_COUNT * ROUND_COUNT) / MAX_RACES_PER_HORSE` (derived — no parallel literal), `REST_DURATION_MS=10_000`, `REST_POLL_INTERVAL_MS=1_000`.
+- [x] **Rest-mechanism constants** (`ARCHITECTURE.md` §16.1b): `MIN_RACEABLE_CONDITION=40`, `MIN_FIT_HORSES_FOR_PROGRAM = (LANE_COUNT * ROUND_COUNT) / MAX_RACES_PER_HORSE = 15` (derived — no parallel literal), `REST_DURATION_MS=10_000`, `REST_POLL_INTERVAL_MS=1_000`.
 - [ ] `LANE_COLORS` array — exactly `LANE_COUNT` hex strings. Use Wong / Okabe-Ito palette extended to 10 (§16.3). Runtime assertion: `LANE_COLORS.length === LANE_COUNT`.
-- [ ] Phase string-literal union `'INITIAL'|'READY'|'RACING'|'FINISHED'` (§4.2 phase names) — exported as `RacePhase` from `types.ts`. **Will be extended to include `'RESTING'`** when the rest mechanism lands (`BUSINESS_LOGIC.md` §4.2 amendment 2026-05-14).
+- [x] Phase string-literal union `'INITIAL'|'RESTING'|'READY'|'RACING'|'FINISHED'` exported as `RacePhase` from `types.ts` (`BUSINESS_LOGIC.md` §4.2).
 - [x] `src/domain/types.ts` — `Rng`, `HorseId`, `Horse`, `Round`, `Program`. Still pending: `Ranking`, `RoundResult`, `LanePosition`, `SimulationSnapshot`, `HorsesEnvelope`.
 - [x] `src/domain/errors.ts` — `InvalidTransitionError(kind, action)`, `ApiError(status, body)`, `NotEnoughFitHorsesError(fitCount, required)` (`ARCHITECTURE.md` decision #25).
 

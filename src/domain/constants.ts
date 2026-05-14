@@ -29,7 +29,23 @@ export const RECOVERY_PER_REST = 3
 // the seeded RNG consumption pattern is reproducible across re-runs.
 export const SIM_TICK_MS = 1000 / 60
 
-// Fit-gate threshold (BUSINESS_LOGIC.md §3.8 / decision #26). A horse is fit
-// to race iff condition ≥ MIN_RACEABLE_CONDITION. Rest bumps every unfit horse
-// to exactly this value.
+// Eligibility constants (BUSINESS_LOGIC.md §3.3). MIN_REST_ROUNDS is referenced
+// by programGenerator's previous-round exclusion; MAX_RACES_PER_HORSE feeds the
+// derived fit-gate threshold below.
+export const MIN_REST_ROUNDS = 1
+export const MAX_RACES_PER_HORSE = 4
+
+// Fit-gate (BUSINESS_LOGIC.md §3.8 / decision #26). A horse is fit when
+// condition ≥ MIN_RACEABLE_CONDITION. Rest bumps every unfit horse to exactly
+// this value. MIN_FIT_HORSES_FOR_PROGRAM is *derived*, not hand-tuned — it
+// stays correct if LANE_COUNT, ROUND_COUNT, or MAX_RACES_PER_HORSE change
+// (CLAUDE.md §1: no parallel literal).
 export const MIN_RACEABLE_CONDITION = 40
+export const MIN_FIT_HORSES_FOR_PROGRAM = (LANE_COUNT * ROUND_COUNT) / MAX_RACES_PER_HORSE
+
+// Rest mechanism timings (BUSINESS_LOGIC.md §3.8 / §4.7).
+export const REST_DURATION_MS = 10_000
+export const REST_POLL_INTERVAL_MS = 1_000
+
+// Pause between rounds (BUSINESS_LOGIC.md §4.4).
+export const INTER_ROUND_DELAY_MS = 1500
