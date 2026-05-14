@@ -7,3 +7,10 @@ export interface Horse {
   name: string
   condition: number
 }
+
+export interface Round {
+  distance: number
+  lanes: HorseId[]
+}
+
+export type Program = Round[]

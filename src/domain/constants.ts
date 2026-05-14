@@ -4,3 +4,8 @@
 export const HORSE_COUNT = 20
 export const CONDITION_MIN = 1
 export const CONDITION_MAX = 100
+
+// Distances per round (m), ordered round-1..round-6 (BUSINESS_LOGIC.md §3.2).
+// ROUND_COUNT is derived from this tuple so the two can never drift apart.
+export const ROUND_DISTANCES = [1200, 1400, 1600, 1800, 2000, 2200] as const
+export const ROUND_COUNT = ROUND_DISTANCES.length
