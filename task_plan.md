@@ -15,7 +15,7 @@ Inside-out per `ARCHITECTURE.md` §15.4. Each phase ends with all of its tests g
 ---
 
 ### Phase 0 — Bootstrap & prerequisites (`ARCHITECTURE.md` §16 blockers)
-Status: `pending`
+Status: `complete`
 
 Everything needed before `vitest run` is meaningful.
 
@@ -33,15 +33,15 @@ Exit: `npm test` runs (zero tests), `npm run typecheck` passes on empty src, `np
 ---
 
 ### Phase 1 — Domain constants & types
-Status: `pending`
+Status: `in_progress` — constants and types are added as the TDD cycles that need them turn red. Items get checked off as they land in the codebase.
 
 The vocabulary every later layer imports. No tests yet — these are pure declarations consumed by Phase 2+ tests.
 
-- [ ] `src/domain/constants.ts` — exports every named constant from `CLAUDE.md` §1 *required list* (HORSE_COUNT, LANE_COUNT, ROUND_COUNT, ROUND_DISTANCES, MIN_REST_ROUNDS, MAX_RACES_PER_HORSE, CONDITION_MIN, CONDITION_MAX, FATIGUE_PER_RACE=8, RECOVERY_PER_REST=3, INTER_ROUND_DELAY_MS=1500, SIM_TICK_MS=1000/60).
-- [ ] Speed-formula tuning constants (§16.2): `BASE_SPEED_MPS_MIN`, `BASE_SPEED_MPS_MAX`, `JITTER_MPS`. Pick believable numbers; document in a comment why.
+- [x] `src/domain/constants.ts` — `HORSE_COUNT`, `CONDITION_MIN`, `CONDITION_MAX`, `ROUND_DISTANCES`, `ROUND_COUNT` (derived), `LANE_COUNT`. Still pending: `MIN_REST_ROUNDS`, `MAX_RACES_PER_HORSE`, `FATIGUE_PER_RACE=8`, `RECOVERY_PER_REST=3`, `INTER_ROUND_DELAY_MS=1500`, `SIM_TICK_MS=1000/60`.
+- [x] Speed-formula tuning constants (§16.2): `BASE_SPEED_MPS_MIN=14`, `BASE_SPEED_MPS_MAX=18`, `JITTER_MPS=1.5`. Believability rationale documented inline.
 - [ ] `LANE_COLORS` array — exactly `LANE_COUNT` hex strings. Use Wong / Okabe-Ito palette extended to 10 (§16.3). Runtime assertion: `LANE_COLORS.length === LANE_COUNT`.
 - [ ] Phase string-literal union `'INITIAL'|'READY'|'RACING'|'FINISHED'` (§4.2 phase names).
-- [ ] `src/domain/types.ts` — all interfaces from `ARCHITECTURE.md` §6: `Horse`, `Round`, `Program`, `Ranking`, `RoundResult`, `LanePosition`, `SimulationSnapshot`, `Rng`, `HorseId`.
+- [x] `src/domain/types.ts` — `Rng`, `HorseId`, `Horse`, `Round`, `Program`. Still pending: `Ranking`, `RoundResult`, `LanePosition`, `SimulationSnapshot`.
 - [ ] `src/domain/errors.ts` — `InvalidTransitionError(kind, action)`, `ApiError(status, body)`.
 
 Exit: `npm run typecheck` green.
@@ -49,17 +49,22 @@ Exit: `npm run typecheck` green.
 ---
 
 ### Phase 2 — Pure domain (TDD, in dependency order)
-Status: `pending`
+Status: `in_progress`
 
 Each module: red test → green impl → refactor. Test files live in `src/domain/__tests__/`.
 
-- [ ] **`rng.ts`** — mulberry32. Test: known seed → known first 5 values.
-- [ ] **`horseFactory.ts`** — `generateRoster(rng): Horse[]`. Tests: HORSE_COUNT entries; conditions ∈ [MIN..MAX]; numbers 1..20 unique; names from curated list indexed by number (decision #18, no RNG for names); deterministic from seed.
-- [ ] **Horse-name list** — fixed curated 20-name array, indexed by number. Lives wherever `horseFactory` reads it (probably `src/domain/horseNames.ts`).
-- [ ] **`programGenerator.ts`** — `generateProgram(horses, rng): Program`. Tests: ROUND_COUNT rounds; each round LANE_COUNT horses; rest rule (no horse in N and N-1); cap rule (≤MAX_RACES_PER_HORSE); selection-order = lane-order (decision #9); weighted-without-replacement (decision #11); deterministic from seed; `program[i].number === i + 1`.
-- [ ] **`simulation.ts`** — `step(snapshot, dtMs, conditionLookup, rng): SimulationSnapshot`. Tests: position advances per tick; speed formula closed-form (`cond=MAX, jitter=0 → speed=BASE_MAX`); jitter drawn per (horse,tick) in lane order 1→10 (decision #13); sub-tick interpolation at finish (decision #14); position clamps to distance; deterministic from seed.
-- [ ] **`conditionMutation.ts`** — `applyRoundEffects(horses, raced): Horse[]`. Tests: raced lose FATIGUE_PER_RACE; rested gain RECOVERY_PER_REST; clamped to [MIN..MAX]; roster set unchanged (only condition mutates).
-- [ ] **`wait.ts`** — `wait(ms)`. Test: resolves after N ms using fake timers.
+- [x] **`rng.ts`** — mulberry32 (committed `1385808`).
+- [x] **`horseFactory.ts`** — `generateRoster(rng, lookupName)` + `pickConditionUniform(rng)` (committed `1f2e091`).
+- [x] **Horse-name list** — backend-owned per decision #18; will arrive as `prisma/horseNames.json` in Phase 3. Frontend stays content-free.
+- [x] **`programGenerator.ts`** — scaffold + lanes + rest rule + condition-weighted selection (commits `16490e7`, `a5deff6`, `7e964c3`, `4bf4881`). Cap rule cycle deliberately skipped (alternation theorem makes it structurally redundant; logged in commit history).
+- [ ] **`simulation.ts`** — decomposed into independent unit-testable functions:
+  - [x] SIM-A1 `computeSpeed(condition, jitter)` — additive linear interpolation, pure (committed `fc21a3d`).
+  - [x] SIM-A2 `drawJitter(rng)` — uniform sample in `[-JITTER_MPS, +JITTER_MPS)`, anchored at `rng()=0.5 → 0`.
+  - [ ] SIM-A3 `advanceLane(lane, speedMps, dtMs, distance, elapsedMsBeforeTick)` — per-tick position update with sub-tick finish interpolation (decision #14) and clamp.
+  - [ ] SIM-A4 `createSnapshot(round, roundNumber)` — zeroed initial snapshot (factory).
+  - [ ] SIM-A5 `step(snapshot, dtMs, conditionLookup, rng)` — orchestrator; lane-order jitter draw (decision #13); already-finished lanes skip jitter and movement; `elapsedMs += dtMs`.
+- [ ] **`conditionMutation.ts`** — `applyRoundEffects(horses, raced): Horse[]`.
+- [ ] **`wait.ts`** — `wait(ms)`.
 
 Exit: `npm test` green for all `src/domain/**`.
 

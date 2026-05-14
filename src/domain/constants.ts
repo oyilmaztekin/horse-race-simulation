@@ -16,3 +16,4 @@ export const LANE_COUNT = 10
 // Tuned for "believable, not realistic" — a thoroughbred gallops ~16–18 m/s.
 export const BASE_SPEED_MPS_MIN = 14
 export const BASE_SPEED_MPS_MAX = 18
+export const JITTER_MPS = 1.5
