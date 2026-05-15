@@ -702,3 +702,18 @@ Resume Phase 6 component scaffolding (parallel work in progress on `ProgramRound
 ### Next action
 
 Begin Phase 7 — start with `App.vue` + `useRestPolling()` mount-once wiring per `ARCHITECTURE.md` §11 step 3.
+
+## 2026-05-15 — Session 32: Phase 7 — RaceTrack container
+
+### What landed
+
+- `src/components/RaceTrack.vue` — reads `race.currentRound`, `race.currentRoundIndex`, `race.currentRng` and instantiates `useRaceSimulation(round, roundNumber, horses.conditionLookup, rng)`. Renders the round header, `LANE_COUNT` `RaceLane` children (resolved via `horses.byId` with a defensive `'—'/CONDITION_MIN` placeholder, same pattern as `ProgramPanel`), and a finish-line decoration. `watch(done, () => race.completeRound(finishOrder.value), { once: true })` per `ARCHITECTURE.md` §16.11 — fires exactly once per mount; subsequent re-keys (new `currentRoundIndex`) get a fresh watch.
+- `src/components/__tests__/RaceTrack.test.ts` — 3 tests with `vi.mock` over `useRaceSimulation` returning module-level `positions` / `finishOrder` / `done` refs the test mutates. Happy: LANE_COUNT `RaceLane` children mount with correct `{laneIndex, horse, distanceM, positionM}`. Edge: flipping `done.value = true` dispatches `race.completeRound(finishOrder.value)` exactly once. Sad: re-toggling `done` (true → false → true) does NOT re-dispatch — guards the `{ once: true }` option (a stub omitting it would call twice).
+
+### Test count
+
+200 tests (27 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 7 cycle 11 — `App.vue` + test: `fetchAll` on mount, `useRestPolling()` mount-once, conditional `<RaceTrack v-if="phase === PHASE_RACING" :key="currentRoundIndex">` per `ARCHITECTURE.md` §11 step 3 / §14.5.

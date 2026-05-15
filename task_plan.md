@@ -143,7 +143,7 @@ Each container uses `createTestingPinia()` for store mocks. `RaceTrack` test moc
 - [x] `HorseList.vue` + test (iterate `horses.horses`; loading skeleton)
 - [x] `ProgramPanel.vue` + test (mount when phase ≠ INITIAL; resolve IDs via `byId`; `isCurrent` reflects `currentRoundIndex`) — parent uses `v-if`; panel itself assumes a program exists.
 - [x] `ResultsPanel.vue` + test (pre-render 6 cards from `ROUND_DISTANCES`; entries fill as `results` grows; insertion-order-independent via `roundNumber` lookup)
-- [ ] `RaceTrack.vue` + test (runs `useRaceSimulation`; `watch(done, fn, { once: true })` per §16.11; calls `race.completeRound(finishOrder)`)
+- [x] `RaceTrack.vue` + test (runs `useRaceSimulation`; `watch(done, fn, { once: true })` per §16.11; calls `race.completeRound(finishOrder)`) — 3 tests (happy/edge/sad): renders LANE_COUNT `RaceLane` children with `{laneIndex, horse, positionM, distanceM}` resolved via `horses.byId` + `positions` ref; flipping `done → true` dispatches `race.completeRound(finishOrder.value)` exactly once; subsequent `done` re-toggles do not re-dispatch (`{ once: true }`). `useRaceSimulation` mocked via `vi.mock` returning module-level refs the test mutates.
 - [ ] **Error banner component** (§16.8 / decision #22) — single banner covering `horses.error !== null` OR empty roster OR mid-meeting-fail message; manual Retry button.
 
 Exit: all container tests green.
