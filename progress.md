@@ -1,5 +1,27 @@
 # Progress Log
 
+## 2026-05-15 — Session 47: Phase 11.1 (step 1) — env-driven server bind
+
+### What landed
+
+- `server/bindConfig.ts` — `resolveBindConfig(env): { host, port }` with `DEFAULT_HOST='127.0.0.1'`, `DEFAULT_PORT=3001`. Throws when `PORT` is set but not a positive integer.
+- `server/__tests__/bindConfig.test.ts` — 3 flavors (env-driven, defaults, invalid PORT).
+- `server/index.ts` — now passes `{ hostname, port }` from `resolveBindConfig(process.env)` to `serve()`. Default behavior unchanged for local dev (`127.0.0.1:3001`); the Docker runtime will override via env if needed (nginx is sole ingress per `task_plan.md` §11.1).
+
+### Why
+
+Per task_plan §11.1, the container patch must let nginx be the only public ingress. Binding to `127.0.0.1` by default already accomplishes that inside the container; making it env-driven means the same binary still works for local dev and for any future deployment that wants `0.0.0.0`. Tested behavior — not a wiring assumption.
+
+### Tests
+
+248 / 248 green (33 files). +3 new tests in `bindConfig.test.ts`.
+
+### Next action
+
+Phase 11.1 continued — Dockerfile, nginx.conf, supervisord.conf, .dockerignore.
+
+---
+
 ## 2026-05-15 — Session 46: Phase 10 — static gates (lint + typecheck) green
 
 ### What landed

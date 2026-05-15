@@ -225,7 +225,7 @@ Reviewer-facing artifact. Runs only after Phase 9 (Playwright happy path) is gre
 - [ ] `Dockerfile` — multi-stage: `web-build` (Vue → `/dist`), `server-build` (tsc over `server/` + `src/domain/` + `prisma/seed.ts` → `/server-dist`), `runtime` (alpine + nginx + nodejs + supervisor; copies dist + server-dist + `prisma/schema.prisma` + `prisma/horseNames.json`; runs `prisma generate`; exposes :80).
 - [ ] `nginx.conf`: SPA fallback at `/`; `proxy_pass` for `/api/`.
 - [ ] `supervisord.conf` — two services: nginx + node.
-- [ ] Patch `server/index.ts` to bind `127.0.0.1:3001` via `HOST` env var (default `127.0.0.1`).
+- [x] Patch `server/index.ts` to bind `127.0.0.1:3001` via `HOST` env var (default `127.0.0.1`). New `server/bindConfig.ts` exposes `resolveBindConfig(env)` returning `{ host, port }`; defaults `127.0.0.1:3001`; throws on non-positive-integer `PORT`. Tests in `server/__tests__/bindConfig.test.ts` (3 flavors: env-driven / defaults / invalid PORT). `serve({ hostname, port })` now reads from env. Full suite 248/248 green.
 - [ ] `.dockerignore` excludes `node_modules`, `dev.db`, `dist`, `.git`, `tests/`, `*.md`.
 - [ ] Local verify: `docker build`, `docker run -p 8080:80 -v $(pwd)/_data:/app/prisma`; browser walks Generate → Start → FINISHED; restart container → `dev.db` survives.
 
