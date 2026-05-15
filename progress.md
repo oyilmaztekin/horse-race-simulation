@@ -1,5 +1,20 @@
 # Progress Log
 
+## 2026-05-15 — Session 35: Phase 8 — web entrypoint + strict port
+
+**Behavior added:** `npm run dev` now serves the app at `http://localhost:5173/`. Previously Vite started with no HTML host and no `mount()`, so `GET /` returned 404. Worse, when port 5173 was already held by a stale process Vite silently drifted to 5174, mismatching the documented Playwright `baseURL` in Phase 9.
+
+**Files:**
+- `vite.config.ts` — added `WEB_PORT = 5173` constant and `server.port` + `server.strictPort: true`. Strict mode fails loudly on collision instead of drifting.
+- `index.html` — created at project root. `<div id="app">` + `<script type="module" src="/src/main.ts">`. Vite requires an HTML host file at the root; without it `/` returns 404 even when the dev server is up.
+- `src/main.ts` — replaced the partial stub (`createApp(App)` with no `.use()` and no `.mount()`) with the full bootstrap: `createApp(App).use(createPinia()).mount('#app')`. Pinia is required because `App.vue` reads `useHorsesStore()` and `useRaceStore()` on mount.
+
+**Test discipline:** test-after deviation logged. The HTML host + bootstrap entrypoint has no Vitest test — the natural test surface is Playwright (Phase 9). `App.vue` mount wiring (Pinia stores, `fetchAll` on mount, `useRestPolling` once, conditional `RaceTrack`) is already covered by `src/components/__tests__/App.test.ts` (3 tests, green). Manual smoke executed: `GET /` → 200 with `#app` + main.ts script tag; `GET /src/main.ts` → 200 (Vite transform); `GET /api/horses` → 200 via proxy returning 20 horses.
+
+**Suite:** 210/210 vitest tests green; typecheck clean.
+
+**Next:** styling — `src/styles/tokens.css`, `reset.css`, `main.css`; then scoped component styles to match `image.png`.
+
 ## 2026-05-14 — Session 1: planning
 
 - Read `BUSINESS_LOGIC.md` (all sections, 6 non-goals, 25 decisions).

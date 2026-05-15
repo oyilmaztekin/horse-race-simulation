@@ -151,10 +151,11 @@ Exit: all container tests green.
 ---
 
 ### Phase 8 — Styling & layout
-Status: `pending`
+Status: `in_progress`
 
 Surface concerns deferred in `ARCHITECTURE.md` §13.
 
+- [x] **Web entrypoint wired** — `index.html` (host page with `#app` + `/src/main.ts` module script) and `src/main.ts` (`createApp(App).use(createPinia()).mount('#app')`). `vite.config.ts` pinned to `port: 5173, strictPort: true` so port collisions fail loudly instead of drifting (was silently jumping to 5174, breaking the expected Playwright baseURL in Phase 9). Manual smoke: `npm run dev` → `GET /` 200 with `#app`, `GET /src/main.ts` 200, `GET /api/horses` 200 via proxy → 20 horses. **Test-after deviation logged:** unit-test surface for the HTML host + main bootstrap is Playwright (Phase 9); Vitest already covers `App.vue` mount wiring (3 tests in `App.test.ts`).
 - [ ] `src/styles/tokens.css` — CSS variables (spacing, radii, neutral palette). `LANE_COLORS` already exported from constants.
 - [ ] `src/styles/reset.css`, `src/styles/main.css`.
 - [ ] Scoped component styles matching `image.png` layout. Track + lanes + finish line in `RaceTrack` / `RaceLane`.
