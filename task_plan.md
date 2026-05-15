@@ -123,7 +123,7 @@ All 7 pure-prop components. Each gets one `@vue/test-utils` mount test: prop in 
 - [x] `ColorSwatch.vue` + test — 3 tests (happy/edge/sad): inline `background-color` style reflects prop; arbitrary CSS color strings pass through unchanged; prop change re-renders style (sad: a stub ignoring the prop would fail).
 - [x] `HorseListItem.vue` + test — 3 tests (happy/edge/sad): renders `horse.name` + `horse.condition`; CONDITION_MIN/MAX boundaries render verbatim; prop change re-renders both fields.
 - [x] `HorseSprite.vue` + test — 3 tests (happy/edge/sad): SVG colored by `color` + condition text visible; horizontal position driven by `--horse-progress` CSS var from `progress` prop (0 → 0, 1 → 1); condition text re-renders on prop change.
-- [ ] `RaceLane.vue` + test (derives color from `LANE_COLORS[laneIndex]`, converts meters→progress)
+- [x] `RaceLane.vue` + test — 3 tests (happy/edge/sad): mounts `HorseSprite` with `LANE_COLORS[laneIndex]` color and forwarded `horse.condition`; `progress = positionM / distanceM` (0 / 0.5 / 1 at midpoint+finish); different `laneIndex` yields a different color (sad: stub returning a fixed color would fail).
 - [ ] `ProgramRoundCard.vue` + test (lane order, `isCurrent` highlight)
 - [ ] `ResultRoundCard.vue` + test (finish order, swatch from `laneIndex`)
 - [ ] `RankingRow.vue` + test

@@ -308,6 +308,22 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 17: Phase 6 cycle 4 (RaceLane)
+
+### What landed
+
+- `src/components/RaceLane.vue` — derives `color` from `LANE_COLORS[laneIndex]` and `progress` from `positionM / distanceM`, forwards `horse.condition` to a child `HorseSprite`. Pure prop-in/markup-out per ARCHITECTURE.md §14.3; no store access.
+- `src/components/__tests__/RaceLane.test.ts` — 3 tests (happy/edge/sad): child sprite receives correct color + condition; progress is `positionM/distanceM` at 0, midpoint, and finish; different `laneIndex` produces a different color (sad: stub returning a fixed color would fail).
+- TS note: `noUncheckedIndexedAccess` returns `string | undefined` for `LANE_COLORS[i]`; fallback to `LANE_COLORS[0]` keeps the type a plain `string` while preserving the runtime invariant already asserted at import time.
+
+### Test count
+
+158 tests (19 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 6 cycle 5 — `ProgramRoundCard.vue`: lane-order list with `isCurrent` highlight.
+
 ## 2026-05-15 — Session 16: Phase 6 cycle 3 (HorseSprite)
 
 ### What landed
