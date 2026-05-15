@@ -1,5 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
+import legacy from '@vitejs/plugin-legacy'
 
 const DEFAULT_WEB_PORT = 5173
 const DEFAULT_API_PROXY_TARGET = 'http://localhost:3001'
@@ -11,7 +12,14 @@ export default defineConfig(({ mode }: { mode: string }) => {
   const apiProxyTarget = env.API_PROXY_TARGET || DEFAULT_API_PROXY_TARGET
 
   return {
-    plugins: [vue()],
+    plugins: [
+      vue(),
+      legacy({
+        targets: 'defaults',
+        modernPolyfills: true,
+        renderLegacyChunks: true,
+      }),
+    ],
     server: {
       port: webPort,
       strictPort: true,
