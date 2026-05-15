@@ -12,3 +12,11 @@ model Horse {
   name      String
   condition Int
 }
+
+// Single-row global rest state (ARCHITECTURE.md decision #28, BUSINESS_LOGIC.md §4.7).
+// restingUntil is null when no rest is in progress; set by POST /api/horses/rest.
+// Lazy-bumped and cleared on the next GET /api/horses after the timer elapses.
+model AppState {
+  id           Int       @id @default(1)
+  restingUntil DateTime?
+}

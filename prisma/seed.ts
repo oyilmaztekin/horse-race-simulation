@@ -28,6 +28,11 @@ async function main(): Promise<void> {
   try {
     await prisma.horse.deleteMany()
     await prisma.horse.createMany({ data: horses })
+    await prisma.appState.upsert({
+      where: { id: 1 },
+      update: { restingUntil: null },
+      create: { id: 1, restingUntil: null },
+    })
     console.log(`Seeded ${await prisma.horse.count()} horses.`)
   } finally {
     await prisma.$disconnect()

@@ -91,6 +91,7 @@ Cross-references like `LANE_COUNT === LANE_COLORS.length` must be enforced by ty
 **Clean Code:**
 - Functions ≤20 lines, one level of abstraction, do one thing, ≤2 args (else options object).
 - Intention-revealing names. Types/classes are nouns; functions are verbs; booleans are predicates (`isRunning`, `hasFinished`).
+- **Parameter names must be full words, never single-letter abbreviations.** `context` not `c`; `transaction` not `tx`; `horse` not `h`; `event` not `e`. Single-letter names are a blocker regardless of how conventional they are in a framework.
 - Banned suffixes: `Manager`, `Helper`, `Util`, `Data`, `Info` — they signal undefined responsibility.
 - No hidden side effects. Pure functions in `domain/`; state writes only via store actions.
 - No flag arguments. No `null` returned or passed — use `undefined` or a discriminated union.

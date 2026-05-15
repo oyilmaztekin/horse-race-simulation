@@ -12,6 +12,13 @@ export interface Horse {
   condition: number
 }
 
+// GET /api/horses and POST /api/horses/rest both return this shape (ARCHITECTURE.md §6 / decision #29).
+// restingUntil is epoch-millis; null means no rest is active.
+export interface HorsesEnvelope {
+  horses: Horse[]
+  restingUntil: number | null
+}
+
 export interface Round {
   distance: number
   lanes: HorseId[]
