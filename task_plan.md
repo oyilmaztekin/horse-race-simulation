@@ -233,25 +233,23 @@ Reviewer-facing artifact. Runs only after Phase 9 (Playwright happy path) is gre
 Exit: container boots, SPA loads, `/api/horses` returns 20 rows, volume persists.
 
 #### Sub-phase 11.2 — Fly.io deploy (manual, first push)
-- [ ] User: `flyctl auth login` (one-time, documented in DEPLOYMENT.md).
-- [ ] `flyctl launch --no-deploy --copy-config` to scaffold `fly.toml`.
-- [ ] Edit `fly.toml`: app name + `primary_region` (e.g., `fra`); `[build] dockerfile`; `[[mounts]]` data → `/app/prisma`; `[http_service]` `internal_port=80`, `force_https=true`, `auto_stop_machines="stop"`, `min_machines_running=0`; `[deploy] release_command` runs migrate + seed; `[checks]` HTTP on `/api/horses`.
-- [ ] `flyctl volumes create data --size 1 --region fra`.
-- [ ] `flyctl deploy` from local — first push.
-- [ ] Browser smoke at `https://beygir-yarisi.fly.dev`.
+- [x] User: `flyctl auth login` (one-time, documented in DEPLOYMENT.md). Already authed as `yilmaztekin.ozer@gmail.com`.
+- [x] `fly.toml` written directly (skipped `flyctl launch --copy-config` since the manifest fields are already known). App = `beygir-yarisi`, region `fra`, `[build] dockerfile = "Dockerfile"`, `[[mounts]] source = "data", destination = "/app/prisma"`, `[http_service] internal_port = 80, force_https = true, auto_stop_machines = "stop", min_machines_running = 0`, `[[http_service.checks]]` GET `/api/horses`, `[[vm]]` shared 1 CPU + 256 MB. **No `[deploy] release_command`** — `deploy/docker-entrypoint.sh` already runs `prisma migrate deploy` + conditional `prisma db seed` idempotently with the volume mounted, so duplicating it as a release_command in an ephemeral release machine without the volume would seed a doomed DB.
+- [ ] **User action required:** `flyctl apps create beygir-yarisi` + `flyctl volumes create data --size 1 --region fra --yes` + `flyctl deploy --remote-only` from local — first push.
+- [ ] **User action required:** browser smoke at `https://beygir-yarisi.fly.dev`.
 
 Exit: app live, TLS green, persists across machine restarts.
 
 #### Sub-phase 11.3 — GitHub Actions CI/CD
-- [ ] `.github/workflows/ci.yml` — PR + push to main: lint, typecheck, vitest, playwright (with `--with-deps chromium`).
-- [ ] `.github/workflows/deploy.yml` — `workflow_run` on ci success, main only: `superfly/flyctl-actions/setup-flyctl` → `flyctl deploy --remote-only`. Uses `secrets.FLY_API_TOKEN`.
-- [ ] User adds `FLY_API_TOKEN` to repo secrets (`flyctl auth token`).
-- [ ] Verify: dummy PR → CI green → merge → deploy fires → live URL updated within ~3 min.
+- [x] `.github/workflows/ci.yml` — PR + push to master: `npm ci`, `prisma generate`, cached Playwright browsers, `lint`, `typecheck`, `vitest`, then `prisma migrate deploy` + `db seed` ahead of `test:e2e`. Playwright report uploaded as artifact on failure.
+- [x] `.github/workflows/deploy.yml` — `workflow_run` on CI success, master only, with a `deploy-prod` concurrency lock (no parallel deploys): `superfly/flyctl-actions/setup-flyctl` → `flyctl deploy --remote-only`. Uses `secrets.FLY_API_TOKEN` and checks out the exact head SHA that CI passed.
+- [ ] **User action required:** `flyctl auth token` and add the value as `FLY_API_TOKEN` in GitHub → Settings → Secrets → Actions.
+- [ ] **User action required:** dummy PR → CI green → merge → deploy fires → live URL updated within ~3 min.
 
 Exit: push-to-main is the only deploy path.
 
 #### Sub-phase 11.4 — `DEPLOYMENT.md` (reviewer-facing doc)
-- [ ] One-paragraph architecture summary; ASCII flow diagram (Fly edge → nginx → static OR Hono); per-file artifact inventory; five-command "deploy from scratch"; three-sentence "how CI/CD works"; live URL; cost note (free under Fly's allowance).
+- [x] `DEPLOYMENT.md` shipped — architecture summary, ASCII topology, file inventory, five-command deploy-from-scratch, CI/CD paragraph, live URL placeholder, cost note. Also documents the local docker smoke recipe.
 
 Exit: reviewer reads `DEPLOYMENT.md` in under 5 minutes and grasps the deploy story.
 

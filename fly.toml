@@ -1,0 +1,41 @@
+# Fly.io deployment manifest for the Horse Racing MVP.
+# Single multi-stage container (nginx + Hono under supervisord), single region,
+# persistent volume for the SQLite database.
+
+app = "beygir-yarisi"
+primary_region = "fra"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  HOST = "127.0.0.1"
+  PORT = "3001"
+  DATABASE_URL = "file:/app/prisma/dev.db"
+  NODE_ENV = "production"
+
+# Persistent SQLite volume. `flyctl volumes create data --size 1 --region fra`
+# must run once before the first deploy.
+[[mounts]]
+  source = "data"
+  destination = "/app/prisma"
+
+[http_service]
+  internal_port = 80
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "10s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/api/horses"
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 256

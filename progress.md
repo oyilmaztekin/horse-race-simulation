@@ -1,5 +1,28 @@
 # Progress Log
 
+## 2026-05-15 — Session 47: Phase 11.2 + 11.3 + 11.4 — fly.toml, CI/CD, DEPLOYMENT.md
+
+### What landed
+
+- `fly.toml` — app `beygir-yarisi`, region `fra`, dockerfile build, `data` volume mounted at `/app/prisma`, `[http_service]` on internal port 80 with HTTP health check on `/api/horses`, `auto_stop_machines = "stop"` + `min_machines_running = 0` to sleep when idle, shared 1 CPU / 256 MB VM. No `[deploy] release_command` — `docker-entrypoint.sh` already runs migrate + conditional seed idempotically with the persistent volume mounted; a release_command in an ephemeral machine without the mount would seed a doomed DB.
+- `.github/workflows/ci.yml` — lint, typecheck, vitest, then `prisma migrate deploy` + seed before `test:e2e`. Caches Playwright browsers on `package-lock.json` hash. Uploads `playwright-report` as an artifact on failure.
+- `.github/workflows/deploy.yml` — `workflow_run` on CI success, master only, with a `deploy-prod` concurrency lock. Checks out the exact head SHA that CI passed before `flyctl deploy --remote-only`. Requires `FLY_API_TOKEN` secret.
+- `DEPLOYMENT.md` — one-page reviewer-facing doc: architecture summary, ASCII topology, file inventory, five-command deploy-from-scratch, CI/CD summary, live URL placeholder, cost note, local docker smoke recipe.
+
+### User action queue (cannot automate from here)
+
+1. `flyctl apps create beygir-yarisi`
+2. `flyctl volumes create data --size 1 --region fra --yes`
+3. `flyctl deploy --remote-only` (first push)
+4. `flyctl auth token` → paste value into GitHub repo Settings → Secrets → Actions as `FLY_API_TOKEN`
+5. Local docker smoke once docker is installed: `docker build -t beygir-yarisi:dev . && docker run -p 8080:80 -v "$(pwd)/_data:/app/prisma" beygir-yarisi:dev`
+
+### Next action
+
+User installs docker + runs the local container smoke; then runs the five Fly commands above. Phase 11 closes when the live URL responds and a master push produces an automatic deploy.
+
+---
+
 ## 2026-05-15 — Session 47: Phase 11.1 (steps 2–4) — Docker + nginx + supervisord
 
 ### What landed
