@@ -19,12 +19,14 @@ Every behavior change — no matter how small — follows this exact sequence. N
 4. **🟢 Green** — run the full suite (`vitest run`); all tests pass.
 5. **Docs update** — update `ARCHITECTURE.md` or `BUSINESS_LOGIC.md` (whichever governs the changed behavior) in the same working-tree state, before staging.
 6. **task_plan.md checkboxes** — tick every completed item in `task_plan.md` and update the phase `Status:` line in the same working-tree state, before staging.
-7. **Commit** — code + docs + task_plan.md go in the same commit. Nothing separate, nothing batched.
+7. **progress.md log entry** — append a short note to `progress.md` describing the behavior added, the test file, and any decisions worth recalling. Same working-tree state, before staging.
+8. **Commit** — code + docs + task_plan.md + progress.md go in the same commit. Nothing separate, nothing batched.
 
 Violations:
 - Code committed without a prior failing test → blocker.
 - Docs updated in a separate follow-up commit → blocker.
 - task_plan.md checkboxes updated in a separate follow-up commit → blocker.
+- progress.md entry written in a separate follow-up commit → blocker.
 - More than one behavior bundled into a single Red→Green cycle → blocker.
 
 ## Exploration: graphify-first, grep-last, find-last (MANDATORY)
