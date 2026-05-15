@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import AppHeader from './components/AppHeader.vue'
+import ErrorBanner from './components/ErrorBanner.vue'
 import HorseList from './components/HorseList.vue'
 import ProgramPanel from './components/ProgramPanel.vue'
 import RaceTrack from './components/RaceTrack.vue'
@@ -27,6 +28,7 @@ const roundKey = computed(() => race.currentRoundIndex)
 <template>
   <div class="app">
     <AppHeader />
+    <ErrorBanner />
     <main class="app__main">
       <aside class="app__roster">
         <HorseList />

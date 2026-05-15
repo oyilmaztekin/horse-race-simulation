@@ -45,6 +45,7 @@ function mountApp(raceState: Record<string, unknown> = { kind: PHASE_INITIAL }) 
     global: {
       stubs: {
         AppHeader: true,
+        ErrorBanner: true,
         HorseList: true,
         ProgramPanel: true,
         ResultsPanel: true,
@@ -93,7 +94,7 @@ describe('App', () => {
     // RaceTrack itself reads stores — pre-seed horses too so it would mount if it had to.
     const wrapper = mount(App, {
       global: {
-        stubs: { AppHeader: true, HorseList: true, ProgramPanel: true, ResultsPanel: true },
+        stubs: { AppHeader: true, ErrorBanner: true, HorseList: true, ProgramPanel: true, ResultsPanel: true },
         plugins: [
           createTestingPinia({
             stubActions: true,

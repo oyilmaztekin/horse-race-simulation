@@ -737,3 +737,21 @@ Phase 7 cycle 11 — `App.vue` + test: `fetchAll` on mount, `useRestPolling()` m
 ### Next action
 
 Phase 7 cycle 12 — `AppHeader.vue` dedicated test (phase indicator text + nested `RaceControls` mounts). Then error banner component (`ARCHITECTURE.md` §16.8 / decision #22) to close Phase 7.
+
+## 2026-05-15 — Session 34: Phase 7 — AppHeader test + ErrorBanner (Phase 7 complete)
+
+### What landed
+
+- `src/components/__tests__/AppHeader.test.ts` — 3 tests retroactively locking the placeholder scaffolded in cycle 11. Happy: phase indicator text mirrors `race.phase`. Edge: mutating the testing-pinia store flips the indicator from `INITIAL` to `FINISHED`. Sad: `RaceControls` is nested inside. **Test-after deviation logged in task_plan.md** — cycle 11 needed a placeholder so `App.vue` could import.
+- `src/components/ErrorBanner.vue` — single component covering `horses.error !== null` OR `!isLoading && horses.length === 0`. Renders `error.message` (or fallback) + a `[data-testid="btn-retry"]` button wired to `horses.fetchAll()`.
+- `src/components/__tests__/ErrorBanner.test.ts` — 4 tests (happy/edge/sad + action): error state with message + Retry button; empty-roster fallback visibility; hidden when roster loaded; Retry click dispatches `fetchAll`.
+- `src/App.vue` — mounts `<ErrorBanner />` between header and main grid.
+- `src/components/__tests__/App.test.ts` — added `ErrorBanner: true` to the stub map in both mount helpers so the existing App tests stay focused on the layout contract.
+
+### Test count
+
+210 tests (30 files), all green. Typecheck clean. **Phase 7 (container components) is COMPLETE.**
+
+### Next action
+
+Phase 8 — styling & layout. `tokens.css`, `reset.css`, `main.css`, scoped component polish to match `image.png`. Manual smoke in dev server: Generate → Start → 6 rounds → FINISHED → Generate again.
