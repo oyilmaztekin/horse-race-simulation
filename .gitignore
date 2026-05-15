@@ -20,3 +20,8 @@ playwright-report
 .playwright
 
 .planning
+
+# Local env files (commit .env.example, not .env)
+.env
+.env.local
+.env.*.local

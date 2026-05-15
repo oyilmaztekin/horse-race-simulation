@@ -1,5 +1,21 @@
 # Progress Log
 
+## 2026-05-15 — Session 36: Phase 8 — env-driven Vite config
+
+**Behavior added:** `vite.config.ts` reads `WEB_PORT` and `API_PROXY_TARGET` from the process environment via Vite's `loadEnv(mode, cwd, '')` (empty prefix so non-`VITE_*` server-config keys are visible). Existing literals (`5173`, `http://localhost:3001`) demoted to `DEFAULT_*` fallbacks. Port parsing guards against `NaN` and non-positive values. Deploy pipelines now set these as pipeline variables; nothing in the repo encodes the deployment target.
+
+**Files:**
+- `vite.config.ts` — switched from object-literal config to function form `defineConfig(({ mode }) => { … })` so `loadEnv` runs at startup. `WEB_PORT` parsed as integer with `Number.isFinite + > 0` guard, falls back to `DEFAULT_WEB_PORT`. `API_PROXY_TARGET` falls back to `DEFAULT_API_PROXY_TARGET`.
+- `.env.example` — committed contract: documents both vars, their purpose, and the Playwright baseURL coupling.
+- `.env` — local copy, gitignored. Mirrors `.env.example` defaults so day-to-day `npm run dev` works without env exports.
+- `.gitignore` — added `.env`, `.env.local`, `.env.*.local` patterns.
+
+**Test discipline:** test-after deviation logged. Build-time config has no Vitest surface; verified via two live runs — (1) `WEB_PORT=5180 npm run dev:web` → Vite bound 5180, 5173 unbound (connection refused via curl); (2) `npm run dev:web` with `.env` defaults → Vite bound 5173 again, returned 200 on `/`. Typecheck clean.
+
+**Suite:** 210/210 vitest tests green (no behavior changes); typecheck clean.
+
+**Open follow-up (not in this commit):** `server/index.ts` still hardcodes `port: 3001`. Promoting it to env (`API_PORT`) for symmetric pipeline-variable control is a natural next step — the Vite `API_PROXY_TARGET` must match whatever the server binds.
+
 ## 2026-05-15 — Session 35: Phase 8 — web entrypoint + strict port
 
 **Behavior added:** `npm run dev` now serves the app at `http://localhost:5173/`. Previously Vite started with no HTML host and no `mount()`, so `GET /` returned 404. Worse, when port 5173 was already held by a stale process Vite silently drifted to 5174, mismatching the documented Playwright `baseURL` in Phase 9.
