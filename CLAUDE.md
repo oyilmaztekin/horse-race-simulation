@@ -18,11 +18,13 @@ Every behavior change — no matter how small — follows this exact sequence. N
 3. **Minimum code change** — smallest edit that makes the test pass. Stop there.
 4. **🟢 Green** — run the full suite (`vitest run`); all tests pass.
 5. **Docs update** — update `ARCHITECTURE.md` or `BUSINESS_LOGIC.md` (whichever governs the changed behavior) in the same working-tree state, before staging.
-6. **Commit** — docs and code go in the same commit. Nothing separate, nothing batched.
+6. **task_plan.md checkboxes** — tick every completed item in `task_plan.md` and update the phase `Status:` line in the same working-tree state, before staging.
+7. **Commit** — code + docs + task_plan.md go in the same commit. Nothing separate, nothing batched.
 
 Violations:
 - Code committed without a prior failing test → blocker.
 - Docs updated in a separate follow-up commit → blocker.
+- task_plan.md checkboxes updated in a separate follow-up commit → blocker.
 - More than one behavior bundled into a single Red→Green cycle → blocker.
 
 ## Exploration: graphify-first, grep-last, find-last (MANDATORY)
@@ -92,6 +94,7 @@ Cross-references like `LANE_COUNT === LANE_COLORS.length` must be enforced by ty
 - Functions ≤20 lines, one level of abstraction, do one thing, ≤2 args (else options object).
 - Intention-revealing names. Types/classes are nouns; functions are verbs; booleans are predicates (`isRunning`, `hasFinished`).
 - **Parameter names must be full words, never single-letter abbreviations.** `context` not `c`; `transaction` not `tx`; `horse` not `h`; `event` not `e`. Single-letter names are a blocker regardless of how conventional they are in a framework.
+- **Every parameter must carry an explicit type annotation — including inline callback parameters.** `.reduce((sum: number, horse: Horse) => …)`, `.filter((horse: Horse) => …)`, `.map((horse: Horse, index: number) => …)`. Inferred-from-context types are still a blocker: the reader (and the diff) shouldn't have to chase a generic to know what `sum` or `horse` is. The only exception is a parameter whose type is *literally* `unknown` because no narrower type exists yet — and that requires a one-line justification.
 - Banned suffixes: `Manager`, `Helper`, `Util`, `Data`, `Info` — they signal undefined responsibility.
 - No hidden side effects. Pure functions in `domain/`; state writes only via store actions.
 - No flag arguments. No `null` returned or passed — use `undefined` or a discriminated union.
