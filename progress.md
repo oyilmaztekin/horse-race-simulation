@@ -308,6 +308,21 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 29: Phase 7 — HorseList container
+
+### What landed
+
+- `src/components/HorseList.vue` — `<ul>` rendering one `HorseListItem` per `horses.horses` entry, plus a `[data-testid="horse-list-skeleton"]` placeholder when `isLoading`. Pure store-read; no actions.
+- `src/components/__tests__/HorseList.test.ts` — 3 tests (happy: 20 items mount → 20 HorseListItem children; edge: `isLoading=true` shows skeleton and zero items; sad: empty roster + not loading → zero items + no skeleton — a stub returning a fixed list would fail both this and the happy case).
+
+### Test count
+
+191 tests (24 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 7 cycle 8 — `ProgramPanel.vue`: mount when phase ≠ INITIAL; resolve `HorseId → Horse` via `horses.byId`; pass `isCurrent` to each `ProgramRoundCard` based on `currentRoundIndex`.
+
 ## 2026-05-15 — Session 28: RaceControls renders server-driven countdown — refactor complete
 
 ### What landed
