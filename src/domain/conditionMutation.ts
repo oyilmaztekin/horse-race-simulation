@@ -12,6 +12,12 @@ export function isFit(horse: Horse): boolean {
   return horse.condition >= MIN_RACEABLE_CONDITION
 }
 
+// Per BUSINESS_LOGIC.md §3.8 fit-gate: aggregate predicate over a roster.
+// Used by `race.canRest`, `race.fitCount`, and the `assertEnoughFitHorses` guard.
+export function countFitHorses(horses: Horse[]): number {
+  return horses.filter((horse: Horse) => isFit(horse)).length
+}
+
 // Per BUSINESS_LOGIC.md §3.8 / decision #27: bump every unfit horse to exactly
 // MIN_RACEABLE_CONDITION; horses already at/above the threshold are unchanged.
 // Bump-to-floor (not bump-by-delta) guarantees one rest re-fits the whole roster.

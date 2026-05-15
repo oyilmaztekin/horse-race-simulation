@@ -205,4 +205,24 @@ Cycle 2 — `generateProgram` happy path from INITIAL → READY (fit-gate passes
 
 Cycle 3 — `generateProgram` fit-gate failure: throws `NotEnoughFitHorsesError` when `count(fit) < MIN_FIT_HORSES_FOR_PROGRAM`, state stays INITIAL.
 
+## 2026-05-15 — Session 8: Phase 4 race store, cycle 3a (countFitHorses)
+
+### What landed
+
+- `src/domain/conditionMutation.ts` — `countFitHorses(horses)` extracted as a pure domain helper. Unit-testable on its own; the race store will call it (and the upcoming `assertEnoughFitHorses` guard) instead of inlining `horses.filter(isFit).length`.
+- `src/domain/__tests__/conditionMutation.test.ts` — 3 tests (happy / edge / sad): mixed roster returns correct count; empty input returns 0; all-unfit input returns 0 (a `return horses.length` stub would fail this).
+
+### Decision
+
+Decomposed the fit-gate into pure domain functions. `isFit` was already there; `countFitHorses` is the aggregate the store needs. The store should not own predicate math — it orchestrates state, not condition rules.
+
+### Test count
+
+93 tests (12 files), all green.
+
+### Next action
+
+Cycle 3b — `assertEnoughFitHorses(horses)` domain guard that throws `NotEnoughFitHorsesError` when the count is below threshold.
+
+
 

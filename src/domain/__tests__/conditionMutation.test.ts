@@ -6,7 +6,12 @@ import {
   MIN_RACEABLE_CONDITION,
   RECOVERY_PER_REST,
 } from '../constants'
-import { applyRestEffects, applyRoundEffects, isFit } from '../conditionMutation'
+import {
+  applyRestEffects,
+  applyRoundEffects,
+  countFitHorses,
+  isFit,
+} from '../conditionMutation'
 import type { Horse } from '../types'
 
 const horse = (number: number, condition: number, name = `H${number}`): Horse => ({
@@ -108,5 +113,29 @@ describe('applyRestEffects', () => {
     })
     expect(next[0]?.condition).toBe(MIN_RACEABLE_CONDITION)
     expect(next[1]?.condition).toBe(80)
+  })
+})
+
+describe('countFitHorses', () => {
+  it('returns the number of horses with condition ≥ MIN_RACEABLE_CONDITION (happy)', () => {
+    const horses: Horse[] = [
+      horse(1, MIN_RACEABLE_CONDITION + 10),
+      horse(2, MIN_RACEABLE_CONDITION),
+      horse(3, MIN_RACEABLE_CONDITION - 1),
+      horse(4, CONDITION_MAX),
+    ]
+    expect(countFitHorses(horses)).toBe(3)
+  })
+
+  it('returns 0 for an empty roster (edge: empty input)', () => {
+    expect(countFitHorses([])).toBe(0)
+  })
+
+  it('returns 0 when every horse sits below the threshold (sad: a `return horses.length` stub would fail)', () => {
+    const horses: Horse[] = [
+      horse(1, CONDITION_MIN),
+      horse(2, MIN_RACEABLE_CONDITION - 1),
+    ]
+    expect(countFitHorses(horses)).toBe(0)
   })
 })
