@@ -1097,3 +1097,34 @@ Reviewer-facing change set: simulation feels brisk on first impression (default 
 ### Next action
 
 Manual smoke in dev server: `npm run dev` → Generate → Start → verify default speed is brisk, + button goes up to 4×, − button goes down to 0.5×, both disable at bounds, readout updates live, race outcomes show expected upset behavior across a few seeds.
+
+## 2026-05-15 — Session 45: Phase 9 — Playwright happy path
+
+### What landed
+
+- `playwright.config.ts` — single-worker, non-parallel, `baseURL: http://localhost:5173`, webServer = `npm run dev` (reuses an existing dev server when present), `testDir: tests/e2e`, `globalSetup: tests/e2e/global-setup.ts`, top-level timeout 120s.
+- `tests/e2e/global-setup.ts` — runs `npm run db:seed` via `spawnSync` so every E2E run starts from the deterministic 0xDECAF roster (avoids drift from prior runs that mutated conditions down).
+- `tests/e2e/happy-path.spec.ts` — single happy-path test:
+  1. `state:INITIAL` + 20 `.horse-list-item` rows.
+  2. Click Generate. If `warning` visible (`count(fit) < 15`), click Rest, wait for `state:RESTING → state:INITIAL` (≤ 30s), re-click Generate.
+  3. Assert `state:READY`, click Start, assert `state:RACING`.
+  4. Click `race-track-speed-increase` 4× to reach `4×` readout (max speed) so the full meeting completes inside ~3 minutes wall clock.
+  5. Wait for `state:FINISHED` (≤ 300s), assert 60 `.result-round-card__row` rows.
+
+Also addressed the user's working-tree edits before starting Phase 9: `src/components/AppHeader.vue` ("state:" prefix on phase indicator) and `src/components/HorseSprite.vue` (realistic SVG horse) — rebaselined `AppHeader.test.ts` to match the new label.
+
+### Test count
+
+- Vitest: 236 / 236 green across 30 files (unchanged).
+- Playwright: 1 / 1 green (~3.3 minutes wall clock).
+
+### Decisions worth recalling
+
+- E2E uses the live database, not a mock — `globalSetup` reseeds before every run so the test is deterministic against the pristine `0xDECAF` roster (10-of-20 fit, exercises the Rest branch).
+- Bumping `simSpeedMultiplier` to 4× in-test keeps the full meeting under ~3 minutes wall clock; at the default 2× it would be ~5–6 minutes. The Phase 12.2 speed control row is therefore load-bearing for E2E feasibility, not just a reviewer nicety.
+- The test branches on `warning` visibility so a future seed where 15+ horses start fit doesn't break the spec — it just skips the Rest step.
+- Playwright browsers cached at `~/.cache/ms-playwright`. The repo's `@playwright/test@1.49` expected `chromium-headless-shell-1223`; ran `npx playwright install chromium` once to fetch the matching build (~113 MiB). Not committed; reviewer runs `npx playwright install` on first checkout.
+
+### Next action
+
+Phase 10 — Polish. Then Phase 11 — Deployment (Fly.io + nginx + Docker + GitHub Actions). Phase 11 needs Fly.io auth (`flyctl auth login`) so it's not fully autonomous.

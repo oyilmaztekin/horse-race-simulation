@@ -185,13 +185,13 @@ Exit: dark-mode gaming look ships; tests + build green; CSS architecture (Tailwi
 ---
 
 ### Phase 9 — Playwright happy path
-Status: `pending`
+Status: `complete` ✓
 
-- [ ] `tests/e2e/happy-path.spec.ts` — load page → roster visible → click Generate. With the current seed (`0xDECAF`), only 10 horses are ≥ 40 condition, so the click surfaces the warning + reveals Rest. Click Rest → wait 10s for countdown to elapse → assert roster reflects bumped conditions → click Generate again → ProgramPanel renders → click Start → wait until 6 result cards visible → assert FINISHED phase indicator. This single happy-path naturally exercises both the rest mechanism and the race loop because the seeded roster forces it.
-- [ ] **Alternative rest-skip path** (only if seed changes): if `count(fit) ≥ 15` on a future seed, the first Generate succeeds without needing rest. Test should branch on the visible "fit horses" warning rather than asserting it always appears.
-- [ ] Playwright config: webServer command runs `npm run dev`; baseURL `http://localhost:5173`.
+- [x] `tests/e2e/happy-path.spec.ts` — load page → roster visible → click Generate. Branches on the warning: when `count(fit) < 15` the test clicks Rest, waits for `RESTING → INITIAL`, and re-clicks Generate; otherwise it proceeds straight from READY. Then click Start, bump speed to 4× (max) on the live RaceTrack control to keep wall-clock total under 5 minutes, wait for `state:FINISHED`, assert 60 `.result-round-card__row` elements (LANE_COUNT × ROUND_COUNT).
+- [x] **Alternative rest-skip path** covered by the `if (warning visible)` branch — same test naturally handles both seed paths.
+- [x] `playwright.config.ts` — `testDir: tests/e2e`, `baseURL: http://localhost:5173`, `webServer: npm run dev` (reuse existing in dev), `workers: 1`, `fullyParallel: false`, `timeout: 120_000`. `tests/e2e/global-setup.ts` runs `npm run db:seed` before the suite so the SQLite roster starts from the deterministic 0xDECAF state on every run.
 
-Exit: `npm run test:e2e` green. This is the acceptance gate (§15.7).
+Exit: `npm run test:e2e` green (1 passed, 3.3m wall clock at 4× sim speed). This is the acceptance gate (§15.7).
 
 ---
 
