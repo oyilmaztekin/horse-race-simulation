@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
 import {
   HORSE_COUNT,
+  INTER_ROUND_DELAY_MS,
   LANE_COUNT,
   MIN_FIT_HORSES_FOR_PROGRAM,
   MIN_RACEABLE_CONDITION,
@@ -10,6 +11,7 @@ import {
   PHASE_RACING,
   PHASE_READY,
   PHASE_RESTING,
+  REST_DURATION_MS,
   ROUND_COUNT,
   ROUND_DISTANCES,
 } from '../../domain/constants'
@@ -246,5 +248,355 @@ describe('useRaceStore — generateProgram phase guard', () => {
     expect(thrown).toBeInstanceOf(InvalidTransitionError)
     expect((thrown as InvalidTransitionError).kind).toBe(PHASE_RESTING)
     expect(race.state.kind).toBe(PHASE_RESTING)
+  })
+})
+
+describe('useRaceStore — start()', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('transitions READY → RACING carrying program/rng/seed (happy)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+    race.generateProgram(KNOWN_SEED)
+    const readyProgram = race.program
+    const readyRng = race.currentRng // null in READY — we'll assert via state below
+    void readyRng
+
+    race.start()
+
+    expect(race.state.kind).toBe(PHASE_RACING)
+    expect(race.phase).toBe(PHASE_RACING)
+    expect(race.seed).toBe(KNOWN_SEED)
+    expect(race.program).toBe(readyProgram)
+    expect(race.currentRoundIndex).toBe(0)
+    expect(race.results).toEqual([])
+    expect(race.currentRng).not.toBeNull()
+  })
+
+  it('exposes currentRound = program[0] after start (edge: round index 0, not 1)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+    race.generateProgram(KNOWN_SEED)
+
+    race.start()
+
+    expect(race.currentRound).not.toBeNull()
+    expect(race.currentRound!.distance).toBe(ROUND_DISTANCES[0])
+    expect(race.currentRound!.lanes).toHaveLength(LANE_COUNT)
+  })
+
+  it('throws InvalidTransitionError from INITIAL and leaves state unchanged (sad)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+
+    let thrown: unknown
+    try {
+      race.start()
+    } catch (caught) {
+      thrown = caught
+    }
+
+    expect(thrown).toBeInstanceOf(InvalidTransitionError)
+    expect((thrown as InvalidTransitionError).kind).toBe(PHASE_INITIAL)
+    expect((thrown as InvalidTransitionError).action).toBe('start')
+    expect(race.state.kind).toBe(PHASE_INITIAL)
+  })
+})
+
+function emptyRankings(): import('../../domain/types').Ranking[] {
+  return Array.from({ length: LANE_COUNT }, (_, index: number) => ({
+    rank: index + 1,
+    horseId: index + 1,
+    lane: index + 1,
+    finishTimeMs: 60_000 + index * 100,
+  }))
+}
+
+describe('useRaceStore — completeRound()', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('POSTs raced lane ids, applies server roster, then advances to next round after wait (happy)', async () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+    race.generateProgram(KNOWN_SEED)
+    race.start()
+
+    const racedIds = race.currentRound!.lanes
+    const fatiguedRoster: Horse[] = horses.horses.map((horse) => ({
+      ...horse,
+      condition: racedIds.includes(horse.number) ? horse.condition - 8 : horse.condition + 3,
+    }))
+    mockCompleteRound.mockResolvedValueOnce(fatiguedRoster)
+
+    const pending = race.completeRound(emptyRankings())
+    await vi.advanceTimersByTimeAsync(INTER_ROUND_DELAY_MS)
+    await pending
+
+    expect(mockCompleteRound).toHaveBeenCalledWith(racedIds)
+    expect(horses.horses).toEqual(fatiguedRoster)
+    expect(race.state.kind).toBe(PHASE_RACING)
+    expect(race.currentRoundIndex).toBe(1)
+    expect(race.results).toHaveLength(1)
+    expect(race.results[0]!.roundNumber).toBe(1)
+  })
+
+  it('transitions to FINISHED after the last round without a wait (edge)', async () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+    race.generateProgram(KNOWN_SEED)
+    race.start()
+    race.state = {
+      ...(race.state as Extract<typeof race.state, { kind: typeof PHASE_RACING }>),
+      currentRoundIndex: ROUND_COUNT - 1,
+    }
+
+    mockCompleteRound.mockResolvedValueOnce(horses.horses)
+
+    await race.completeRound(emptyRankings())
+
+    expect(race.state.kind).toBe(PHASE_FINISHED)
+    expect(race.results).toHaveLength(1)
+    expect(race.results[0]!.roundNumber).toBe(ROUND_COUNT)
+    expect(race.seed).toBe(KNOWN_SEED)
+  })
+
+  it('throws InvalidTransitionError when called outside RACING (sad)', async () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+
+    await expect(race.completeRound(emptyRankings())).rejects.toBeInstanceOf(
+      InvalidTransitionError,
+    )
+    expect(race.state.kind).toBe(PHASE_INITIAL)
+  })
+
+  it('transitions to INITIAL when the POST rejects (sad: decision #23)', async () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const preFailureRoster = horses.horses
+    const race = useRaceStore()
+    race.generateProgram(KNOWN_SEED)
+    race.start()
+
+    mockCompleteRound.mockRejectedValueOnce(new Error('boom'))
+
+    await race.completeRound(emptyRankings())
+
+    expect(race.state.kind).toBe(PHASE_INITIAL)
+    expect(race.results).toEqual([])
+    expect(horses.horses).toEqual(preFailureRoster)
+  })
+})
+
+describe('useRaceStore — rest()', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('transitions INITIAL → RESTING with envelope.restingUntil (happy)', async () => {
+    vi.setSystemTime(FIXED_NOW_MS)
+    const restEnd = FIXED_NOW_MS + REST_DURATION_MS
+    mockStartRest.mockResolvedValueOnce({ horses: [], restingUntil: restEnd })
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+
+    await race.rest()
+
+    expect(mockStartRest).toHaveBeenCalledOnce()
+    expect(race.state.kind).toBe(PHASE_RESTING)
+    expect(race.restingUntil).toBe(restEnd)
+  })
+
+  it('is reachable from FINISHED (edge: post-meeting rest)', async () => {
+    vi.setSystemTime(FIXED_NOW_MS)
+    const restEnd = FIXED_NOW_MS + REST_DURATION_MS
+    mockStartRest.mockResolvedValueOnce({ horses: [], restingUntil: restEnd })
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+    const finishedProgram = generateProgramFn(horses.horses, createRng(KNOWN_SEED))
+    race.state = {
+      kind: PHASE_FINISHED,
+      program: finishedProgram,
+      seed: KNOWN_SEED,
+      results: [],
+    }
+
+    await race.rest()
+
+    expect(race.state.kind).toBe(PHASE_RESTING)
+    expect(race.restingUntil).toBe(restEnd)
+  })
+
+  it('throws InvalidTransitionError from RACING (sad: no mid-meeting rest)', async () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+    race.generateProgram(KNOWN_SEED)
+    race.start()
+
+    await expect(race.rest()).rejects.toBeInstanceOf(InvalidTransitionError)
+    expect(race.state.kind).toBe(PHASE_RACING)
+    expect(mockStartRest).not.toHaveBeenCalled()
+  })
+})
+
+describe('useRaceStore — completeRest()', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('transitions RESTING → INITIAL and applies the bumped roster (happy)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+    race.state = { kind: PHASE_RESTING, restingUntil: FIXED_NOW_MS + 1000 }
+    const bumped: Horse[] = makeFitRoster().map((horse) => ({
+      ...horse,
+      condition: MIN_RACEABLE_CONDITION,
+    }))
+
+    race.completeRest(bumped)
+
+    expect(race.state.kind).toBe(PHASE_INITIAL)
+    expect(race.restingUntil).toBeNull()
+    expect(horses.horses).toEqual(bumped)
+  })
+
+  it('throws InvalidTransitionError when called outside RESTING (sad)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+
+    expect(() => race.completeRest(makeFitRoster())).toThrow(InvalidTransitionError)
+    expect(race.state.kind).toBe(PHASE_INITIAL)
+  })
+
+  it('rejects the call from RACING and preserves horses (sad: mid-meeting)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const preCallRoster = horses.horses
+    const race = useRaceStore()
+    race.generateProgram(KNOWN_SEED)
+    race.start()
+
+    expect(() => race.completeRest(makeFitRoster())).toThrow(InvalidTransitionError)
+    expect(horses.horses).toEqual(preCallRoster)
+  })
+})
+
+describe('useRaceStore — resumeRestFromBoot()', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    vi.setSystemTime(FIXED_NOW_MS)
+  })
+
+  it('transitions INITIAL → RESTING with the boot envelope timestamp (happy)', () => {
+    const race = useRaceStore()
+    const future = FIXED_NOW_MS + REST_DURATION_MS
+
+    race.resumeRestFromBoot(future)
+
+    expect(race.state.kind).toBe(PHASE_RESTING)
+    expect(race.restingUntil).toBe(future)
+  })
+
+  it('no-ops when the timestamp is already past (edge: stale boot snapshot)', () => {
+    const race = useRaceStore()
+
+    race.resumeRestFromBoot(FIXED_NOW_MS - 1)
+
+    expect(race.state.kind).toBe(PHASE_INITIAL)
+  })
+
+  it('no-ops when state is not INITIAL (sad: race already underway)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+    race.generateProgram(KNOWN_SEED)
+
+    race.resumeRestFromBoot(FIXED_NOW_MS + REST_DURATION_MS)
+
+    expect(race.state.kind).toBe(PHASE_READY)
+  })
+})
+
+describe('useRaceStore — derived gates (canGenerate / canStart / canRest / fitCount)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('INITIAL + fit roster → canGenerate true, canStart/canRest false, fitCount=HORSE_COUNT (happy)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+
+    expect(race.fitCount).toBe(HORSE_COUNT)
+    expect(race.canGenerate).toBe(true)
+    expect(race.canStart).toBe(false)
+    expect(race.canRest).toBe(false)
+  })
+
+  it('READY → canStart true, canGenerate still true (re-roll allowed), canRest false (edge)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+    race.generateProgram(KNOWN_SEED)
+
+    expect(race.canGenerate).toBe(true)
+    expect(race.canStart).toBe(true)
+    expect(race.canRest).toBe(false)
+  })
+
+  it('INITIAL + insufficient fit roster → canRest true, canStart false (edge: fit-gate triggered)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeRosterWithFitCount(MIN_FIT_HORSES_FOR_PROGRAM - 1))
+    const race = useRaceStore()
+
+    expect(race.fitCount).toBe(MIN_FIT_HORSES_FOR_PROGRAM - 1)
+    expect(race.canRest).toBe(true)
+    expect(race.canStart).toBe(false)
+  })
+
+  it('RACING / RESTING / loading roster → all gates false (sad: all controls locked)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+    race.generateProgram(KNOWN_SEED)
+    race.start()
+
+    expect(race.canGenerate).toBe(false)
+    expect(race.canStart).toBe(false)
+    expect(race.canRest).toBe(false)
+
+    race.state = { kind: PHASE_RESTING, restingUntil: FIXED_NOW_MS + REST_DURATION_MS }
+    expect(race.canGenerate).toBe(false)
+    expect(race.canStart).toBe(false)
+    expect(race.canRest).toBe(false)
+
+    setActivePinia(createPinia())
+    const loadingHorses = useHorsesStore()
+    loadingHorses.$patch({ isLoading: true })
+    const loadingRace = useRaceStore()
+    expect(loadingRace.canGenerate).toBe(false)
+    expect(loadingRace.canStart).toBe(false)
+    expect(loadingRace.canRest).toBe(false)
   })
 })

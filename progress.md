@@ -256,7 +256,38 @@ Store-level test exercises only what the store owns: the wiring + the post-throw
 
 ### Next action
 
-Cycle 5 — `start()` action: READY → RACING with `currentRoundIndex = 0`, `results = []`, carrying program/rng/seed; throws `InvalidTransitionError` from non-READY phases.
+Phase 5 — composables (`useRaceApi` real implementation, `useRaceSimulation`, `useRestPolling`).
+
+## 2026-05-15 — Session 12: Phase 4 race store, cycles 5–10 (Phase 4 complete)
+
+Six TDD cycles landed back-to-back; Phase 4 is now complete. Phase 4 tests grew from 4 to 31 (Phase 4 contributes the bulk of the 129-total). Each cycle: red→green→one behavior at a time.
+
+### Cycle 5 — `start()`
+`READY → RACING` carrying program/rng/seed; initializes `currentRoundIndex = 0`, `results = []`; throws `InvalidTransitionError(kind, 'start')` from any non-READY phase. 3 tests (happy/edge/sad).
+
+### Cycle 6 — `completeRound(rankings)`
+Phase-guarded on RACING. Builds `RoundResult { roundNumber, rankings }`, POSTs `racedIds` via `useRaceApi().completeRound`, then either:
+- success + last round → `PHASE_FINISHED { program, seed, results }` (no wait), or
+- success + mid-meeting → `wait(INTER_ROUND_DELAY_MS)` then RACING with advanced index, or
+- failure → `PHASE_INITIAL` (decision #23 — local results evaporate; pre-call roster intact since `applyServerUpdate` was never called).
+
+4 tests: happy (mid-meeting advance + POST args + roster applied), edge (last round → FINISHED, no wait), sad (POST rejects → INITIAL), sad (guard from non-RACING throws).
+
+### Cycle 7 — `rest()`
+Allowed only from INITIAL / FINISHED; throws `InvalidTransitionError` otherwise. POSTs via `useRaceApi().startRest`, sets `PHASE_RESTING { restingUntil: envelope.restingUntil }`. 3 tests (happy/edge/sad).
+
+### Cycle 8 — `completeRest(updated)`
+Allowed only from RESTING. Applies the bumped roster via `horses.applyServerUpdate(updated)` and transitions to INITIAL. 3 tests (happy + two sads — from INITIAL and from RACING, both throw + leave horses untouched).
+
+### Cycle 9 — `resumeRestFromBoot(restingUntil)`
+Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transitions INITIAL → RESTING only if (a) currently in INITIAL and (b) the timestamp is still in the future. Otherwise no-op. 3 tests (happy / past-timestamp edge / non-INITIAL sad).
+
+### Cycle 10 — Derived gates
+`fitCount` (delegates to domain `countFitHorses`); `canGenerate` (roster-ready AND phase in INITIAL/READY/FINISHED); `canStart` (roster-ready AND phase === READY); `canRest` (roster-ready AND phase in INITIAL/FINISHED AND `fitCount < MIN_FIT_HORSES_FOR_PROGRAM`). 4 tests covering the four key combinations: fit/INITIAL, READY, unfit/INITIAL, locked (RACING / RESTING / loading).
+
+### Test count
+
+129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
 ## 2026-05-15 — Session 11: Phase 4 race store, cycle 4 (generateProgram phase guard)
 

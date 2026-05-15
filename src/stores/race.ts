@@ -1,17 +1,23 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import {
+  HORSE_COUNT,
+  INTER_ROUND_DELAY_MS,
+  MIN_FIT_HORSES_FOR_PROGRAM,
   PHASE_FINISHED,
   PHASE_INITIAL,
   PHASE_RACING,
   PHASE_READY,
   PHASE_RESTING,
+  ROUND_COUNT,
 } from '../domain/constants'
-import { assertEnoughFitHorses } from '../domain/conditionMutation'
+import { assertEnoughFitHorses, countFitHorses } from '../domain/conditionMutation'
 import { InvalidTransitionError } from '../domain/errors'
 import { generateProgram as generateProgramFn } from '../domain/programGenerator'
 import { createRng } from '../domain/rng'
-import type { Program, Ranking, Rng, RoundResult } from '../domain/types'
+import type { Horse, Program, Ranking, Rng, RoundResult } from '../domain/types'
+import { wait } from '../domain/wait'
+import { useRaceApi } from '../composables/useRaceApi'
 import { useHorsesStore } from './horses'
 
 export type RaceState =
@@ -56,6 +62,29 @@ export const useRaceStore = defineStore('race', () => {
     state.value.kind === PHASE_RACING ? state.value.rng : null,
   )
 
+  const fitCount = computed<number>(() => {
+    const horses = useHorsesStore()
+    return countFitHorses(horses.horses)
+  })
+  const isRosterReady = computed<boolean>(() => {
+    const horses = useHorsesStore()
+    return !horses.isLoading && horses.horses.length === HORSE_COUNT
+  })
+  const canGenerate = computed<boolean>(() => {
+    if (!isRosterReady.value) return false
+    const kind = state.value.kind
+    return kind === PHASE_INITIAL || kind === PHASE_READY || kind === PHASE_FINISHED
+  })
+  const canStart = computed<boolean>(
+    () => isRosterReady.value && state.value.kind === PHASE_READY,
+  )
+  const canRest = computed<boolean>(() => {
+    if (!isRosterReady.value) return false
+    const kind = state.value.kind
+    const allowedPhase = kind === PHASE_INITIAL || kind === PHASE_FINISHED
+    return allowedPhase && fitCount.value < MIN_FIT_HORSES_FOR_PROGRAM
+  })
+
   function generateProgram(seed: number = Date.now()): void {
     const currentKind = state.value.kind
     if (currentKind === PHASE_RACING || currentKind === PHASE_RESTING) {
@@ -68,12 +97,81 @@ export const useRaceStore = defineStore('race', () => {
     state.value = { kind: PHASE_READY, program, rng: meetingRng, seed }
   }
 
-  function resumeRestFromBoot(_restingUntil: number): void {
-    // wired in a later cycle
+  async function rest(): Promise<void> {
+    const currentKind = state.value.kind
+    if (currentKind !== PHASE_INITIAL && currentKind !== PHASE_FINISHED) {
+      throw new InvalidTransitionError(currentKind, 'rest')
+    }
+    const envelope = await useRaceApi().startRest()
+    state.value = { kind: PHASE_RESTING, restingUntil: envelope.restingUntil ?? Date.now() }
   }
 
-  function completeRound(_rankings: Ranking[]): Promise<void> {
-    return Promise.resolve()
+  function start(): void {
+    const current = state.value
+    if (current.kind !== PHASE_READY) {
+      throw new InvalidTransitionError(current.kind, 'start')
+    }
+    state.value = {
+      kind: PHASE_RACING,
+      program: current.program,
+      rng: current.rng,
+      seed: current.seed,
+      currentRoundIndex: 0,
+      results: [],
+    }
+  }
+
+  function completeRest(updated: Horse[]): void {
+    if (state.value.kind !== PHASE_RESTING) {
+      throw new InvalidTransitionError(state.value.kind, 'completeRest')
+    }
+    useHorsesStore().applyServerUpdate(updated)
+    state.value = { kind: PHASE_INITIAL }
+  }
+
+  function resumeRestFromBoot(restingUntil: number): void {
+    if (state.value.kind !== PHASE_INITIAL) return
+    if (restingUntil <= Date.now()) return
+    state.value = { kind: PHASE_RESTING, restingUntil }
+  }
+
+  async function completeRound(rankings: Ranking[]): Promise<void> {
+    const current = state.value
+    if (current.kind !== PHASE_RACING) {
+      throw new InvalidTransitionError(current.kind, 'completeRound')
+    }
+    const roundNumber = current.currentRoundIndex + 1
+    const racedIds = current.program[current.currentRoundIndex]!.lanes
+    const newResults: RoundResult[] = [...current.results, { roundNumber, rankings }]
+    const api = useRaceApi()
+    const horses = useHorsesStore()
+    let updated
+    try {
+      updated = await api.completeRound(racedIds)
+    } catch {
+      state.value = { kind: PHASE_INITIAL }
+      return
+    }
+    horses.applyServerUpdate(updated)
+    const isLastRound = current.currentRoundIndex === ROUND_COUNT - 1
+    if (isLastRound) {
+      state.value = {
+        kind: PHASE_FINISHED,
+        program: current.program,
+        seed: current.seed,
+        results: newResults,
+      }
+      return
+    }
+    await wait(INTER_ROUND_DELAY_MS)
+    state.value = {
+      kind: PHASE_RACING,
+      program: current.program,
+      rng: current.rng,
+      seed: current.seed,
+      currentRoundIndex: current.currentRoundIndex + 1,
+      results: newResults,
+    }
   }
 
   return {
@@ -86,7 +184,14 @@ export const useRaceStore = defineStore('race', () => {
     restingUntil,
     seed,
     currentRng,
+    fitCount,
+    canGenerate,
+    canStart,
+    canRest,
     generateProgram,
+    start,
+    rest,
+    completeRest,
     resumeRestFromBoot,
     completeRound,
   }
