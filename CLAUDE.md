@@ -90,7 +90,21 @@ This codebase is **MVP-scoped**. Pause, restart, mid-race regeneration, DNF, and
 
 Cross-references like `LANE_COUNT === LANE_COLORS.length` must be enforced by type or runtime invariant — never by hoping the literals stay in sync.
 
-## 2. Clean Code & SOLID
+## 2. CSS Class Naming — BEM
+
+All CSS class names follow **BEM** (Block__Element--Modifier):
+
+- **Block** — the standalone component root: `race-lane`, `horse-sprite`, `program-card`.
+- **Element** — a part of the block, joined with `__`: `race-lane__label`, `horse-sprite__bar`.
+- **Modifier** — a variant or state, joined with `--`: `race-lane--current`, `horse-sprite--finished`.
+
+Rules:
+- Never nest BEM segments more than two levels deep (`block__element`, never `block__element__sub`).
+- Modifier classes are added *in addition to* the base class, never instead of it.
+- Dynamic inline styles are allowed only for values that cannot be expressed as a modifier (e.g. `width` driven by a runtime percentage). Use a CSS custom property (`--progress: 42%`) over a raw `style` binding when possible.
+- A class name that doesn't parse as a BEM token is a blocker.
+
+## 3. Clean Code & SOLID (MANDATORY)
 
 **Clean Code:**
 - Functions ≤20 lines, one level of abstraction, do one thing, ≤2 args (else options object).
@@ -113,7 +127,7 @@ Cross-references like `LANE_COUNT === LANE_COLORS.length` must be enforced by ty
 
 A violation without a written justification is a bug.
 
-## 3. TDD — Red / Green / Refactor
+## 4. TDD — Red / Green / Refactor (MANDATORY)
 
 No production code without a failing test that requires it. Tools: **Vitest + `@vue/test-utils`**, **Playwright** for E2E.
 
@@ -138,7 +152,7 @@ Three is the **floor**, not a fixed count — add more when a behavior genuinely
 
 Rejected: test-after, asserting on implementation details, skipping/disabling failing tests, refactoring on a red bar.
 
-## 4. Pre-commit checklist
+## 5. Pre-commit checklist
 
 Every changed function answers **yes** to all:
 
