@@ -149,9 +149,10 @@ describe('createSnapshot', () => {
     distance: ROUND_DISTANCES[2],
     lanes: [11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
   }
+  const half = () => 0.5
 
   it('returns a zeroed snapshot with distance + roundNumber wired through (happy)', () => {
-    const snap = createSnapshot(round, 3)
+    const snap = createSnapshot(round, 3, half)
     expect(snap.roundNumber).toBe(3)
     expect(snap.distance).toBe(round.distance)
     expect(snap.elapsedMs).toBe(0)
@@ -159,19 +160,36 @@ describe('createSnapshot', () => {
   })
 
   it('numbers lanes 1..LANE_COUNT in lane-order and matches horseIds by index (edge — boundary)', () => {
-    const snap = createSnapshot(round, 3)
+    const snap = createSnapshot(round, 3, half)
     snap.lanes.forEach((lane, index) => {
       expect(lane.lane).toBe(index + 1)
       expect(lane.horseId).toBe(round.lanes[index])
     })
   })
 
-  it('every lane starts at meters=0 with finishedAtMs=null (sad — a stub returning distance/0 would fail)', () => {
-    const snap = createSnapshot(round, 3)
+  it('every lane starts at meters=0 with finishedAtMs=null and form=0 when rng()=0.5 (sad — a stub returning distance/0 would fail)', () => {
+    const snap = createSnapshot(round, 3, half)
     for (const lane of snap.lanes) {
       expect(lane.meters).toBe(0)
       expect(lane.finishedAtMs).toBeNull()
+      expect(lane.form).toBe(0)
     }
+  })
+
+  it('draws form per lane in lane-order 1→10 using the rng — lane 1 gets the first draw (edge — Phase 12 decision)', () => {
+    // Sequenced rng: lane 1 draws rng=0 → form=-FORM_MPS; lane 10 draws rng=1-eps → form≈+FORM_MPS.
+    const epsilon = 1e-10
+    const values = [0, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 1 - epsilon]
+    let index = 0
+    const rng = () => values[index++] as number
+    const snap = createSnapshot(round, 3, rng)
+    expect(snap.lanes[0]?.form).toBe(-FORM_MPS)
+    expect(snap.lanes[9]?.form).toBeGreaterThan(FORM_MPS - 1e-5)
+    expect(snap.lanes[9]?.form).toBeLessThan(FORM_MPS)
+    for (let lane = 1; lane <= 8; lane += 1) {
+      expect(snap.lanes[lane]?.form).toBe(0)
+    }
+    expect(index).toBe(LANE_COUNT)
   })
 })
 
@@ -189,8 +207,9 @@ describe('step', () => {
   }
   const half = () => 0.5
   const maxConditionLookup = (_horseId: HorseId) => CONDITION_MAX
+  // form=0 for every lane (rng=0.5 → drawForm=0) — keeps closed-form anchors exact.
   const startSnapshot = (): SimulationSnapshot =>
-    createSnapshot({ distance: ROUND_DISTANCES[0], lanes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }, 1)
+    createSnapshot({ distance: ROUND_DISTANCES[0], lanes: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] }, 1, half)
 
   it('advances every lane by speed*dt and accumulates elapsedMs (happy — closed-form: cond=MAX, jitter=0)', () => {
     // rng() === 0.5 → jitter=0; condition=MAX → speed = BASE_SPEED_MPS_MAX exactly.
@@ -233,5 +252,29 @@ describe('step', () => {
     const lane1 = next.lanes[0] as LanePosition
     expect(lane1.meters).toBe(snap.distance)
     expect(lane1.finishedAtMs).toBe(12_345)
+  })
+
+  it('uses each lane.form additively in the speed formula and does NOT redraw form per tick (Phase 12 — form is per-race)', () => {
+    // Hand-craft a snapshot with rigged form values; step must consume exactly
+    // LANE_COUNT rng draws (one per lane for jitter), never extra for form.
+    const base = startSnapshot()
+    const riggedLanes: LanePosition[] = base.lanes.map((lane, index) =>
+      index === 0 ? { ...lane, form: -FORM_MPS } : index === 9 ? { ...lane, form: +FORM_MPS } : { ...lane },
+    )
+    const seeded: SimulationSnapshot = { ...base, lanes: riggedLanes }
+    // half-rng → jitter=0; all conditions equal → meters reflect only the form gap.
+    const values = Array.from({ length: LANE_COUNT }, () => 0.5)
+    const next = step(seeded, SIM_TICK_MS, maxConditionLookup, sequenceRng(values))
+    const lane1 = next.lanes[0] as LanePosition
+    const lane10 = next.lanes[9] as LanePosition
+    const middle = next.lanes[5] as LanePosition
+    expect(lane10.meters).toBeGreaterThan(middle.meters)
+    expect(middle.meters).toBeGreaterThan(lane1.meters)
+    // The exact gap = 2*FORM_MPS * dt seconds.
+    const expectedGapMeters = 2 * FORM_MPS * (SIM_TICK_MS / 1000)
+    expect(lane10.meters - lane1.meters).toBeCloseTo(expectedGapMeters, 10)
+    // form is unchanged after the tick — it's a per-race quantity, not per-tick.
+    expect(next.lanes[0]?.form).toBe(-FORM_MPS)
+    expect(next.lanes[9]?.form).toBe(+FORM_MPS)
   })
 })

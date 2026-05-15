@@ -56,6 +56,9 @@ export interface LanePosition {
   lane: number
   meters: number
   finishedAtMs: number | null
+  // Per-race form offset (m/s), drawn once at snapshot creation in lane-order
+  // 1→10 via drawForm(rng). Constant across the race. BUSINESS_LOGIC.md §3.4.
+  form: number
 }
 
 export interface SimulationSnapshot {

@@ -51,13 +51,16 @@ export function advanceLane(
 }
 
 // Zeroed initial snapshot for a round. Lanes are 1-indexed in lane-order;
-// horseIds come from the round's lane assignments (decision #9).
-export function createSnapshot(round: Round, roundNumber: number): SimulationSnapshot {
+// horseIds come from the round's lane assignments (decision #9). drawForm is
+// called once per lane in lane-order 1→10 *before* any per-tick jitter draws —
+// this fixes the RNG consumption ordering for the whole race (Phase 12).
+export function createSnapshot(round: Round, roundNumber: number, rng: Rng): SimulationSnapshot {
   const lanes: LanePosition[] = round.lanes.map((horseId, index) => ({
     horseId,
     lane: index + 1,
     meters: 0,
     finishedAtMs: null,
+    form: drawForm(rng),
   }))
   return { roundNumber, distance: round.distance, elapsedMs: 0, lanes }
 }
@@ -75,9 +78,7 @@ export function step(
   const lanes = snapshot.lanes.map((lane) => {
     if (lane?.finishedAtMs) return lane
     const jitter = drawJitter(rng)
-    // Step 3 will wire lane.form here; until then the form term is 0 so the
-    // formula collapses to the previous behavior and all seeded tests still hold.
-    const speed = computeSpeed(conditionLookup(lane.horseId), 0, jitter)
+    const speed = computeSpeed(conditionLookup(lane.horseId), lane.form, jitter)
     return advanceLane(lane, speed, dtMs, snapshot.distance, snapshot.elapsedMs)
   })
   return { ...snapshot, elapsedMs: snapshot.elapsedMs + dtMs, lanes }

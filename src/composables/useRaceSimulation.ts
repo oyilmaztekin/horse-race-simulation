@@ -11,7 +11,9 @@ export function useRaceSimulation(
   conditionLookup: ConditionLookup,
   rng: Rng,
 ) {
-  const snapshot = ref<SimulationSnapshot>(createSnapshot(round, roundNumber))
+  // createSnapshot draws form per lane (lane-order 1→10) from the shared rng
+  // before any per-tick jitter draws — RNG consumption ordering frozen here.
+  const snapshot = ref<SimulationSnapshot>(createSnapshot(round, roundNumber, rng))
 
   const positions = computed<LanePosition[]>(() => snapshot.value.lanes)
 

@@ -842,3 +842,31 @@ Step 2 — change `computeSpeed` signature to `(condition, form, jitter)` and up
 ### Next action
 
 Step 3 — extend `LanePosition` with `form: number`, and have `createSnapshot(round, n, rng)` draw `drawForm(rng)` once per lane in lane-order 1→10. This is where behavior actually shifts; expect seeded simulation/useRaceSimulation fixtures to need rebaselining (Step 6).
+
+## 2026-05-15 — Session 37: Phase 12.1 Steps 3+4 — per-race form wired through
+
+### What landed
+
+- `src/domain/types.ts` — `LanePosition` gains required `form: number` field (per-race offset in m/s).
+- `src/domain/simulation.ts`:
+  - `createSnapshot(round, roundNumber, rng)` now requires an rng and draws `form` per lane in lane-order 1→10 via `drawForm`. This is the entrypoint that fixes RNG consumption ordering for the rest of the race.
+  - `step()` reads `lane.form` directly and passes it to `computeSpeed` — no extra rng draw per tick for form (form is per-race, not per-tick).
+- `src/composables/useRaceSimulation.ts` — `createSnapshot` call site now passes the shared `rng`.
+- `src/domain/__tests__/simulation.test.ts`:
+  - Existing `createSnapshot` tests updated to pass `rng=() => 0.5` (form=0 for all lanes).
+  - New "draws form per lane in lane-order 1→10" test asserts the consumption pattern and that exactly LANE_COUNT draws are consumed.
+  - New `step` test "uses each lane.form additively in the speed formula and does NOT redraw form per tick" with rigged form values for lanes 1 and 10; asserts the gap = 2*FORM_MPS*dt and that `lane.form` is unchanged after the tick.
+- `BUSINESS_LOGIC.md` §3.4 — added form-scope bullet, updated jitter-scope wording (jitter is now visual; form owns outcome variance), added RNG consumption order paragraph.
+
+### Test count
+
+216 tests (30 files), all green. No rebaselining needed — the existing `useRaceSimulation` seeded tests asserted *properties* (determinism across two runs, finishOrder length), not specific positions, so they survived the RNG-stream shift.
+
+### Decisions worth recalling
+
+- Steps 3 and 4 ended up coupled by necessity: once `lane.form` is a required field of `LanePosition`, `step()` cannot skip it. I bundled them into one commit because separating would have required a placeholder (e.g. defaulting form to 0 in step) that no test could meaningfully cover.
+- "No rebaseline needed" is a property of how the original tests were written (assert determinism, not exact meters). That's load-bearing for this PR — worth recording.
+
+### Next action
+
+Step 5 — closed-form anchor tests independent of seed: cond=MAX/MIN with form=0, jitter=0 over 1200 m → exact `1200/{BASE_SPEED_MPS_MAX|MIN}` ms. Sensitivity tests asserting the formula is sensitive to each of its three args (catches stub regressions like `return BASE_SPEED_MPS_MAX`).
