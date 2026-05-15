@@ -1,5 +1,12 @@
 # Progress Log
 
+## 2026-05-15 — Session 40b: End-of-meeting score table — Step 15 (ScoreTable.vue)
+
+- New `src/components/ScoreTable.vue` — container component reading `race.results` + `horses.byId`, calling `computeStandings`, rendering a BEM table (`score-table` block, `__header / __grid / __head-row / __row / __cell` elements, `__row--champion` modifier on rank 1). Plain-numeric `formatTime` for the Total (s) column.
+- Three-flavor smoke tests in `src/components/__tests__/ScoreTable.test.ts`: happy (3 horses across 3 rounds, expected order, champion modifier asserted on rank 1 only); edge (empty results renders zero body rows); sad (horse 99 missing from roster lookup is silently omitted, horse 1 still ranks).
+- ARCHITECTURE.md §14.1 inventory bumped 14 → 15 files; §14.2 container split adds `ScoreTable` row.
+- Full suite: 242 tests across 32 files. ScoreTable component pre-existed from a draft in tree before this session; tests and impl were aligned with the spec from §3.10 (test contract uses `data-testid="score-table-row"` for row selection — kept since it makes selector intent explicit and survives style refactors).
+
 ## 2026-05-15 — Session 40: End-of-meeting score table — Step 14 (computeStandings + Standing type)
 
 - New `Standing` type in `src/domain/types.ts` and `src/domain/standings.ts` exporting `computeStandings(results, lookupHorse): Standing[]`. Pure function: folds `RoundResult[]` into per-horse aggregates (wins, podiums, roundsRun, totalFinishTimeMs), drops horses unknown to the lookup, sorts wins desc → podiums desc → totalFinishTimeMs asc → horseId asc, assigns dense unique ranks 1..N.

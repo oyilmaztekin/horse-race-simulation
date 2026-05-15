@@ -910,7 +910,7 @@ export function wait(ms: number): Promise<void> {
 
 Designed in the second brainstorming session (2026-05-13). Decisions recorded in §12 entries 17–23.
 
-### 14.1 Inventory (14 files)
+### 14.1 Inventory (15 files)
 
 ```
 App.vue
@@ -926,6 +926,7 @@ ProgramPanel.vue
 ResultsPanel.vue
   ResultRoundCard.vue
     RankingRow.vue
+ScoreTable.vue             (end-of-meeting aggregate — center slot when FINISHED, BUSINESS_LOGIC.md §3.10)
 ColorSwatch.vue            (shared)
 ```
 
@@ -944,6 +945,7 @@ ColorSwatch.vue            (shared)
 | `ResultsPanel` | Render the results panel; iterate completed rounds. |
 | `ResultRoundCard` | Render one round's finish order. |
 | `RankingRow` | Render one finish-order entry. |
+| `ScoreTable` | Render the end-of-meeting aggregate (wins / podiums / total time) via `computeStandings`; mounted in the center slot when `phase === FINISHED`. |
 | `ColorSwatch` | Render a colored square. |
 
 ### 14.2 Container / presentational split
@@ -959,6 +961,7 @@ ColorSwatch.vue            (shared)
 | **container** | `RaceTrack` | `race.currentRound`, `race.currentRng`, `horses.conditionLookup`, `horses.byId` | `useRaceSimulation` | `race.completeRound(rankings)` |
 | **container** | `ProgramPanel` | `race.program`, `race.currentRoundIndex`, `horses.byId` | – | – |
 | **container** | `ResultsPanel` | `race.results`, `horses.byId` (+ `ROUND_DISTANCES` constant) | – | – |
+| **container** | `ScoreTable` | `race.results`, `horses.byId` | – | – |
 | **presentational** | `HorseListItem` | – | – | – |
 | **presentational** | `RaceLane` | – | – | – |
 | **presentational** | `HorseSprite` | – | – | – |
