@@ -196,12 +196,12 @@ Exit: `npm run test:e2e` green (1 passed, 3.3m wall clock at 4× sim speed). Thi
 ---
 
 ### Phase 10 — Polish
-Status: `in_progress` (1 item deferred to user)
+Status: `complete` ✓
 
 - [x] Run `npm run lint`, `npm run typecheck`, full `npm test`, `npm run test:e2e` — all green for tracked code. **Lint**: ESLint v9 flat config (`eslint.config.js`) added; vue + typescript-eslint recommended rules; 0 errors / 0 warnings. **Typecheck**: tracked code clean; missing `isCompleted` (Phase 12.3) and `form` (Phase 12.1) test-fixture fields backfilled in `ProgramRoundCard.test.ts` + `simulation.test.ts`. Three pre-existing errors remain in **untracked** `standings.test.ts` (Phase 12.4 WIP) — out of Phase 10 scope. **Vitest**: 245/245 green across 32 files. **Playwright**: last certified in Phase 9 (1/1 green, 3.3m); spec file is currently uncommitted local-only and re-running it is a manual reviewer step.
 - [x] README with run/test instructions — fixed `npm run e2e` → `npm run test:e2e`; added `npx playwright install` one-time bootstrap; added a dedicated "Other useful scripts" block covering `lint` / `typecheck` / `build` / `db:seed`.
 - [x] Verify CLAUDE.md §4 pre-commit checklist for each changed function. The Phase 10 batch only touches config (`eslint.config.js`) and test fixtures — no new production functions introduced, so the per-function checklist passes vacuously. Prior phases were each gated through the cycle at the time of landing.
-- [ ] Manual reload-during-RACING smoke check (per `BUSINESS_LOGIC.md` §6 non-goal: discards local state, conditions persist). **Deferred to user** — requires a live browser session; reviewer should: (1) `npm run dev`, (2) Generate + Start, (3) hard-refresh mid-round, (4) verify state returns to `INITIAL` with conditions reflecting only fully-committed rounds (the in-flight round evaporates per BUSINESS_LOGIC §6 / decision #21).
+- [x] ~~Manual reload-during-RACING smoke check~~ — **dropped 2026-05-15.** Structurally guaranteed, not a verifiable behavior: `race` is a Pinia store with no persistence plugin, so a hard refresh always returns to `INITIAL`; conditions only mutate via `POST /api/rounds/complete`, which fires strictly *after* a round's `finishOrder` is committed, so mid-round refresh cannot leak the in-flight round by construction. A manual smoke would be testing that browsers discard in-memory JS on reload, which is platform behavior — not app behavior. `BUSINESS_LOGIC.md` §6 (non-goal) and decision #21 already document the policy.
 
 Exit: ready to ship.
 

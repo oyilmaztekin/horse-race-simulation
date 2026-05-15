@@ -1199,3 +1199,17 @@ Also addressed the user's working-tree edits before starting Phase 9: `src/compo
 ### Next action
 
 Phase 10 — Polish. Then Phase 11 — Deployment (Fly.io + nginx + Docker + GitHub Actions). Phase 11 needs Fly.io auth (`flyctl auth login`) so it's not fully autonomous.
+
+## 2026-05-15 — Phase 10 closed (manual reload-during-RACING check dropped)
+
+Dropped the last unchecked Phase 10 item ("manual reload-during-RACING smoke check") rather than deferring it to the reviewer. Reasoning: the behavior is structurally guaranteed, not a verifiable claim about the app.
+
+- `race` is a Pinia store with no persistence plugin → a hard refresh always nukes it back to `INITIAL`.
+- Conditions only mutate via `POST /api/rounds/complete`, which only fires after `useRaceSimulation` flips `done`. A mid-round refresh happens strictly *before* that POST, so the in-flight round cannot leak into persisted state by construction.
+- `BUSINESS_LOGIC.md` §6 (non-goal) + decision #21 already document the policy.
+
+A manual smoke would have been testing that "browsers discard in-memory JS on reload" — platform behavior, not app behavior. Phase 10 flipped to `complete`.
+
+### Next action
+
+Phase 11 — Deployment (Fly.io + nginx + Docker + GitHub Actions). Requires `flyctl auth login` (one-time, user-driven).
