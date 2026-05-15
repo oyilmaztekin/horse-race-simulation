@@ -308,6 +308,21 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 14: Phase 6 cycle 1 (ColorSwatch)
+
+### What landed
+
+- `src/components/ColorSwatch.vue` — pure `<span>` with inline `background-color` from a single `color: string` prop. Scoped styles for size/radius; no emits, no store access (per ARCHITECTURE.md §14.3).
+- `src/components/__tests__/ColorSwatch.test.ts` — 3 tests (happy/edge/sad): hex color rendered via `style`; arbitrary CSS color strings (e.g., `rebeccapurple`) pass through unchanged; `setProps` rerender updates the style and removes the old color (sad: stub ignoring the prop would fail).
+
+### Test count
+
+148 tests (16 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 6 cycle 2 — `HorseListItem.vue`: render `horse.name` + `horse.condition`; one mount test (happy/edge/sad).
+
 ## 2026-05-15 — Session 11: Phase 4 race store, cycle 4 (generateProgram phase guard)
 
 ### What landed
