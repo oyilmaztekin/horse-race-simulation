@@ -5,11 +5,17 @@ import type { HorseId, LanePosition, Ranking, Rng, Round, SimulationSnapshot } f
 
 type ConditionLookup = (horseId: HorseId) => number
 
+// Phase 12.2: simSpeedSupplier is read on every rAF frame so reviewer-driven
+// multiplier changes take effect on the next tick. A function (not a Ref)
+// keeps the composable's signature reactive-framework-agnostic.
+type SimSpeedSupplier = () => number
+
 export function useRaceSimulation(
   round: Round,
   roundNumber: number,
   conditionLookup: ConditionLookup,
   rng: Rng,
+  simSpeedSupplier: SimSpeedSupplier = () => 1,
 ) {
   // createSnapshot draws form per lane (lane-order 1→10) from the shared rng
   // before any per-tick jitter draws — RNG consumption ordering frozen here.
@@ -42,7 +48,10 @@ export function useRaceSimulation(
     }
     const realDt = lastRealTs === 0 ? 0 : realTs - lastRealTs
     lastRealTs = realTs
-    accumulator += realDt
+    // Multiplier scales the wall-clock that feeds the fixed-tick accumulator:
+    // sim ticks themselves remain SIM_TICK_MS so RNG consumption is unchanged.
+    // At multiplier=1, math is byte-identical to the no-multiplier path.
+    accumulator += realDt * simSpeedSupplier()
     while (accumulator >= SIM_TICK_MS && !done.value) {
       snapshot.value = simulationStep(snapshot.value, SIM_TICK_MS, conditionLookup, rng)
       accumulator -= SIM_TICK_MS

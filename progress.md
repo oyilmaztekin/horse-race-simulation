@@ -1003,3 +1003,27 @@ Sub-phase 12.2 — runtime sim-speed control. Step 9: `useRaceStore.simSpeedMult
 ### Next action
 
 Step 10 — multiply the rAF accumulator's wall-clock by `simSpeedMultiplier` inside `useRaceSimulation`. Must preserve determinism: at multiplier=1 the seeded output stays byte-identical to today.
+
+## 2026-05-15 — Session 42: Phase 12.2 Step 10 — accumulator scales by multiplier
+
+### What landed
+
+- `src/composables/useRaceSimulation.ts` — new optional 5th param `simSpeedSupplier: () => number` (defaults to `() => 1`). Inside the rAF loop, `realDt` is multiplied by `simSpeedSupplier()` before being added to the fixed-tick accumulator. The sim tick itself stays `SIM_TICK_MS`, so RNG consumption pattern is unchanged at any multiplier.
+- `src/components/RaceTrack.vue` — passes `() => race.simSpeedMultiplier` as the supplier so reviewer-driven multiplier changes take effect on the next tick.
+- `src/composables/__tests__/useRaceSimulation.test.ts` — `mountHarness` extended with a supplier param; three new tests:
+  - Happy/edge: multiplier=2 produces ~2× the meters in the same wall-clock window (with one-tick slop allowed).
+  - Sad: multiplier=1 produces byte-identical seeded finish-order to the no-supplier baseline — guards determinism.
+  - Edge: changing the supplier mid-race (1→4) causes the second window to advance ~4× faster than the first.
+
+### Test count
+
+228 tests (30 files), all green (+3 multiplier tests).
+
+### Decisions worth recalling
+
+- Multiplier is read every rAF frame via the supplier (not captured once at mount) so changes propagate immediately without re-mounting the composable.
+- Scaling happens upstream of the accumulator (real wall-clock × multiplier), not in the sim tick itself. This keeps the seeded RNG sequence bit-identical at any multiplier; only the *rate* at which ticks happen changes.
+
+### Next action
+
+Step 11 — render the `[−] N× [+]` control row above the lanes in `RaceTrack.vue`. Disabled at bounds. BEM-scoped under `.race-track__speed-control`.

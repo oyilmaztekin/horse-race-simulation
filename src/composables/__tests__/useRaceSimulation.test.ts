@@ -1,6 +1,7 @@
 import { defineComponent, h, type Ref } from 'vue'
 import { mount } from '@vue/test-utils'
 import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { useRaceSimulation } from '../useRaceSimulation'
 import { createRng } from '../../domain/rng'
 import { CONDITION_MAX, LANE_COUNT, ROUND_DISTANCES } from '../../domain/constants'
@@ -21,11 +22,11 @@ interface HarnessExposed {
   done: Ref<boolean>
 }
 
-function mountHarness(round: Round = ROUND, seed = 0xC0FFEE) {
+function mountHarness(round: Round = ROUND, seed = 0xC0FFEE, simSpeedSupplier: () => number = () => 1) {
   const exposed: { value: HarnessExposed | null } = { value: null }
   const Harness = defineComponent({
     setup() {
-      const sim = useRaceSimulation(round, ROUND_NUMBER, conditionLookup, createRng(seed))
+      const sim = useRaceSimulation(round, ROUND_NUMBER, conditionLookup, createRng(seed), simSpeedSupplier)
       exposed.value = sim as unknown as HarnessExposed
       return () => h('div')
     },
@@ -86,5 +87,58 @@ describe('useRaceSimulation', () => {
     wrapper.unmount()
     expect(cancelSpy).toHaveBeenCalled()
     cancelSpy.mockRestore()
+  })
+
+  it('Phase 12.2: scales position advance by the simSpeed supplier (multiplier=2 → ~2× meters in the same wall-clock window)', async () => {
+    // multiplier=1 baseline run — capture max lane meters after 500ms wall-clock.
+    const baseline = mountHarness(ROUND, 0xC0FFEE, () => 1)
+    await vi.advanceTimersByTimeAsync(500)
+    const baselineMax = Math.max(...baseline.exposed.positions.value.map((lane) => lane.meters))
+    baseline.wrapper.unmount()
+
+    // multiplier=2 run with the same seed and wall-clock window.
+    const fast = mountHarness(ROUND, 0xC0FFEE, () => 2)
+    await vi.advanceTimersByTimeAsync(500)
+    const fastMax = Math.max(...fast.exposed.positions.value.map((lane) => lane.meters))
+    fast.wrapper.unmount()
+
+    // ~2× meters; allow a tick of slop on either side (one SIM_TICK_MS gap).
+    expect(fastMax).toBeGreaterThan(baselineMax * 1.8)
+    expect(fastMax).toBeLessThan(baselineMax * 2.2)
+  })
+
+  it('Phase 12.2: multiplier=1 produces byte-identical seeded output to the no-multiplier baseline (sad: any drift breaks reproducibility)', async () => {
+    // Default (no supplier passed) → 1× baseline.
+    const a = mountHarness(ROUND, 42)
+    await vi.advanceTimersByTimeAsync(120_000)
+    const ordersA = a.exposed.finishOrder.value.map((ranking) => ranking.horseId)
+    a.wrapper.unmount()
+
+    // Explicit supplier returning 1 → must produce the same order.
+    const b = mountHarness(ROUND, 42, () => 1)
+    await vi.advanceTimersByTimeAsync(120_000)
+    const ordersB = b.exposed.finishOrder.value.map((ranking) => ranking.horseId)
+    b.wrapper.unmount()
+
+    expect(ordersA).toEqual(ordersB)
+  })
+
+  it('Phase 12.2: multiplier changes mid-race take effect on the next tick (edge: live tuning)', async () => {
+    const multiplier = ref(1)
+    const supplier = () => multiplier.value
+    const harness = mountHarness(ROUND, 0xC0FFEE, supplier)
+    await vi.advanceTimersByTimeAsync(300)
+    const slowMax = Math.max(...harness.exposed.positions.value.map((lane) => lane.meters))
+
+    // Speed up: 4× for the next window.
+    multiplier.value = 4
+    await vi.advanceTimersByTimeAsync(300)
+    const fastMax = Math.max(...harness.exposed.positions.value.map((lane) => lane.meters))
+    harness.wrapper.unmount()
+
+    // Second window covered ~4× the per-ms distance of the first window.
+    const slowDelta = slowMax
+    const fastDelta = fastMax - slowMax
+    expect(fastDelta).toBeGreaterThan(slowDelta * 3)
   })
 })
