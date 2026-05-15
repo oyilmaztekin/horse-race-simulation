@@ -175,7 +175,7 @@ describe('RaceControls — button click dispatches', () => {
     expect(wrapper.find('[data-testid="btn-rest"]').exists()).toBe(false)
   })
 
-  it('renders a countdown derived from restingUntil during RESTING (happy)', () => {
+  it('renders the server-polled remainingRestMs as seconds during RESTING (happy)', () => {
     const restingUntil = Date.now() + 7000
     const wrapper = mount(RaceControls, {
       global: {
@@ -183,7 +183,7 @@ describe('RaceControls — button click dispatches', () => {
           createTestingPinia({
             initialState: {
               horses: { horses: makeHorses(), isLoading: false, error: null },
-              race: { state: { kind: PHASE_RESTING, restingUntil } },
+              race: { state: { kind: PHASE_RESTING, restingUntil, remainingRestMs: 7000 } },
             },
           }),
         ],
@@ -192,6 +192,34 @@ describe('RaceControls — button click dispatches', () => {
     const countdown = wrapper.find('[data-testid="countdown"]')
     expect(countdown.exists()).toBe(true)
     expect(countdown.text()).toContain('7')
+  })
+
+  it('reflects a fresh applyRestObservation immediately, with no local interval (sad — a stub still running Date.now() math would not update)', async () => {
+    const restingUntil = Date.now() + 9000
+    const wrapper = mount(RaceControls, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            initialState: {
+              horses: { horses: makeHorses(), isLoading: false, error: null },
+              race: { state: { kind: PHASE_RESTING, restingUntil, remainingRestMs: 9000 } },
+            },
+          }),
+        ],
+      },
+    })
+    expect(wrapper.find('[data-testid="countdown"]').text()).toContain('9')
+
+    const { useRaceStore } = await import('../../stores/race')
+    const race = useRaceStore()
+    vi.mocked(race.applyRestObservation).mockImplementation((remainingRestMs: number) => {
+      if (race.state.kind === PHASE_RESTING) {
+        race.state = { ...race.state, remainingRestMs }
+      }
+    })
+    race.applyRestObservation(3000)
+    await wrapper.vm.$nextTick()
+    expect(wrapper.find('[data-testid="countdown"]').text()).toContain('3')
   })
 
   it('hides the countdown outside RESTING (edge — stub always rendering would fail)', () => {

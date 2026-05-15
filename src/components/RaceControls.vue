@@ -1,40 +1,34 @@
 <script setup lang="ts">
-import { computed, onUnmounted, ref } from 'vue'
-import { PHASE_RESTING } from '../domain/constants'
-import { NotEnoughFitHorsesError } from '../domain/errors'
-import { useRaceStore } from '../stores/race'
+import { computed, ref } from "vue";
+import { NotEnoughFitHorsesError } from "../domain/errors";
+import { useRaceStore } from "../stores/race";
 
-// Server is authoritative for rest: `race.restingUntil` (epoch ms) is set by
-// POST /api/horses/rest and cleared by the lazy-bump on GET /api/horses
-// (see BUSINESS_LOGIC.md §4.7 / ARCHITECTURE.md decision #29). This tick is
-// purely a render trigger so the displayed remaining seconds tick down between
-// the 1s polls; it never advances or ends the rest itself.
-const DISPLAY_TICK_MS = 250
+// The server owns the rest timer (POST /api/horses/rest sets restingUntil,
+// GET /api/horses returns the up-to-date remainingRestMs and lazy-bumps on
+// expiry — BUSINESS_LOGIC.md §4.7 / ARCHITECTURE.md decision #29). This
+// component reads what the most recent poll told us; useRestPolling is the
+// heartbeat that refreshes the value.
+const MS_PER_SECOND = 1000;
 
-const race = useRaceStore()
-const lastWarning = ref<string | null>(null)
-const displayNowMs = ref<number>(Date.now())
-const displayTickHandle = setInterval(() => {
-  displayNowMs.value = Date.now()
-}, DISPLAY_TICK_MS)
-onUnmounted(() => clearInterval(displayTickHandle))
+const race = useRaceStore();
+const lastWarning = ref<string | null>(null);
 
-// Display value derived from server's restingUntil; null when not RESTING.
-const secondsUntilRestComplete = computed<number | null>(() => {
-  if (race.phase !== PHASE_RESTING || race.restingUntil === null) return null
-  return Math.max(0, Math.ceil((race.restingUntil - displayNowMs.value) / 1000))
-})
+ const secondsUntilRestComplete = computed<number | null>(() =>
+    race.restingMsRemaining
+      ? Math.max(0, Math.ceil(race.restingMsRemaining / MS_PER_SECOND))
+      : null,
+  )
 
 function onGenerate(): void {
   try {
-    race.generateProgram()
-    lastWarning.value = null
+    race.generateProgram();
+    lastWarning.value = null;
   } catch (error: unknown) {
     if (error instanceof NotEnoughFitHorsesError) {
-      lastWarning.value = `Cannot generate: only ${error.fitCount} of ${error.required} horses are fit to race.`
-      return
+      lastWarning.value = `Cannot generate: only ${error.fitCount} of ${error.required} horses are fit to race.`;
+      return;
     }
-    throw error
+    throw error;
   }
 }
 </script>

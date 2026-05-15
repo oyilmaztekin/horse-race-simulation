@@ -308,6 +308,25 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 28: RaceControls renders server-driven countdown — refactor complete
+
+### What landed
+
+- `src/components/RaceControls.vue` — dropped the local `setInterval`, `displayNowMs` ref, and `onUnmounted` cleanup. The countdown is now `Math.ceil(race.restingMsRemaining / MS_PER_SECOND)`, derived entirely from the store value that `useRestPolling` refreshes on every 1s tick. The view layer no longer calls `Date.now()` anywhere.
+- `src/components/__tests__/RaceControls.test.ts` — happy test seeds `state.remainingRestMs = 7000` and asserts "7" renders. New sad test mutates the store via `applyRestObservation(3000)` and asserts the displayed seconds flip to "3" on the next tick — a stub still running local `Date.now()` math would not update.
+
+### Result
+
+A developer reading `RaceControls.vue` now sees one short formula and a single store read; the server's authority over the rest timer is the only path that produces the displayed number. Refresh resilience: page reload → boot fetch returns the still-active envelope → `resumeRestFromBoot(restingUntil, remainingRestMs)` → countdown picks up exactly where the server left off.
+
+### Test count
+
+188 tests (23 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 7 cycle 6 — `HorseList.vue` container: iterate `horses.horses`; loading skeleton when `isLoading`.
+
 ## 2026-05-15 — Session 27: useRestPolling forwards remainingRestMs to the store
 
 ### What landed
