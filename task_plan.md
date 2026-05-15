@@ -252,9 +252,9 @@ Two coupled revisions ship together: (a) runtime `SIM_SPEED_MULTIPLIER` so revie
 - [x] Step 5 — Closed-form anchor tests independent of seed (cond=MAX/MIN, form=0, jitter=0; sensitivity per arg).
 - [x] Step 6 — Rebaseline remaining seeded simulation tests + composable test fixtures. *(no-op: existing seeded tests asserted determinism, not exact positions)*
 - [x] Step 7 — Variance-shape behavior tests (cond=80 always beats cond=45 with forms=0; cond=45 can beat cond=55 with form rigged; FORM_MPS boundary documented).
-- [ ] Step 8 — `JITTER_MPS` 1.5 → 0.5 (visual jiggle only; form now owns outcome variance).
+- [x] Step 8 — `JITTER_MPS` 1.5 → 0.5 (visual jiggle only; form now owns outcome variance).
 
-Exit: per-race form active, suite green, 45-vs-55 races flip outcomes across seeds.
+Exit: per-race form active, suite green, 45-vs-55 races flip outcomes across seeds. **DONE 2026-05-15.**
 
 #### Sub-phase 12.2 — Runtime sim-speed control
 - [ ] Step 9 — `useRaceStore.simSpeedMultiplier` + `increase/decreaseSimSpeed` clamped to [0.5, 4] in 0.5 steps; default 2.

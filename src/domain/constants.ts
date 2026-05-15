@@ -43,7 +43,10 @@ if (LANE_COLORS.length !== LANE_COUNT) {
 // Tuned for "believable, not realistic" — a thoroughbred gallops ~16–18 m/s.
 export const BASE_SPEED_MPS_MIN = 14
 export const BASE_SPEED_MPS_MAX = 18
-export const JITTER_MPS = 1.5
+// Per-tick jitter, now purely visual (Phase 12 — per-race form owns outcome
+// variance). Reduced from 1.5 → 0.5 so lanes still jiggle but don't churn the
+// per-tick speed enough to mask the form-driven outcome.
+export const JITTER_MPS = 0.5
 
 // Per-race "form" magnitude (BUSINESS_LOGIC.md §3.4 / Phase 9 revision). One
 // draw per lane at snapshot creation, held constant across the race. Lets

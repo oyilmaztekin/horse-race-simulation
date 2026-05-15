@@ -913,3 +913,32 @@ Step 7 — variance-shape behavior tests: (a) with form forced to 0 for both, co
 ### Next action
 
 Step 8 — `JITTER_MPS` 1.5 → 0.5. Pure tuning change; form now owns outcome variance, jitter is visual jiggle.
+
+## 2026-05-15 — Session 40: Phase 12.1 Step 8 — JITTER_MPS 1.5 → 0.5
+
+### What landed
+
+- `src/domain/constants.ts` — `JITTER_MPS` shrunk from 1.5 to 0.5 with an inline comment explaining the rationale (form now owns outcome variance; jitter is visual jiggle).
+
+### Test count
+
+222 tests (30 files), all green. The seeded tests survived because they assert *properties* (determinism, lane-order draw, monotonicity) not absolute magnitudes; the jitter-magnitude tests in `drawJitter` use `JITTER_MPS` symbolically, so they re-validate against the new constant automatically.
+
+### Phase 12.1 closed
+
+All eight steps of sub-phase 12.1 (per-race form variance) are now landed:
+
+| Step | Status |
+|---|---|
+| 1. drawForm primitive | ✅ commit 1c24030 |
+| 2. computeSpeed 3-arg | ✅ commit d6ecb8a |
+| 3. createSnapshot draws form | ✅ commit c994baf |
+| 4. step() uses lane.form | ✅ commit c994baf (bundled with 3) |
+| 5. closed-form anchors | ✅ commit 7b55ea6 |
+| 6. rebaseline seeded fixtures | ✅ no-op |
+| 7. variance-shape behavior tests | ✅ commit dc9cc14 |
+| 8. JITTER_MPS 1.5 → 0.5 | ✅ this commit |
+
+### Next action
+
+Sub-phase 12.2 — runtime sim-speed control. Step 9: `useRaceStore.simSpeedMultiplier` with `increase/decreaseSimSpeed` actions clamped to [0.5, 4] in 0.5 steps; default 2. Pure store change, no UI yet.
