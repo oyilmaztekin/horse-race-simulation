@@ -7,6 +7,23 @@ Guidance for Claude Code working in this repository.
 
 1. **Orient with graphify** (`graphify-out/GRAPH_REPORT.md`, then `graphify query` / `graphify path` / `graphify explain`).
 2. **Read `ARCHITECTURE.md` and `BUSINESS_LOGIC.md`** — authoritative source for domain rules (BUSINESS_LOGIC §3), state stores (ARCHITECTURE §4), domain types (ARCHITECTURE §6), component inventory (ARCHITECTURE §14), and testing strategy (ARCHITECTURE §15).
+3. **Build your progress plan** — list each behavior to implement as a separate step; each step maps to exactly one Red→Green→Commit cycle (see Mandatory Change Cycle below).
+
+## Mandatory Change Cycle (MANDATORY)
+
+Every behavior change — no matter how small — follows this exact sequence. No shortcuts, no batching steps, no skipping steps.
+
+1. **graphify query** — identify which nodes and edges are affected; understand propagation before touching anything.
+2. **🔴 Red** — write the failing test; confirm it fails for the right reason.
+3. **Minimum code change** — smallest edit that makes the test pass. Stop there.
+4. **🟢 Green** — run the full suite (`vitest run`); all tests pass.
+5. **Docs update** — update `ARCHITECTURE.md` or `BUSINESS_LOGIC.md` (whichever governs the changed behavior) in the same working-tree state, before staging.
+6. **Commit** — docs and code go in the same commit. Nothing separate, nothing batched.
+
+Violations:
+- Code committed without a prior failing test → blocker.
+- Docs updated in a separate follow-up commit → blocker.
+- More than one behavior bundled into a single Red→Green cycle → blocker.
 
 ## Exploration: graphify-first, grep-last, find-last (MANDATORY)
 
