@@ -308,6 +308,21 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 19: Phase 6 cycle 6 (ResultRoundCard)
+
+### What landed
+
+- `src/components/ResultRoundCard.vue` — `<section>` with round header and finish-order rows; each row composes a `ColorSwatch` colored by `LANE_COLORS[laneIndex]` per ARCHITECTURE.md §14.3. Pure props; no store access.
+- `src/components/__tests__/ResultRoundCard.test.ts` — 3 tests (happy/edge/sad): header + LANE_COUNT finish rows; one ColorSwatch per entry with correct color; reordered entries rerender in new order (sad).
+
+### Test count
+
+164 tests (21 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 6 cycle 7 — `RankingRow.vue` (final presentational component).
+
 ## 2026-05-15 — Session 18: Phase 6 cycle 5 (ProgramRoundCard)
 
 ### What landed
