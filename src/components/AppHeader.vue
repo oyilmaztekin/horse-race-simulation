@@ -8,7 +8,7 @@ const race = useRaceStore()
 <template>
   <header class="app-header">
     <h1 class="app-header__title">Horse Racing</h1>
-    <span class="app-header__phase" :data-testid="'phase-indicator'">{{ race.phase }}</span>
+    <span class="app-header__phase" :data-testid="'phase-indicator'">state:{{ race.phase }}</span>
     <RaceControls />
   </header>
 </template>

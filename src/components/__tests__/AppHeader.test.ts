@@ -38,7 +38,7 @@ function mountHeader(raceState: Record<string, unknown>) {
 describe('AppHeader', () => {
   it('renders the phase indicator with the current race phase (happy)', () => {
     const wrapper = mountHeader({ kind: PHASE_INITIAL })
-    expect(wrapper.find('[data-testid="phase-indicator"]').text()).toBe(PHASE_INITIAL)
+    expect(wrapper.find('[data-testid="phase-indicator"]').text()).toBe(`state:${PHASE_INITIAL}`)
   })
 
   it('updates the phase indicator when the store phase changes (edge)', async () => {
@@ -54,7 +54,7 @@ describe('AppHeader', () => {
       results: [],
     } as unknown as { kind: string }
     await wrapper.vm.$nextTick()
-    expect(wrapper.find('[data-testid="phase-indicator"]').text()).toBe(PHASE_FINISHED)
+    expect(wrapper.find('[data-testid="phase-indicator"]').text()).toBe(`state:${PHASE_FINISHED}`)
   })
 
   it('mounts RaceControls as a child (sad: a header without the nested controls would break the layout contract)', () => {
