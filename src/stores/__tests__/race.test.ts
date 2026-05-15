@@ -236,7 +236,7 @@ describe('useRaceStore — generateProgram phase guard', () => {
     horses.applyServerUpdate(makeFitRoster())
 
     const race = useRaceStore()
-    race.state = { kind: PHASE_RESTING, restingUntil: FIXED_NOW_MS + 10_000 }
+    race.state = { kind: PHASE_RESTING, restingUntil: FIXED_NOW_MS + 10_000, remainingRestMs: 10_000 }
 
     let thrown: unknown
     try {
@@ -455,6 +455,56 @@ describe('useRaceStore — rest()', () => {
   })
 })
 
+describe('useRaceStore — restingMsRemaining + applyRestObservation()', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+    vi.setSystemTime(FIXED_NOW_MS)
+  })
+
+  it('exposes the envelope.remainingRestMs after rest() (happy)', async () => {
+    mockStartRest.mockResolvedValueOnce({
+      horses: [],
+      restingUntil: FIXED_NOW_MS + REST_DURATION_MS,
+      remainingRestMs: REST_DURATION_MS,
+    })
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+
+    await race.rest()
+
+    expect(race.restingMsRemaining).toBe(REST_DURATION_MS)
+  })
+
+  it('applyRestObservation updates restingMsRemaining while RESTING (edge: simulates a poll tick)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+    race.state = {
+      kind: PHASE_RESTING,
+      restingUntil: FIXED_NOW_MS + REST_DURATION_MS,
+      remainingRestMs: REST_DURATION_MS,
+    }
+
+    race.applyRestObservation(7_000)
+
+    expect(race.restingMsRemaining).toBe(7_000)
+    expect(race.state.kind).toBe(PHASE_RESTING)
+  })
+
+  it('applyRestObservation is a no-op outside RESTING and restingMsRemaining stays null (sad — store that wrote anyway would fail)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+    const race = useRaceStore()
+
+    race.applyRestObservation(3_000)
+
+    expect(race.state.kind).toBe(PHASE_INITIAL)
+    expect(race.restingMsRemaining).toBeNull()
+  })
+})
+
 describe('useRaceStore — completeRest()', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
@@ -465,7 +515,7 @@ describe('useRaceStore — completeRest()', () => {
     const horses = useHorsesStore()
     horses.applyServerUpdate(makeFitRoster())
     const race = useRaceStore()
-    race.state = { kind: PHASE_RESTING, restingUntil: FIXED_NOW_MS + 1000 }
+    race.state = { kind: PHASE_RESTING, restingUntil: FIXED_NOW_MS + 1000, remainingRestMs: 1000 }
     const bumped: Horse[] = makeFitRoster().map((horse) => ({
       ...horse,
       condition: MIN_RACEABLE_CONDITION,
@@ -507,20 +557,21 @@ describe('useRaceStore — resumeRestFromBoot()', () => {
     vi.setSystemTime(FIXED_NOW_MS)
   })
 
-  it('transitions INITIAL → RESTING with the boot envelope timestamp (happy)', () => {
+  it('transitions INITIAL → RESTING with the boot envelope timestamp and remainingMs (happy)', () => {
     const race = useRaceStore()
     const future = FIXED_NOW_MS + REST_DURATION_MS
 
-    race.resumeRestFromBoot(future)
+    race.resumeRestFromBoot(future, REST_DURATION_MS)
 
     expect(race.state.kind).toBe(PHASE_RESTING)
     expect(race.restingUntil).toBe(future)
+    expect(race.restingMsRemaining).toBe(REST_DURATION_MS)
   })
 
-  it('no-ops when the timestamp is already past (edge: stale boot snapshot)', () => {
+  it('no-ops when remainingMs is already 0 or negative (edge: stale boot snapshot)', () => {
     const race = useRaceStore()
 
-    race.resumeRestFromBoot(FIXED_NOW_MS - 1)
+    race.resumeRestFromBoot(FIXED_NOW_MS - 1, 0)
 
     expect(race.state.kind).toBe(PHASE_INITIAL)
   })
@@ -531,7 +582,7 @@ describe('useRaceStore — resumeRestFromBoot()', () => {
     const race = useRaceStore()
     race.generateProgram(KNOWN_SEED)
 
-    race.resumeRestFromBoot(FIXED_NOW_MS + REST_DURATION_MS)
+    race.resumeRestFromBoot(FIXED_NOW_MS + REST_DURATION_MS, REST_DURATION_MS)
 
     expect(race.state.kind).toBe(PHASE_READY)
   })
@@ -586,7 +637,7 @@ describe('useRaceStore — derived gates (canGenerate / canStart / canRest / fit
     expect(race.canStart).toBe(false)
     expect(race.canRest).toBe(false)
 
-    race.state = { kind: PHASE_RESTING, restingUntil: FIXED_NOW_MS + REST_DURATION_MS }
+    race.state = { kind: PHASE_RESTING, restingUntil: FIXED_NOW_MS + REST_DURATION_MS, remainingRestMs: REST_DURATION_MS }
     expect(race.canGenerate).toBe(false)
     expect(race.canStart).toBe(false)
     expect(race.canRest).toBe(false)

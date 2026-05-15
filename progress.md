@@ -308,6 +308,26 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 26: Race store carries server-polled remainingRestMs
+
+### What landed
+
+- `src/stores/race.ts` — `RESTING` variant of the `RaceState` union gains `remainingRestMs: number`. New computed `restingMsRemaining` exposes the latest server-polled value (null outside RESTING). New action `applyRestObservation(remainingRestMs)` no-ops outside RESTING and otherwise replaces `state.value.remainingRestMs` in place. `rest()` seeds the field from `envelope.remainingRestMs`. `resumeRestFromBoot(restingUntil, remainingRestMs)` signature updated; no-op when remainingRestMs ≤ 0.
+- `src/stores/__tests__/race.test.ts` — 3 new tests for the new behavior (happy: rest() seeds the value; edge: applyRestObservation updates the value while RESTING; sad: applyRestObservation no-ops elsewhere). Existing RESTING-state literals updated to include the new field.
+- `src/stores/horses.ts` + `src/stores/__tests__/horses.test.ts` — `resumeRestFromBoot` callsite passes both fields; mock signature widened.
+
+### Why
+
+The component will read `race.restingMsRemaining` directly; the polling composable will write it via `applyRestObservation`. Splits authority cleanly: the server *decides* (computes remainingRestMs each poll), the store *holds* it, the component *renders* it. No client-side `Date.now()` math anywhere downstream.
+
+### Test count
+
+186 tests (23 files), all green. Typecheck clean.
+
+### Next action
+
+Cycle C — `useRestPolling` calls `race.applyRestObservation(envelope.remainingRestMs)` on each mid-rest tick.
+
 ## 2026-05-15 — Session 25: Envelope carries server-computed remainingRestMs
 
 ### What landed

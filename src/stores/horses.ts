@@ -18,8 +18,8 @@ export const useHorsesStore = defineStore('horses', () => {
     try {
       const envelope = await api.getHorses()
       horses.value = envelope.horses
-      if (envelope.restingUntil !== null) {
-        useRaceStore().resumeRestFromBoot(envelope.restingUntil)
+      if (envelope.restingUntil && envelope.remainingRestMs) {
+        useRaceStore().resumeRestFromBoot(envelope.restingUntil, envelope.remainingRestMs)
       }
     } catch (caught) {
       error.value = caught as Error

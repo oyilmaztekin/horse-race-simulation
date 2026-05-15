@@ -231,7 +231,7 @@ describe('RaceControls — button click dispatches', () => {
     await wrapper.find('[data-testid="btn-generate"]').trigger('click')
     expect(wrapper.find('[data-testid="btn-rest"]').exists()).toBe(true)
 
-    race.state = { kind: PHASE_RESTING, restingUntil: Date.now() + 5000 }
+    race.state = { kind: PHASE_RESTING, restingUntil: Date.now() + 5000, remainingRestMs: 5000 }
     await wrapper.vm.$nextTick()
 
     expect(wrapper.find('[data-testid="btn-generate"]').attributes('disabled')).toBeDefined()

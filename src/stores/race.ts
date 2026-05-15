@@ -22,7 +22,7 @@ import { useHorsesStore } from './horses'
 
 export type RaceState =
   | { kind: typeof PHASE_INITIAL }
-  | { kind: typeof PHASE_RESTING; restingUntil: number }
+  | { kind: typeof PHASE_RESTING; restingUntil: number; remainingRestMs: number }
   | { kind: typeof PHASE_READY; program: Program; rng: Rng; seed: number }
   | {
       kind: typeof PHASE_RACING
@@ -54,6 +54,12 @@ export const useRaceStore = defineStore('race', () => {
   )
   const restingUntil = computed<number | null>(() =>
     state.value.kind === PHASE_RESTING ? state.value.restingUntil : null,
+  )
+  // Display value driven by the server: each rest poll calls applyRestObservation()
+  // with the server-computed remainingRestMs. The component renders this directly,
+  // so no Date.now() math lives on the client (BUSINESS_LOGIC.md §4.7).
+  const restingMsRemaining = computed<number | null>(() =>
+    state.value.kind === PHASE_RESTING ? state.value.remainingRestMs : null,
   )
   const seed = computed<number | null>(() =>
     'seed' in state.value ? state.value.seed : null,
@@ -103,7 +109,18 @@ export const useRaceStore = defineStore('race', () => {
       throw new InvalidTransitionError(currentKind, 'rest')
     }
     const envelope = await useRaceApi().startRest()
-    state.value = { kind: PHASE_RESTING, restingUntil: envelope.restingUntil ?? Date.now() }
+    state.value = {
+      kind: PHASE_RESTING,
+      restingUntil: envelope.restingUntil ?? Date.now(),
+      remainingRestMs: envelope.remainingRestMs ?? 0,
+    }
+  }
+
+  // Refresh the displayed countdown with the latest server-polled value.
+  // Called by useRestPolling on every successful GET /api/horses tick.
+  function applyRestObservation(remainingRestMs: number): void {
+    if (state.value.kind !== PHASE_RESTING) return
+    state.value = { ...state.value, remainingRestMs }
   }
 
   function start(): void {
@@ -129,10 +146,10 @@ export const useRaceStore = defineStore('race', () => {
     state.value = { kind: PHASE_INITIAL }
   }
 
-  function resumeRestFromBoot(restingUntil: number): void {
+  function resumeRestFromBoot(restingUntil: number, remainingRestMs: number): void {
     if (state.value.kind !== PHASE_INITIAL) return
-    if (restingUntil <= Date.now()) return
-    state.value = { kind: PHASE_RESTING, restingUntil }
+    if (remainingRestMs <= 0) return
+    state.value = { kind: PHASE_RESTING, restingUntil, remainingRestMs }
   }
 
   async function completeRound(rankings: Ranking[]): Promise<void> {
@@ -182,6 +199,7 @@ export const useRaceStore = defineStore('race', () => {
     currentRoundIndex,
     results,
     restingUntil,
+    restingMsRemaining,
     seed,
     currentRng,
     fitCount,
@@ -193,6 +211,7 @@ export const useRaceStore = defineStore('race', () => {
     rest,
     completeRest,
     resumeRestFromBoot,
+    applyRestObservation,
     completeRound,
   }
 })

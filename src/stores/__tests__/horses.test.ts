@@ -17,7 +17,7 @@ vi.mock('../../composables/useRaceApi', () => ({
   }),
 }))
 
-const mockResumeRestFromBoot = vi.fn<(restingUntil: number) => void>()
+const mockResumeRestFromBoot = vi.fn<(restingUntil: number, remainingRestMs: number) => void>()
 
 vi.mock('../race', () => ({
   useRaceStore: () => ({ resumeRestFromBoot: mockResumeRestFromBoot }),
@@ -60,7 +60,7 @@ describe('useHorsesStore', () => {
       const store = useHorsesStore()
       await store.fetchAll()
 
-      expect(mockResumeRestFromBoot).toHaveBeenCalledWith(futureMs)
+      expect(mockResumeRestFromBoot).toHaveBeenCalledWith(futureMs, 8_000)
       expect(mockResumeRestFromBoot).toHaveBeenCalledTimes(1)
     })
 
