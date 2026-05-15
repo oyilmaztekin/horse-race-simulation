@@ -826,3 +826,19 @@ Phase 8 — styling & layout. `tokens.css`, `reset.css`, `main.css`, scoped comp
 ### Next action
 
 Step 2 — change `computeSpeed` signature to `(condition, form, jitter)` and update the 3 existing call sites + tests. Existing closed-form anchor (cond=MAX, jitter=0 → BASE_SPEED_MPS_MAX) stays exact once form=0 is wired in.
+
+## 2026-05-15 — Session 36: Phase 12.1 Step 2 — computeSpeed 3-arg signature
+
+### What landed
+
+- `src/domain/simulation.ts` — `computeSpeed(condition, form, jitter)` adds the `form` term to the formula. Call site in `step()` passes `form=0` as a placeholder; Step 3 will wire `lane.form` here. With form=0 the formula is byte-identical to the previous behavior, so all seeded tests stay green without rebaselining.
+- `src/domain/__tests__/simulation.test.ts` — existing 3 `computeSpeed` tests updated to the new signature; new "adds form additively, independent of jitter" test covers the new arg (form-only, mixed form+jitter).
+- `BUSINESS_LOGIC.md` §3.4 — speed formula updated to `f(condition, form, jitter)` with the per-race / per-tick distinction made explicit; form=0, jitter=0 collapse to the deterministic anchor.
+
+### Test count
+
+214 tests (30 files), all green (+1 new computeSpeed test).
+
+### Next action
+
+Step 3 — extend `LanePosition` with `form: number`, and have `createSnapshot(round, n, rng)` draw `drawForm(rng)` once per lane in lane-order 1→10. This is where behavior actually shifts; expect seeded simulation/useRaceSimulation fixtures to need rebaselining (Step 6).

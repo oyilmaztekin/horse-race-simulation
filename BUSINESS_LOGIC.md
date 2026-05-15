@@ -68,11 +68,14 @@ Both rules are **intra-meeting**: "prior rounds" means prior rounds within the p
   ```
   position += speed × dt        // dt = SIM_TICK_MS in milliseconds
   ```
-- Speed is `f(condition, jitter)` — **additive linear interpolation** on the condition range, with a per-tick jitter perturbation:
+- Speed is `f(condition, form, jitter)` — **additive linear interpolation** on the condition range, with a per-race form offset and a per-tick jitter perturbation:
   ```
-  speed = BASE_SPEED_MIN + (condition / CONDITION_MAX) × (BASE_SPEED_MAX − BASE_SPEED_MIN) + jitter
+  speed = BASE_SPEED_MIN
+        + (condition / CONDITION_MAX) × (BASE_SPEED_MAX − BASE_SPEED_MIN)
+        + form        // drawn once per lane at snapshot creation, held constant across the race
+        + jitter      // drawn every tick per still-racing lane
   ```
-  A horse at `condition = CONDITION_MIN` runs near `BASE_SPEED_MIN`; a horse at `condition = CONDITION_MAX` runs near `BASE_SPEED_MAX`. The two endpoint constants and the jitter magnitude are tuned during implementation per A4 — only the **shape** is locked here.
+  A horse at `condition = CONDITION_MIN` runs near `BASE_SPEED_MIN`; a horse at `condition = CONDITION_MAX` runs near `BASE_SPEED_MAX`. Form is uniform in `[-FORM_MPS, +FORM_MPS)`; jitter is uniform in `[-JITTER_MPS, +JITTER_MPS)`. Both contribute additively, so `form = 0, jitter = 0` collapses the formula to the deterministic anchor used by closed-form tests. The endpoint constants and the form/jitter magnitudes are tuned during implementation per A4 — only the **shape** is locked here.
 - **Jitter scope: independent per (horse, tick).** Every tick, every still-racing horse draws its own jitter sample from the shared RNG. The draw order within a tick is **lane 1 first → lane 10 last**, so a known seed reproduces an exact race. This produces natural relative variance between horses (one pulls ahead this frame, another the next); a shared-per-tick or fixed-per-round scheme would flatten that variance.
 - A horse **finishes** when `position ≥ round.distance`. The finish time is recorded with **sub-tick interpolation** — the exact fractional millisecond *within* the crossing frame, not the frame boundary:
   ```

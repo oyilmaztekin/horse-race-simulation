@@ -15,22 +15,29 @@ import { advanceLane, computeSpeed, createSnapshot, drawForm, drawJitter, step }
 import type { HorseId, LanePosition, Round, SimulationSnapshot } from '../types'
 
 describe('computeSpeed', () => {
-  it('returns BASE_SPEED_MPS_MAX exactly when condition === CONDITION_MAX and jitter === 0 (happy — closed-form anchor)', () => {
+  it('returns BASE_SPEED_MPS_MAX exactly when condition === CONDITION_MAX and form === 0 and jitter === 0 (happy — closed-form anchor)', () => {
     // BUSINESS_LOGIC.md §3.4: this anchor must be exact for finish-time tests
-    expect(computeSpeed(CONDITION_MAX, 0)).toBe(BASE_SPEED_MPS_MAX)
+    expect(computeSpeed(CONDITION_MAX, 0, 0)).toBe(BASE_SPEED_MPS_MAX)
   })
 
-  it('is strictly monotone in condition with zero jitter (edge — boundary inputs)', () => {
-    expect(computeSpeed(CONDITION_MIN, 0)).toBeLessThan(computeSpeed(50, 0))
-    expect(computeSpeed(50, 0)).toBeLessThan(computeSpeed(CONDITION_MAX, 0))
-    // lower bound stays above MIN_SPEED's floor only by the (MIN/MAX) ratio term
-    expect(computeSpeed(CONDITION_MIN, 0)).toBeGreaterThanOrEqual(BASE_SPEED_MPS_MIN)
+  it('is strictly monotone in condition with zero form and zero jitter (edge — boundary inputs)', () => {
+    expect(computeSpeed(CONDITION_MIN, 0, 0)).toBeLessThan(computeSpeed(50, 0, 0))
+    expect(computeSpeed(50, 0, 0)).toBeLessThan(computeSpeed(CONDITION_MAX, 0, 0))
+    expect(computeSpeed(CONDITION_MIN, 0, 0)).toBeGreaterThanOrEqual(BASE_SPEED_MPS_MIN)
   })
 
-  it('adds jitter additively (negative — a stub that drops the jitter arg would fail)', () => {
-    const base = computeSpeed(50, 0)
-    expect(computeSpeed(50, 0.7)).toBeCloseTo(base + 0.7, 10)
-    expect(computeSpeed(50, -0.5)).toBeCloseTo(base - 0.5, 10)
+  it('adds jitter additively (sad — a stub that drops the jitter arg would fail)', () => {
+    const base = computeSpeed(50, 0, 0)
+    expect(computeSpeed(50, 0, 0.7)).toBeCloseTo(base + 0.7, 10)
+    expect(computeSpeed(50, 0, -0.5)).toBeCloseTo(base - 0.5, 10)
+  })
+
+  it('adds form additively, independent of jitter (sad — a stub that drops the form arg would fail)', () => {
+    const base = computeSpeed(50, 0, 0)
+    expect(computeSpeed(50, 0.8, 0)).toBeCloseTo(base + 0.8, 10)
+    expect(computeSpeed(50, -0.6, 0)).toBeCloseTo(base - 0.6, 10)
+    // form and jitter compose linearly — both contribute their full magnitude
+    expect(computeSpeed(50, 0.4, 0.3)).toBeCloseTo(base + 0.7, 10)
   })
 })
 
