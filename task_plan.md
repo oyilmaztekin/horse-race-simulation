@@ -83,6 +83,7 @@ Backend runnable end-to-end before the frontend exists.
 - [x] **`prisma/seed.ts` amendment:** upserts `AppState { id: 1, restingUntil: null }` so the meta row exists before the first GET.
 - [x] **`server/routes/horses.ts`** — `createHorsesRouter(db)`: GET returns `HorsesEnvelope`; lazy-bump-on-poll in `$transaction`; POST /rest idempotent. 8 tests green (mock-db DI pattern).
 - [x] **`server/routes/rounds.ts`** — `createRoundsRouter(db)`: POST /complete applies `applyRoundEffects`, persists, returns `Horse[]`. 4 tests green.
+- [x] **`server/routes/rounds.ts` hardening (2026-05-15):** `isValidRaced` guard rejects malformed bodies with 400 (`{ error: 'invalid raced' }`). Empty array stays valid (all-horses recovery). Bounds enforced against `HORSE_COUNT` from `src/domain/constants.ts` — no parallel literal. 6 new tests (happy/edge/sad mix) green; full suite 103/103.
 - [x] **`server/index.ts`** — Hono app, mounts both routers, serves on port 3001.
 - [x] Server tests in `server/__tests__/` use mock-db via dependency injection (factory pattern — no real SQLite in tests).
 

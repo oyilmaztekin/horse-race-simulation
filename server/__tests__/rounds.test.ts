@@ -4,7 +4,7 @@ import { Hono } from 'hono'
 import type { PrismaClient } from '@prisma/client'
 import { createRoundsRouter } from '../routes/rounds'
 import { createMockDb, makeHorses } from './helpers'
-import { FATIGUE_PER_RACE, RECOVERY_PER_REST, CONDITION_MAX } from '../../src/domain/constants'
+import { FATIGUE_PER_RACE, RECOVERY_PER_REST, CONDITION_MAX, HORSE_COUNT } from '../../src/domain/constants'
 import type { Horse } from '../../src/domain/types'
 
 type HorseUpdateCall = { where: { number: number }; data: { condition: number } }
@@ -67,6 +67,64 @@ describe('POST /api/rounds/complete', () => {
 
     const restedUpdates = updateCalls.filter((updateCall: HorseUpdateCall) => updateCall.where.number !== 1)
     expect(restedUpdates.every((updateCall: HorseUpdateCall) => updateCall.data.condition === 80 + RECOVERY_PER_REST)).toBe(true)
+  })
+
+  it('accepts an empty raced array and applies recovery to every horse (edge)', async () => {
+    const horses = makeHorses(80)
+    const db = createMockDb(horses)
+
+    const res = await post(makeApp(db), { raced: [] })
+
+    expect(res.status).toBe(200)
+    expect(db.horse.update).toHaveBeenCalledTimes(HORSE_COUNT)
+  })
+
+  it('rejects body with missing raced field (sad)', async () => {
+    const db = createMockDb(makeHorses(80))
+
+    const res = await post(makeApp(db), {})
+
+    expect(res.status).toBe(400)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toBe('invalid raced')
+    expect(db.horse.update).not.toHaveBeenCalled()
+    expect(db.horse.findMany).not.toHaveBeenCalled()
+  })
+
+  it('rejects body with non-array raced (sad)', async () => {
+    const db = createMockDb(makeHorses(80))
+
+    const res = await post(makeApp(db), { raced: 'not-an-array' })
+
+    expect(res.status).toBe(400)
+    expect(db.horse.update).not.toHaveBeenCalled()
+  })
+
+  it('rejects raced entry below 1 (sad)', async () => {
+    const db = createMockDb(makeHorses(80))
+
+    const res = await post(makeApp(db), { raced: [0] })
+
+    expect(res.status).toBe(400)
+    expect(db.horse.update).not.toHaveBeenCalled()
+  })
+
+  it('rejects raced entry above HORSE_COUNT (sad)', async () => {
+    const db = createMockDb(makeHorses(80))
+
+    const res = await post(makeApp(db), { raced: [HORSE_COUNT + 1] })
+
+    expect(res.status).toBe(400)
+    expect(db.horse.update).not.toHaveBeenCalled()
+  })
+
+  it('rejects raced with non-integer entries (sad)', async () => {
+    const db = createMockDb(makeHorses(80))
+
+    const res = await post(makeApp(db), { raced: [1, 'two'] })
+
+    expect(res.status).toBe(400)
+    expect(db.horse.update).not.toHaveBeenCalled()
   })
 
   it('clamps condition at CONDITION_MAX for already-fit horses recovering', async () => {
