@@ -91,11 +91,11 @@ Exit: `tsx watch server/index.ts` boots; `curl localhost:3001/api/horses` return
 ---
 
 ### Phase 4 — Pinia stores
-Status: `pending`
+Status: `in_progress`
 
 Order: `horses` first, then `race` (race depends on horses + api).
 
-- [ ] **`src/stores/horses.ts`** — state (horses, isLoading, error); actions `fetchAll`, `applyServerUpdate`; getters `byId`, `conditionLookup`. **`fetchAll` reads `HorsesEnvelope`** and calls `race.resumeRestFromBoot(restingUntil)` if non-null (`ARCHITECTURE.md` §11 step 2 — refresh resilience for the rest mechanism). Tests stub `useRaceApi`: fetchAll wires loading/error; envelope with non-null restingUntil triggers resumeRestFromBoot; applyServerUpdate replaces; byId / conditionLookup correct on hit and miss (miss → CONDITION_MIN).
+- [x] **`src/stores/horses.ts`** — state (horses, isLoading, error); actions `fetchAll`, `applyServerUpdate`; getters `byId`, `conditionLookup`. **`fetchAll` reads `HorsesEnvelope`** and calls `race.resumeRestFromBoot(restingUntil)` if non-null (`ARCHITECTURE.md` §11 step 2 — refresh resilience for the rest mechanism). Tests stub `useRaceApi`: fetchAll wires loading/error; envelope with non-null restingUntil triggers resumeRestFromBoot; applyServerUpdate replaces; byId / conditionLookup correct on hit and miss (miss → CONDITION_MIN). Also added `Ranking` and `RoundResult` to `src/domain/types.ts`; created `src/composables/useRaceApi.ts` stub.
 - [ ] **`src/stores/race.ts`** — `RaceState` discriminated union (now 5 variants: `INITIAL | RESTING | READY | RACING | FINISHED`) + `assertRacing` + `mutateRacing` (§16.10 ref impl). Actions: `generateProgram(seed?)`, `start()`, `completeRound(rankings)`, **`rest()`**, **`completeRest(updated)`**, **`resumeRestFromBoot(restingUntil)`**. Computed: `phase`, `program`, `currentRound`, `currentRoundIndex`, `results`, `canGenerate`, `canStart`, **`canRest`**, **`restingUntil`**, **`fitCount`**, `currentRng`, `seed`. Tests: every illegal transition throws `InvalidTransitionError`; legal paths land in the right kind; `generateProgram` throws `NotEnoughFitHorsesError` when `fitCount < MIN_FIT_HORSES_FOR_PROGRAM`; `rest()` only allowed from INITIAL/FINISHED, POSTs and transitions to RESTING; `completeRest` only allowed from RESTING, transitions to INITIAL with updated roster; `resumeRestFromBoot` no-ops if state ≠ INITIAL or timestamp is in the past; `canRest` reflects fit-gate + phase; `completeRound` pushes result → POSTs → applies server update → either FINISHED or advances index after `wait`; `completeRound` failure transitions to INITIAL and surfaces banner (`BUSINESS_LOGIC.md` decision #23 / §16.8); `canGenerate` reflects roster readiness (§16.9, decision #20).
 
 Exit: `src/stores/**` tests green.

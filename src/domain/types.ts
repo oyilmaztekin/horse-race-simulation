@@ -26,6 +26,20 @@ export interface Round {
 
 export type Program = Round[]
 
+// One horse's finish result within a round (ARCHITECTURE.md §6).
+export interface Ranking {
+  rank: number
+  horseId: HorseId
+  lane: number
+  finishTimeMs: number
+}
+
+// The full result set for one completed round, stored in the race store.
+export interface RoundResult {
+  roundNumber: number
+  rankings: Ranking[]
+}
+
 export interface LanePosition {
   horseId: HorseId
   lane: number

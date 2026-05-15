@@ -154,3 +154,21 @@ Doc-only commit (no code). After commit, resume implementation by adding the
 four new constants + `NotEnoughFitHorsesError` to Phase 1, then write the
 red test for `applyRestEffects` / `isFit` in Phase 2 (`CLAUDE.md` §3 — one
 failing test per behavior).
+
+## 2026-05-15 — Session 5: Phase 4 (Pinia stores) — in progress
+
+### What landed
+
+- `src/domain/types.ts` — added `Ranking` and `RoundResult` types (required by race store).
+- `src/composables/useRaceApi.ts` — stub implementation (full TDD in Phase 5); exported so stores can import it now.
+- `src/stores/horses.ts` — full implementation: `horses` / `isLoading` / `error` refs; `fetchAll` (reads envelope, calls `race.resumeRestFromBoot` if `restingUntil !== null`); `applyServerUpdate`; `byId`; `conditionLookup` (miss → `CONDITION_MIN`).
+- `src/stores/__tests__/horses.test.ts` — 12 tests (3 for `fetchAll`, 3 for `applyServerUpdate`, 3 for `byId`, 3 for `conditionLookup`); `useRaceApi` and race store mocked at module level via `vi.mock`.
+- `src/stores/race.ts` — stub only (just `resumeRestFromBoot` no-op); full implementation is next.
+
+### Test count
+
+84 tests (11 files), all green.
+
+### Next action
+
+Write `src/stores/__tests__/race.test.ts` (RED), then implement full `src/stores/race.ts` (GREEN). This completes Phase 4.
