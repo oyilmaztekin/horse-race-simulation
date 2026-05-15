@@ -207,51 +207,23 @@ Exit: ready to ship.
 
 ---
 
-### Phase 11 — Deployment (Fly.io + nginx + Docker + GitHub Actions)
-Status: `pending`
+### Phase 11 — CI only (deployment cut from scope)
+Status: `complete` ✓ (descoped 2026-05-15)
 
-Reviewer-facing artifact. Runs only after Phase 9 (Playwright happy path) is green — E2E is the acceptance gate; deploy is downstream.
+**Scope cut (2026-05-15):** Fly.io / Docker / nginx / supervisord work is **out of scope**. The reviewer-facing deployment artifact (Dockerfile, fly.toml, supervisord.conf, nginx.conf, docker-entrypoint.sh, DEPLOYMENT.md, server/bindConfig.ts, deploy/* workflow) was reverted at the user's request — time constraint, no shipping target. Sub-phases 11.1, 11.2, 11.4 are cancelled. Only 11.3 survives, and only the CI half of it (lint / typecheck / vitest on PR + master). No deploy workflow.
 
-**Locked decisions** (from 2026-05-14 discussion; see `findings.md` Deployment section):
-- Host: **Fly.io** free allowance. Single region. 1GB persistent volume for `prisma/dev.db`.
-- Container: **single multi-stage Docker image**. nginx + node (Hono) inside, run by `supervisord`.
-- nginx role: serves `/dist` (Vue build) AND reverse-proxies `/api/*` → `127.0.0.1:3001` (Hono). Two upstreams, one process.
-- TLS: terminated at **Fly edge**; nginx speaks plain HTTP inside the VM.
-- Hono binds **`127.0.0.1:3001`**, not `0.0.0.0` — nginx is sole ingress.
-- IaC: **`fly.toml` is the IaC artifact**. No Terraform (community fly provider adds flakiness; fly.toml is declarative and reviewer-recognizable).
-- CI/CD: GitHub Actions. Push-to-main → test → build → `flyctl deploy --remote-only`.
+#### Sub-phase 11.1 — Container build — **CANCELLED**
+Dockerfile / nginx.conf / supervisord.conf / docker-entrypoint.sh / .dockerignore / server/bindConfig.ts all reverted. `server/index.ts` restored to its pre-Phase-11 form (`serve({ port: 3001 })`).
 
-#### Sub-phase 11.1 — Container build (local smoke test only, no deploy yet)
-- [x] `Dockerfile` — multi-stage (`web-build` Vue → `/dist`, `server-build` prod-deps + `prisma generate`, `runtime` alpine + nginx + node + supervisord). No separate TS compile for the server — `node --import tsx/esm /app/server/index.ts` keeps source-level imports working (server imports `../../src/domain/*`). `npm install --no-save tsx prisma` in `server-build` so the CLIs are available for the entrypoint's `prisma migrate deploy` + `prisma db seed`.
-- [x] `nginx.conf` (`deploy/nginx.conf`): SPA fallback at `/` via `try_files`; `proxy_pass http://hono_api` for `/api/`; gzip on for text/css/js/json/svg; access/error logs to stdout/stderr.
-- [x] `supervisord.conf` (`deploy/supervisord.conf`): two services — `nginx -g 'daemon off;'` + `node --import tsx/esm /app/server/index.ts`; both autorestart, logs to stdout/stderr. API gets `HOST=127.0.0.1 PORT=3001 DATABASE_URL=file:/app/prisma/dev.db`.
-- [x] Patch `server/index.ts` to bind `127.0.0.1:3001` via `HOST` env var (default `127.0.0.1`). New `server/bindConfig.ts` exposes `resolveBindConfig(env)` returning `{ host, port }`; defaults `127.0.0.1:3001`; throws on non-positive-integer `PORT`. Tests in `server/__tests__/bindConfig.test.ts` (3 flavors: env-driven / defaults / invalid PORT). `serve({ hostname, port })` now reads from env. Full suite 248/248 green.
-- [x] `.dockerignore` excludes `node_modules`, `dist`, `coverage`, `prisma/dev.db*`, `.git`, `.github`, editors, `tests/`, `*.md`, env files, `graphify-out`, planning artifacts.
-- [x] `deploy/docker-entrypoint.sh` — runs `prisma migrate deploy` on every boot (idempotent), then seeds via `prisma db seed` only when `horse.count() === 0` (cold-start vs. resumed volume). Exec's `supervisord` as PID 1.
-- [ ] Local verify: `docker build`, `docker run -p 8080:80 -v $(pwd)/_data:/app/prisma`; browser walks Generate → Start → FINISHED; restart container → `dev.db` survives.
+#### Sub-phase 11.2 — Fly.io deploy — **CANCELLED**
+fly.toml reverted. No Fly app, no volume, no deploy.
 
-Exit: container boots, SPA loads, `/api/horses` returns 20 rows, volume persists.
+#### Sub-phase 11.3 — GitHub Actions CI (deploy half cancelled)
+- [x] `.github/workflows/ci.yml` — PR + push to master: `npm ci`, `npx prisma generate`, `npm run lint`, `npm run typecheck`, `npm test`. ~10-minute timeout. No Playwright (slow + needs DB seed), no deploy.
+- [x] `.github/workflows/deploy.yml` — **deleted**. No `FLY_API_TOKEN` secret needed.
 
-#### Sub-phase 11.2 — Fly.io deploy (manual, first push)
-- [x] User: `flyctl auth login` (one-time, documented in DEPLOYMENT.md).
-- [x] `fly.toml` written directly (skipped `flyctl launch --copy-config` since the manifest fields are already known). App = `beygir-yarisi`, region `fra`, `[build] dockerfile = "Dockerfile"`, `[[mounts]] source = "data", destination = "/app/prisma"`, `[http_service] internal_port = 80, force_https = true, auto_stop_machines = "stop", min_machines_running = 0`, `[[http_service.checks]]` GET `/api/horses`, `[[vm]]` shared 1 CPU + 256 MB. **No `[deploy] release_command`** — `deploy/docker-entrypoint.sh` already runs `prisma migrate deploy` + conditional `prisma db seed` idempotently with the volume mounted, so duplicating it as a release_command in an ephemeral release machine without the volume would seed a doomed DB.
-- [ ] **User action required:** `flyctl apps create beygir-yarisi` + `flyctl volumes create data --size 1 --region fra --yes` + `flyctl deploy --remote-only` from local — first push.
-- [ ] **User action required:** browser smoke at `https://beygir-yarisi.fly.dev`.
-
-Exit: app live, TLS green, persists across machine restarts.
-
-#### Sub-phase 11.3 — GitHub Actions CI/CD
-- [x] `.github/workflows/ci.yml` — PR + push to master: `npm ci`, `prisma generate`, cached Playwright browsers, `lint`, `typecheck`, `vitest`, then `prisma migrate deploy` + `db seed` ahead of `test:e2e`. Playwright report uploaded as artifact on failure.
-- [x] `.github/workflows/deploy.yml` — `workflow_run` on CI success, master only, with a `deploy-prod` concurrency lock (no parallel deploys): `superfly/flyctl-actions/setup-flyctl` → `flyctl deploy --remote-only`. Uses `secrets.FLY_API_TOKEN` and checks out the exact head SHA that CI passed.
-- [ ] **User action required:** `flyctl auth token` and add the value as `FLY_API_TOKEN` in GitHub → Settings → Secrets → Actions.
-- [ ] **User action required:** dummy PR → CI green → merge → deploy fires → live URL updated within ~3 min.
-
-Exit: push-to-main is the only deploy path.
-
-#### Sub-phase 11.4 — `DEPLOYMENT.md` (reviewer-facing doc)
-- [x] `DEPLOYMENT.md` shipped — architecture summary, ASCII topology, file inventory, five-command deploy-from-scratch, CI/CD paragraph, live URL placeholder, cost note. Also documents the local docker smoke recipe.
-
-Exit: reviewer reads `DEPLOYMENT.md` in under 5 minutes and grasps the deploy story.
+#### Sub-phase 11.4 — `DEPLOYMENT.md` — **CANCELLED**
+DEPLOYMENT.md reverted.
 
 ---
 

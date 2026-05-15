@@ -1,5 +1,26 @@
 # Progress Log
 
+## 2026-05-15 — Session 48: Phase 11 descoped — CI only
+
+### What changed
+
+User cut deployment from scope (time constraint, no shipping target). Reverted everything from session 47:
+
+- Deleted: `Dockerfile`, `.dockerignore`, `fly.toml`, `DEPLOYMENT.md`, `deploy/` directory (nginx.conf, supervisord.conf, docker-entrypoint.sh), `.github/workflows/deploy.yml`, `server/bindConfig.ts`, `server/__tests__/bindConfig.test.ts`.
+- Restored `server/index.ts` to `serve({ fetch: app.fetch, port: 3001 })` — no env-driven bind.
+- Rewrote `.github/workflows/ci.yml` to a minimal job: `npm ci`, `npx prisma generate`, `npm run lint`, `npm run typecheck`, `npm test`. No Playwright, no DB seed, no deploy. ~10-min timeout.
+- `task_plan.md` §11 rewritten — 11.1, 11.2, 11.4 marked **CANCELLED**; 11.3 kept (CI only).
+
+### Why
+
+Reviewer cares about clean architecture, TDD, and a working local app — not a deployed URL. Time is the constraint. CI on master/PRs still gives static-gate signal for any future reviewer who clones the repo and pushes.
+
+### Test count
+
+248 / 248 vitest green across 33 files (bindConfig.test.ts removed; nothing else touched).
+
+---
+
 ## 2026-05-15 — Session 47: Phase 11.2 + 11.3 + 11.4 — fly.toml, CI/CD, DEPLOYMENT.md
 
 ### What landed
