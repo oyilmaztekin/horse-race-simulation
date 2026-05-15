@@ -73,18 +73,18 @@ Exit: `npm test` green for all `src/domain/**`.
 ---
 
 ### Phase 3 — Server (Hono + Prisma)
-Status: `pending`
+Status: `complete` ✓
 
 Backend runnable end-to-end before the frontend exists.
 
-- [ ] **`server/db.ts`** — Prisma client singleton.
-- [ ] **`prisma/schema.prisma` amendment (2026-05-14):** add `AppState { id Int @id @default(1), restingUntil DateTime? }` model per `ARCHITECTURE.md` decision #28. New migration required.
+- [x] **`server/db.ts`** — Prisma client singleton.
+- [x] **`prisma/schema.prisma` amendment (2026-05-14):** add `AppState { id Int @id @default(1), restingUntil DateTime? }` model per `ARCHITECTURE.md` decision #28. Migration `20260515092416_add_app_state` applied.
 - [x] **`prisma/seed.ts`** — imports `generateRoster` with `createRng(0xDECAF)`; reads `horseNames.json`; deletes + recreates rows. Migration `20260514124617_init` applied; 20 rows persisted.
-- [ ] **`prisma/seed.ts` amendment:** also upsert `AppState { id: 1, restingUntil: null }` so the meta row exists before the first GET.
-- [ ] **`server/routes/horses.ts`** — `GET /` → `HorsesEnvelope { horses, restingUntil }` per `ARCHITECTURE.md` §7. **Lazy-bump-on-poll** inside a `db.$transaction`: if `restingUntil <= now`, run `applyRestEffects`, clear `restingUntil`, return bumped envelope. `POST /rest` — idempotent: if already resting, return existing envelope; otherwise set `restingUntil = now + REST_DURATION_MS`, return envelope. Tests (red first): GET returns envelope shape; lazy-bump fires only when timer elapsed; POST /rest sets timer; POST /rest while resting is a no-op.
-- [ ] **`server/routes/rounds.ts`** — `POST /complete` with `{ raced }`, calls `applyRoundEffects`, persists via `$transaction`, returns full roster (flat `Horse[]`, NOT envelope — see `ARCHITECTURE.md` §7 rationale). Test: fatigue applied, rested recovered, response matches DB state.
-- [ ] **`server/index.ts`** — Hono app, mount routes, `serve` on 3001.
-- [ ] Server tests in `server/__tests__/` use an in-memory SQLite fixture or a per-test temp file.
+- [x] **`prisma/seed.ts` amendment:** upserts `AppState { id: 1, restingUntil: null }` so the meta row exists before the first GET.
+- [x] **`server/routes/horses.ts`** — `createHorsesRouter(db)`: GET returns `HorsesEnvelope`; lazy-bump-on-poll in `$transaction`; POST /rest idempotent. 8 tests green (mock-db DI pattern).
+- [x] **`server/routes/rounds.ts`** — `createRoundsRouter(db)`: POST /complete applies `applyRoundEffects`, persists, returns `Horse[]`. 4 tests green.
+- [x] **`server/index.ts`** — Hono app, mounts both routers, serves on port 3001.
+- [x] Server tests in `server/__tests__/` use mock-db via dependency injection (factory pattern — no real SQLite in tests).
 
 Exit: `tsx watch server/index.ts` boots; `curl localhost:3001/api/horses` returns envelope with 20 horses; `curl -X POST localhost:3001/api/horses/rest` returns envelope with future `restingUntil`; server tests green.
 
