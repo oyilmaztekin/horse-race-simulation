@@ -23,11 +23,11 @@ function simulateRoundToFinish(round: Round, roundNumber: number, horses: Horse[
   const lookup = conditionLookupFor(horses)
   let snap = createSnapshot(round, roundNumber)
   let ticks = 0
-  while (snap.lanes.some((l) => l.finishedAtMs === null) && ticks < MAX_TICKS_PER_ROUND) {
+  while (snap.lanes.some((l) => !l.finishedAtMs) && ticks < MAX_TICKS_PER_ROUND) {
     snap = step(snap, SIM_TICK_MS, lookup, rng)
     ticks += 1
   }
-  if (snap.lanes.some((l) => l.finishedAtMs === null)) {
+  if (snap.lanes.some((l) => !l.finishedAtMs)) {
     throw new Error(`Round ${roundNumber} did not finish within ${MAX_TICKS_PER_ROUND} ticks`)
   }
   return snap

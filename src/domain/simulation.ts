@@ -32,7 +32,7 @@ export function advanceLane(
   distance: number,
   elapsedMsBeforeTick: number,
 ): LanePosition {
-  if (lane.finishedAtMs !== null) return lane
+  if (lane?.finishedAtMs) return lane
   const advanced = lane.meters + speedMps * (dtMs / MS_PER_SECOND)
   if (advanced < distance) {
     return { ...lane, meters: advanced }
@@ -65,7 +65,7 @@ export function step(
   rng: Rng,
 ): SimulationSnapshot {
   const lanes = snapshot.lanes.map((lane) => {
-    if (lane.finishedAtMs !== null) return lane
+    if (lane?.finishedAtMs) return lane
     const jitter = drawJitter(rng)
     const speed = computeSpeed(conditionLookup(lane.horseId), jitter)
     return advanceLane(lane, speed, dtMs, snapshot.distance, snapshot.elapsedMs)
