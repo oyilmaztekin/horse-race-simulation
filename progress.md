@@ -308,6 +308,21 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 15: Phase 6 cycle 2 (HorseListItem)
+
+### What landed
+
+- `src/components/HorseListItem.vue` — `<li>` rendering `horse.name` + `horse.condition` as separate spans. Single `horse: Horse` prop per ARCHITECTURE.md §14.3; no emits, no swatch (decision #21).
+- `src/components/__tests__/HorseListItem.test.ts` — 3 tests (happy/edge/sad): name + condition visible; CONDITION_MIN/MAX rendered verbatim at boundaries; `setProps` rerender swaps in the new name/condition and drops the old (sad: a stub returning a constant template would fail).
+
+### Test count
+
+151 tests (17 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 6 cycle 3 — `HorseSprite.vue`: SVG + condition text prop (BUSINESS_LOGIC §3.9 / decision #27).
+
 ## 2026-05-15 — Session 14: Phase 6 cycle 1 (ColorSwatch)
 
 ### What landed

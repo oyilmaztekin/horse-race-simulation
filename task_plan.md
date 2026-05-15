@@ -121,7 +121,7 @@ Status: `in_progress`
 All 7 pure-prop components. Each gets one `@vue/test-utils` mount test: prop in → expected text/class out. No store access, no emits.
 
 - [x] `ColorSwatch.vue` + test — 3 tests (happy/edge/sad): inline `background-color` style reflects prop; arbitrary CSS color strings pass through unchanged; prop change re-renders style (sad: a stub ignoring the prop would fail).
-- [ ] `HorseListItem.vue` + test (name + condition; no swatch per decision #21)
+- [x] `HorseListItem.vue` + test — 3 tests (happy/edge/sad): renders `horse.name` + `horse.condition`; CONDITION_MIN/MAX boundaries render verbatim; prop change re-renders both fields.
 - [ ] `HorseSprite.vue` + test (SVG, `progress: 0..1`, **`condition: number` rendered as plain text above the SVG** per `BUSINESS_LOGIC.md` §3.9 / `ARCHITECTURE.md` decision #27)
 - [ ] `RaceLane.vue` + test (derives color from `LANE_COLORS[laneIndex]`, converts meters→progress)
 - [ ] `ProgramRoundCard.vue` + test (lane order, `isCurrent` highlight)
