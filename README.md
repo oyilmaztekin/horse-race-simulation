@@ -32,9 +32,9 @@ npm run test:e2e       # playwright happy path (~3.3 min wall clock — real tim
 
 The MVP scope is enforced by **explicit non-goals**. Each one removes a category of state complexity that wouldn't survive an honest cost/benefit pass:
 
-- **No pause / resume / restart mid-race.** Pause turns a state machine of 4 phases into one with a cross-cutting `paused` flag on every transition, plus a "what does fatigue mean for a paused round" question that has no good answer. Cut.
-- **No mid-race regeneration.** "Regenerate" while RACING means defining whether in-flight conditions roll back, which means versioning condition history. Cut.
-- **No DNF / scratch / injury.** Adds an N+1th outcome per horse per round and bleeds into eligibility math. Cut.
+- **No pause / resume / restart mid-race.** Pause turns a state machine of 4 phases into one with a cross-cutting `paused` flag on every transition, plus a "what does fatigue mean for a paused round" question that has no good answer.
+- **No mid-race regeneration.** "Regenerate" while RACING means defining whether in-flight conditions roll back, which means versioning condition history.
+- **No DNF / scratch / injury.** Adds an N+1th outcome per horse per round and bleeds into eligibility math
 - **No per-horse identity colors.** Colors are per-lane (`LANE_COLORS[laneIndex]`), not per-horse — the same horse in lane 3 of round 1 and lane 7 of round 4 is a different color. This is counterintuitive at first glance, which is exactly why it's documented: it keeps the eye on *the race*, not on tracking individuals across rounds.
 
 Each of these is one line in `BUSINESS_LOGIC.md` §6. Adding any of them is a doc change first, then a code change — never the reverse.
@@ -109,7 +109,7 @@ Playwright asserts what only a real browser can: state machine reaches `FINISHED
 
 ## CI
 
-`.github/workflows/ci.yml` runs on every PR and push to `master`: `npm ci` → `prisma generate` → `npm run lint` → `npm run typecheck` → `npm test`. ~3 minutes wall clock on `ubuntu-latest`. Playwright is intentionally not in CI — it needs the dev server + a seeded DB and adds ~3 minutes for one test that local development already exercises constantly. Deployment is out of scope; the assessment is judged on the source tree, not a live URL.
+`.github/workflows/ci.yml` runs on every PR and push to `master`: `npm ci` → `prisma generate` → `npm run lint` → `npm run typecheck` → `npm test`. ~3 minutes wall clock on `ubuntu-latest`. Playwright is intentionally not in CI — it needs the dev server + a seeded DB and adds ~3 minutes for one test that local development already exercises constantly.
 
 ## Graphify — using the knowledge graph as a meta-tool
 
