@@ -278,3 +278,36 @@ describe('step', () => {
     expect(next.lanes[9]?.form).toBe(+FORM_MPS)
   })
 })
+
+// Closed-form anchors: properties of the speed formula that hold without any
+// RNG — independent of seed, jitter magnitude, form magnitude. These are the
+// spec; the seeded tests above are regression anchors. (BUSINESS_LOGIC.md §3.4)
+describe('simulation — closed-form anchors', () => {
+  it('finish time for cond=MAX, form=0, jitter=0 over distance D is exactly D / BASE_SPEED_MPS_MAX seconds (happy)', () => {
+    // No RNG involved — pure formula check via advanceLane with a single overshooting tick.
+    const distance = ROUND_DISTANCES[0] // 1200 m
+    const startLane: LanePosition = { horseId: 1, lane: 1, meters: 0, finishedAtMs: null, form: 0 }
+    const finished = advanceLane(startLane, BASE_SPEED_MPS_MAX, 1_000_000, distance, 0)
+    expect(finished.meters).toBe(distance)
+    expect(finished.finishedAtMs).toBeCloseTo((distance / BASE_SPEED_MPS_MAX) * 1000, 6)
+  })
+
+  it('finish time for cond=MIN, form=0, jitter=0 over distance D is exactly D / BASE_SPEED_MPS_MIN seconds (edge — boundary anchor)', () => {
+    const distance = ROUND_DISTANCES[5] // 2200 m
+    const startLane: LanePosition = { horseId: 1, lane: 1, meters: 0, finishedAtMs: null, form: 0 }
+    const finished = advanceLane(startLane, BASE_SPEED_MPS_MIN, 1_000_000, distance, 0)
+    expect(finished.meters).toBe(distance)
+    expect(finished.finishedAtMs).toBeCloseTo((distance / BASE_SPEED_MPS_MIN) * 1000, 6)
+  })
+
+  it('computeSpeed is sensitive to each of its three arguments (sad — a stub that ignored any arg would fail this)', () => {
+    // Independent perturbation per arg — every arg must change the output.
+    const base = computeSpeed(50, 0, 0)
+    expect(computeSpeed(51, 0, 0)).not.toBe(base)
+    expect(computeSpeed(50, 0.1, 0)).not.toBe(base)
+    expect(computeSpeed(50, 0, 0.1)).not.toBe(base)
+    // And the contributions are linearly independent.
+    expect(computeSpeed(50, 0.3, 0.2)).toBeCloseTo(base + 0.5, 10)
+    expect(computeSpeed(50, -0.3, -0.2)).toBeCloseTo(base - 0.5, 10)
+  })
+})

@@ -249,8 +249,8 @@ Two coupled revisions ship together: (a) runtime `SIM_SPEED_MULTIPLIER` so revie
 - [x] Step 2 — `computeSpeed(condition, form, jitter)` 3-arg signature; updated formula adds `form` term; existing 2-arg tests rebaselined.
 - [x] Step 3 — `LanePosition.form` field; `createSnapshot(round, n, rng)` draws form per lane in lane-order 1→10.
 - [x] Step 4 — `step()` passes persistent `lane.form` into `computeSpeed`; no extra rng for form per tick.
-- [ ] Step 5 — Closed-form anchor tests independent of seed (cond=MAX/MIN, form=0, jitter=0; sensitivity per arg).
-- [ ] Step 6 — Rebaseline remaining seeded simulation tests + composable test fixtures.
+- [x] Step 5 — Closed-form anchor tests independent of seed (cond=MAX/MIN, form=0, jitter=0; sensitivity per arg).
+- [x] Step 6 — Rebaseline remaining seeded simulation tests + composable test fixtures. *(no-op: existing seeded tests asserted determinism, not exact positions)*
 - [ ] Step 7 — Variance-shape behavior tests (cond=80 always beats cond=45 with forms=0; cond=45 can beat cond=55 with form rigged).
 - [ ] Step 8 — `JITTER_MPS` 1.5 → 0.5 (visual jiggle only; form now owns outcome variance).
 

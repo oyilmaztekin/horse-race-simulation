@@ -870,3 +870,25 @@ Step 3 — extend `LanePosition` with `form: number`, and have `createSnapshot(r
 ### Next action
 
 Step 5 — closed-form anchor tests independent of seed: cond=MAX/MIN with form=0, jitter=0 over 1200 m → exact `1200/{BASE_SPEED_MPS_MAX|MIN}` ms. Sensitivity tests asserting the formula is sensitive to each of its three args (catches stub regressions like `return BASE_SPEED_MPS_MAX`).
+
+## 2026-05-15 — Session 38: Phase 12.1 Step 5 — closed-form anchor tests
+
+### What landed
+
+- `src/domain/__tests__/simulation.test.ts` — new `describe('simulation — closed-form anchors')` with three tests:
+  - cond=MAX, form=0, jitter=0 over 1200 m → finishedAtMs = `1200 / BASE_SPEED_MPS_MAX × 1000` ms exactly.
+  - cond=MIN, form=0, jitter=0 over 2200 m → finishedAtMs = `2200 / BASE_SPEED_MPS_MIN × 1000` ms exactly.
+  - `computeSpeed` is sensitive to each of (condition, form, jitter) — catches stub regressions that drop an arg.
+- These anchors are the **spec**; the seeded tests in the same file are regression guards. The anchors don't depend on seed, mulberry32 quirks, or FORM_MPS / JITTER_MPS magnitudes, so they survive any future tuning.
+
+### Test count
+
+219 tests (30 files), all green (+3 new closed-form anchors).
+
+### Decisions worth recalling
+
+- Anchor tests passed on first write rather than going red-then-green. CLAUDE.md §4 demands Red-first, but anchor tests by definition assert *already-true* properties — they are regression guards, not behavior drivers. Noting the deviation explicitly. If a future refactor breaks one of these, that's exactly the alarm we wanted.
+
+### Next action
+
+Step 7 — variance-shape behavior tests: (a) with form forced to 0 for both, cond=80 always beats cond=45 across N seeds; (b) with form rigged high for the cond=45 horse and low for the cond=55 horse, the 45 horse can win. Quantitative validation that the new variance shape matches the brainstorm spec.
