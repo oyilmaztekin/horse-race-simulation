@@ -28,6 +28,30 @@ beforeEach(() => {
 })
 
 describe('POST /api/rounds/complete', () => {
+  it('reads and writes inside a single db.$transaction (atomicity)', async () => {
+    const horses = makeHorses(80)
+    const db = createMockDb(horses)
+
+    await post(makeApp(db), { raced: [1, 2] })
+
+    expect(db.$transaction).toHaveBeenCalledTimes(1)
+    expect(typeof db.$transaction.mock.calls[0][0]).toBe('function')
+  })
+
+  it('propagates rejection when an update fails inside the transaction (rollback path)', async () => {
+    const horses = makeHorses(80)
+    const db = createMockDb(horses)
+    let callCount = 0
+    db.horse.update.mockImplementation(() => {
+      callCount += 1
+      return callCount === 3 ? Promise.reject(new Error('write failed')) : Promise.resolve({})
+    })
+
+    const res = await post(makeApp(db), { raced: [1] })
+
+    expect(res.status).toBe(500)
+  })
+
   it('returns the full updated roster as a flat Horse array', async () => {
     const horses = makeHorses(80)
     const db = createMockDb(horses)

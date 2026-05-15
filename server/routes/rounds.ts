@@ -21,13 +21,19 @@ export function createRoundsRouter(db: PrismaClient): Hono {
       return context.json({ error: 'invalid raced' }, 400)
     }
     const raced: HorseId[] = body.raced
-    const current = await db.horse.findMany({ orderBy: { number: 'asc' } })
-    const updated = applyRoundEffects(current, raced)
-    await Promise.all(
-      updated.map((horse: Horse) =>
-        db.horse.update({ where: { number: horse.number }, data: { condition: horse.condition } }),
-      ),
-    )
+    const updated = await db.$transaction(async (transaction) => {
+      const current = await transaction.horse.findMany({ orderBy: { number: 'asc' } })
+      const next = applyRoundEffects(current, raced)
+      await Promise.all(
+        next.map((horse: Horse) =>
+          transaction.horse.update({
+            where: { number: horse.number },
+            data: { condition: horse.condition },
+          }),
+        ),
+      )
+      return next
+    })
     return context.json(updated)
   })
 
