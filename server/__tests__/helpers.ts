@@ -25,7 +25,7 @@ export function createMockDb(horses: Horse[] = [], restingUntil: Date | null = n
       update: vi.fn().mockResolvedValue({}),
       upsert: vi.fn().mockResolvedValue({}),
     },
-    $transaction: vi.fn((cb: (tx: MockDb) => unknown) => cb(mock)),
+    $transaction: vi.fn((callback: (transaction: MockDb) => unknown) => callback(mock)),
   }
   return mock
 }

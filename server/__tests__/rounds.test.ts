@@ -7,6 +7,8 @@ import { createMockDb, makeHorses } from './helpers'
 import { FATIGUE_PER_RACE, RECOVERY_PER_REST, CONDITION_MAX } from '../../src/domain/constants'
 import type { Horse } from '../../src/domain/types'
 
+type HorseUpdateCall = { where: { number: number }; data: { condition: number } }
+
 function makeApp(db: ReturnType<typeof createMockDb>) {
   const app = new Hono()
   app.route('/api/rounds', createRoundsRouter(db as unknown as PrismaClient))
@@ -43,11 +45,14 @@ describe('POST /api/rounds/complete', () => {
 
     await post(makeApp(db), { raced: [1, 2, 3] })
 
-    const updateCalls: { where: { number: number }; data: { condition: number } }[] =
-      db.horse.update.mock.calls.map((c: unknown[]) => c[0] as { where: { number: number }; data: { condition: number } })
+    const updateCalls: HorseUpdateCall[] = db.horse.update.mock.calls.map(
+      (call: unknown[]) => call[0] as HorseUpdateCall,
+    )
 
-    const racedUpdates = updateCalls.filter((c) => [1, 2, 3].includes(c.where.number))
-    expect(racedUpdates.every((c) => c.data.condition === 80 - FATIGUE_PER_RACE)).toBe(true)
+    const racedUpdates = updateCalls.filter(
+      (updateCall: HorseUpdateCall) => [1, 2, 3].includes(updateCall.where.number),
+    )
+    expect(racedUpdates.every((updateCall: HorseUpdateCall) => updateCall.data.condition === 80 - FATIGUE_PER_RACE)).toBe(true)
   })
 
   it('applies recovery to horses that did not race', async () => {
@@ -56,11 +61,12 @@ describe('POST /api/rounds/complete', () => {
 
     await post(makeApp(db), { raced: [1] })
 
-    const updateCalls: { where: { number: number }; data: { condition: number } }[] =
-      db.horse.update.mock.calls.map((c: unknown[]) => c[0] as { where: { number: number }; data: { condition: number } })
+    const updateCalls: HorseUpdateCall[] = db.horse.update.mock.calls.map(
+      (call: unknown[]) => call[0] as HorseUpdateCall,
+    )
 
-    const restedUpdates = updateCalls.filter((c) => c.where.number !== 1)
-    expect(restedUpdates.every((c) => c.data.condition === 80 + RECOVERY_PER_REST)).toBe(true)
+    const restedUpdates = updateCalls.filter((updateCall: HorseUpdateCall) => updateCall.where.number !== 1)
+    expect(restedUpdates.every((updateCall: HorseUpdateCall) => updateCall.data.condition === 80 + RECOVERY_PER_REST)).toBe(true)
   })
 
   it('clamps condition at CONDITION_MAX for already-fit horses recovering', async () => {
@@ -69,10 +75,11 @@ describe('POST /api/rounds/complete', () => {
 
     await post(makeApp(db), { raced: [1] })
 
-    const updateCalls: { where: { number: number }; data: { condition: number } }[] =
-      db.horse.update.mock.calls.map((c: unknown[]) => c[0] as { where: { number: number }; data: { condition: number } })
+    const updateCalls: HorseUpdateCall[] = db.horse.update.mock.calls.map(
+      (call: unknown[]) => call[0] as HorseUpdateCall,
+    )
 
-    const restedUpdates = updateCalls.filter((c) => c.where.number !== 1)
-    expect(restedUpdates.every((c) => c.data.condition === CONDITION_MAX)).toBe(true)
+    const restedUpdates = updateCalls.filter((updateCall: HorseUpdateCall) => updateCall.where.number !== 1)
+    expect(restedUpdates.every((updateCall: HorseUpdateCall) => updateCall.data.condition === CONDITION_MAX)).toBe(true)
   })
 })

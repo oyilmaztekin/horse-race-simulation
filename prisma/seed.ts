@@ -10,7 +10,7 @@ const ROSTER_SEED = 0xdecaf
 function loadNames(): string[] {
   const url = new URL('./horseNames.json', import.meta.url)
   const parsed: unknown = JSON.parse(readFileSync(url, 'utf8'))
-  if (!Array.isArray(parsed) || !parsed.every((n): n is string => typeof n === 'string')) {
+  if (!Array.isArray(parsed) || !parsed.every((item: unknown): item is string => typeof item === 'string')) {
     throw new Error('prisma/horseNames.json must be a JSON array of strings')
   }
   return parsed

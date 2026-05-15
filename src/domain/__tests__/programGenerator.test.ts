@@ -6,9 +6,9 @@ import { createRng } from '../rng'
 import type { Horse } from '../types'
 
 const ANY_SEED = 42
-const stubName = (n: number): string => `stub-${n}`
+const stubName = (horseNumber: number): string => `stub-${horseNumber}`
 
-const buildRoster = (conditionByNumber: (n: number) => number): Horse[] =>
+const buildRoster = (conditionByNumber: (horseNumber: number) => number): Horse[] =>
   Array.from({ length: HORSE_COUNT }, (_, i) => {
     const number = i + 1
     return { number, name: `stub-${number}`, condition: conditionByNumber(number) }
@@ -138,7 +138,7 @@ describe('generateProgram', () => {
     // theorem from the rest rule forces every horse into exactly 3 rounds regardless
     // of condition. The weighting effect is observable only in *which* horses get
     // picked in round 1 (which then determines the alternation group).
-    const horses = buildRoster((n) => (n === 1 ? 100 : n === 2 ? 1 : 50))
+    const horses = buildRoster((horseNumber: number) => (horseNumber === 1 ? 100 : horseNumber === 2 ? 1 : 50))
 
     let highInRound1 = 0
     let lowInRound1 = 0
@@ -168,8 +168,8 @@ describe('generateProgram', () => {
   it('changing only the condition distribution changes the program for the same seed (negative — picker reads condition)', () => {
     // identical horse numbers and rng — only the conditions differ
     const baseline = buildRoster(() => 50)
-    const skewed = baseline.map((h) =>
-      h.number === 1 ? { ...h, condition: 100 } : h.number === 2 ? { ...h, condition: 1 } : h,
+    const skewed = baseline.map((horse: Horse) =>
+      horse.number === 1 ? { ...horse, condition: 100 } : horse.number === 2 ? { ...horse, condition: 1 } : horse,
     )
 
     const programA = generateProgram(baseline, createRng(ANY_SEED))

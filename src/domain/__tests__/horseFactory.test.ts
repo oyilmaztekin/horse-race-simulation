@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { CONDITION_MAX, CONDITION_MIN, HORSE_COUNT } from '../constants'
 import { generateRoster, pickConditionUniform } from '../horseFactory'
 import { createRng } from '../rng'
-import type { Rng } from '../types'
+import type { Horse, Rng } from '../types'
 
 const ANY_SEED = 42
-const stubName = (n: number): string => `stub-${n}`
+const stubName = (horseNumber: number): string => `stub-${horseNumber}`
 
 describe('generateRoster', () => {
   it('returns HORSE_COUNT horses with non-empty names and bounded conditions (happy)', () => {
@@ -21,7 +21,7 @@ describe('generateRoster', () => {
 
   it('assigns horse numbers exactly 1..HORSE_COUNT, unique (edge)', () => {
     const roster = generateRoster(createRng(ANY_SEED), stubName)
-    const numbers = roster.map((h) => h.number).sort((a, b) => a - b)
+    const numbers = roster.map((horse: Horse) => horse.number).sort((leftNumber: number, rightNumber: number) => leftNumber - rightNumber)
     const expected = Array.from({ length: HORSE_COUNT }, (_, i) => i + 1)
 
     expect(numbers).toEqual(expected)
@@ -29,7 +29,7 @@ describe('generateRoster', () => {
 
   it('produces non-uniform conditions across the roster (negative)', () => {
     const roster = generateRoster(createRng(ANY_SEED), stubName)
-    const distinctConditions = new Set(roster.map((h) => h.condition))
+    const distinctConditions = new Set(roster.map((horse: Horse) => horse.condition))
 
     // a stub like "all conditions = 50" would leave size = 1
     expect(distinctConditions.size).toBeGreaterThan(1)

@@ -12,8 +12,8 @@ export function createRoundsRouter(db: PrismaClient): Hono {
     const current = await db.horse.findMany({ orderBy: { number: 'asc' } })
     const updated = applyRoundEffects(current, raced)
     await Promise.all(
-      updated.map((h: Horse) =>
-        db.horse.update({ where: { number: h.number }, data: { condition: h.condition } }),
+      updated.map((horse: Horse) =>
+        db.horse.update({ where: { number: horse.number }, data: { condition: horse.condition } }),
       ),
     )
     return context.json(updated)
