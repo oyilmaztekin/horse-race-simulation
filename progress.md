@@ -308,6 +308,21 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 31: Phase 7 — ResultsPanel container
+
+### What landed
+
+- `src/components/ResultsPanel.vue` — always renders 6 `ResultRoundCard` (one per `ROUND_DISTANCES` entry); meeting structure is visible from page load per `BUSINESS_LOGIC.md` §3.6. Each card's entries are filled by looking up `race.results` by `roundNumber` (not by index), so insertion order in `race.results` doesn't shift the panel layout. Rankings → entries conversion: `{ position: rank, horse: byId(horseId), laneIndex: lane - 1 }`. Same defensive horse placeholder as ProgramPanel.
+- `src/components/__tests__/ResultsPanel.test.ts` — 3 tests with `createTestingPinia({ stubActions: false })`: edge (INITIAL → 6 cards with empty entries, distances in order), happy (RACING with 2 results → first two cards filled, rest empty), sad (FINISHED with out-of-order results `[{r3}, {r1}]` → cards still render 1..6 in order, only round 1 and 3 have entries; a stub that iterated `results` would fail).
+
+### Test count
+
+197 tests (26 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 7 cycle 10 — `RaceTrack.vue`: instantiates `useRaceSimulation`, watches `done` with `{ once: true }`, dispatches `race.completeRound(finishOrder)`.
+
 ## 2026-05-15 — Session 30: Phase 7 — ProgramPanel container
 
 ### What landed
