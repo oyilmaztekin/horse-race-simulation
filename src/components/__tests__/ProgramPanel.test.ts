@@ -85,6 +85,58 @@ describe('ProgramPanel', () => {
     ])
   })
 
+  it('marks rounds with completed results as isCompleted (happy)', () => {
+    const program = makeProgram()
+    const fakeResults = [
+      { roundNumber: 1 } as never,
+      { roundNumber: 2 } as never,
+    ]
+    const wrapper = mount(ProgramPanel, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            stubActions: false,
+            initialState: {
+              horses: { horses: makeHorses(), isLoading: false, error: null },
+              race: {
+                state: {
+                  kind: PHASE_RACING,
+                  program,
+                  rng: () => 0.5,
+                  seed: 1,
+                  currentRoundIndex: 2,
+                  results: fakeResults,
+                },
+              },
+            },
+          }),
+        ],
+      },
+    })
+    const cards = wrapper.findAllComponents(ProgramRoundCard)
+    expect(cards.map((card) => card.props().isCompleted)).toEqual([
+      true, true, false, false, false, false,
+    ])
+  })
+
+  it('marks no rounds completed in READY phase (sad — implementation always-true would fail)', () => {
+    const wrapper = mount(ProgramPanel, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            stubActions: false,
+            initialState: {
+              horses: { horses: makeHorses(), isLoading: false, error: null },
+              race: { state: { kind: PHASE_READY, program: makeProgram(), rng: () => 0.5, seed: 1 } },
+            },
+          }),
+        ],
+      },
+    })
+    const cards = wrapper.findAllComponents(ProgramRoundCard)
+    expect(cards.every((card) => card.props().isCompleted === false)).toBe(true)
+  })
+
   it('passes distinct distances and horse-name slices across rounds (sad — stub returning a single fixed card would fail)', () => {
     const program = makeProgram()
     // Make round 2 use lanes 11..20 so we can verify the panel doesn't reuse round-1 lanes.

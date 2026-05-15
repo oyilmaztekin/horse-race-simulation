@@ -1,5 +1,12 @@
 # Progress Log
 
+## 2026-05-15 — Session 39: ProgramPanel collapse for completed rounds
+
+- `ProgramRoundCard.vue` accepts new `isCompleted: boolean` prop; when true, hides the `<ol>` list and adds `program-round-card--collapsed` modifier (opacity 0.6).
+- `ProgramPanel.vue` computes `isCompleted = index < race.results.length` and forwards to each card — completed rounds collapse automatically as `RoundResult`s land in the store; READY/INITIAL have empty results so nothing collapses pre-race.
+- Tests: `ProgramRoundCard.test.ts` +3 cases (collapsed hides entries, expanded shows entries, completed overrides current); `ProgramPanel.test.ts` +2 cases (mid-race results count maps to isCompleted; READY marks none completed).
+- Decision: derive completion from `results.length` rather than a `completedRoundIndex` flag — single source of truth, no new store field; works in both RACING and FINISHED.
+
 ## 2026-05-15 — Session 38: Phase 8.5 — Tailwind + dark-mode gaming redesign (Phase 8.5 complete)
 
 ### What landed

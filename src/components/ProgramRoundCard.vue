@@ -6,15 +6,22 @@ defineProps<{
   distance: number
   entries: { laneIndex: number; horse: Horse }[]
   isCurrent: boolean
+  isCompleted: boolean
 }>()
 </script>
 
 <template>
-  <section class="program-round-card" :class="{ 'program-round-card--current': isCurrent }">
+  <section
+    class="program-round-card"
+    :class="{
+      'program-round-card--current': isCurrent,
+      'program-round-card--collapsed': isCompleted,
+    }"
+  >
     <header class="program-round-card__header">
       Round {{ roundNumber }} — {{ distance }} m
     </header>
-    <ol class="program-round-card__list">
+    <ol v-if="!isCompleted" class="program-round-card__list">
       <li
         v-for="entry in entries"
         :key="entry.laneIndex"
@@ -37,6 +44,9 @@ defineProps<{
   border-color: var(--color-current);
   background: var(--color-current-bg);
   box-shadow: var(--shadow-current);
+}
+.program-round-card--collapsed {
+  opacity: 0.6;
 }
 .program-round-card__header {
   @apply py-s2 px-s3 text-xs font-racing uppercase tracking-widest text-text-muted;

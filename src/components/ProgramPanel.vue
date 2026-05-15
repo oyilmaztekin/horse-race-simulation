@@ -11,6 +11,7 @@ interface CardProps {
   distance: number
   entries: { laneIndex: number; horse: Horse }[]
   isCurrent: boolean
+  isCompleted: boolean
 }
 
 const race = useRaceStore()
@@ -25,6 +26,7 @@ function resolve(horseId: number): Horse {
 
 const cards = computed<CardProps[]>(() => {
   const program = race.program ?? []
+  const completedCount = race.results.length
   return program.map((round: Round, index: number) => ({
     roundNumber: index + 1,
     distance: round.distance,
@@ -33,6 +35,7 @@ const cards = computed<CardProps[]>(() => {
       horse: resolve(horseId),
     })),
     isCurrent: race.currentRoundIndex === index,
+    isCompleted: index < completedCount,
   }))
 })
 </script>
@@ -48,6 +51,7 @@ const cards = computed<CardProps[]>(() => {
         :distance="card.distance"
         :entries="card.entries"
         :is-current="card.isCurrent"
+        :is-completed="card.isCompleted"
       />
     </div>
   </section>

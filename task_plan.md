@@ -282,6 +282,11 @@ Exit: per-race form active, suite green, 45-vs-55 races flip outcomes across see
 
 Exit: reviewer can speed/slow the simulation live during any race. **DONE 2026-05-15 (Step 12 deferred to Phase 9).**
 
+#### Sub-phase 12.3 — Program panel collapse for completed rounds
+- [x] Step 13 — `ProgramRoundCard` accepts `isCompleted`; hides entries + applies `--collapsed` modifier when true. `ProgramPanel` derives it from `race.results.length`. Tests: 3 card-level + 2 panel-level cases.
+
+Exit: completed rounds collapse during/after a meeting; active round stays open. **DONE 2026-05-15.**
+
 ---
 
 ## Errors encountered

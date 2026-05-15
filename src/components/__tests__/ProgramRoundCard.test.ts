@@ -43,4 +43,45 @@ describe('ProgramRoundCard', () => {
     expect(items[0]?.text()).toContain(`Horse ${LANE_COUNT}`)
     expect(items[LANE_COUNT - 1]?.text()).toContain('Horse 1')
   })
+
+  it('hides entries and applies collapsed class when isCompleted (happy)', () => {
+    const wrapper = mount(ProgramRoundCard, {
+      props: {
+        roundNumber: 1,
+        distance: 1200,
+        entries: buildEntries(),
+        isCurrent: false,
+        isCompleted: true,
+      },
+    })
+    expect(wrapper.classes()).toContain('program-round-card--collapsed')
+    expect(wrapper.findAll('[data-test="program-entry"]')).toHaveLength(0)
+  })
+
+  it('shows entries when isCompleted is false (edge)', () => {
+    const wrapper = mount(ProgramRoundCard, {
+      props: {
+        roundNumber: 1,
+        distance: 1200,
+        entries: buildEntries(),
+        isCurrent: true,
+        isCompleted: false,
+      },
+    })
+    expect(wrapper.classes()).not.toContain('program-round-card--collapsed')
+    expect(wrapper.findAll('[data-test="program-entry"]')).toHaveLength(LANE_COUNT)
+  })
+
+  it('collapses regardless of isCurrent when isCompleted is true (sad — implementation ignoring isCompleted would fail)', () => {
+    const wrapper = mount(ProgramRoundCard, {
+      props: {
+        roundNumber: 1,
+        distance: 1200,
+        entries: buildEntries(),
+        isCurrent: true,
+        isCompleted: true,
+      },
+    })
+    expect(wrapper.findAll('[data-test="program-entry"]')).toHaveLength(0)
+  })
 })
