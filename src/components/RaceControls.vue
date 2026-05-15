@@ -11,6 +11,7 @@ const race = useRaceStore()
       class="race-controls__button"
       data-testid="btn-generate"
       :disabled="!race.canGenerate"
+      @click="race.generateProgram()"
     >
       Generate Program
     </button>
@@ -19,6 +20,7 @@ const race = useRaceStore()
       class="race-controls__button"
       data-testid="btn-start"
       :disabled="!race.canStart"
+      @click="race.start()"
     >
       Start
     </button>

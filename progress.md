@@ -308,6 +308,21 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 22: Phase 7 cycle 2 (RaceControls click dispatches)
+
+### What landed
+
+- `src/components/RaceControls.vue` — `@click="race.generateProgram()"` and `@click="race.start()"` on the two buttons.
+- `src/components/__tests__/RaceControls.test.ts` — 3 new tests under a `button click dispatches` describe: Generate click invokes `race.generateProgram` (happy); Start click invokes `race.start` and not generateProgram (edge); a disabled Generate (RESTING phase) does NOT fire the handler (sad — a stub that fired regardless would fail). `createTestingPinia` auto-stubs actions, so the assertions read directly from the spies.
+
+### Test count
+
+173 tests (23 files), all green.
+
+### Next action
+
+Cycle 3 — on `NotEnoughFitHorsesError` thrown from `generateProgram`, surface the warning banner and reveal the Rest button.
+
 ## 2026-05-15 — Session 21: Phase 7 cycle 1 (RaceControls button enabled state)
 
 ### What landed

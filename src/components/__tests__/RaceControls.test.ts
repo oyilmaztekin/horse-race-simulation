@@ -1,6 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   HORSE_COUNT,
   PHASE_INITIAL,
@@ -69,5 +69,66 @@ describe('RaceControls — button enabled state', () => {
     })
     expect(wrapper.find('[data-testid="btn-generate"]').attributes('disabled')).toBeDefined()
     expect(wrapper.find('[data-testid="btn-start"]').attributes('disabled')).toBeDefined()
+  })
+})
+
+describe('RaceControls — button click dispatches', () => {
+  it('dispatches race.generateProgram on Generate click (happy)', async () => {
+    const wrapper = mount(RaceControls, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            initialState: {
+              horses: { horses: makeHorses(), isLoading: false, error: null },
+              race: { state: { kind: PHASE_INITIAL } },
+            },
+          }),
+        ],
+      },
+    })
+    const { useRaceStore } = await import('../../stores/race')
+    const race = useRaceStore()
+    await wrapper.find('[data-testid="btn-generate"]').trigger('click')
+    expect(race.generateProgram).toHaveBeenCalledOnce()
+  })
+
+  it('dispatches race.start on Start click when READY (edge)', async () => {
+    const wrapper = mount(RaceControls, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            initialState: {
+              horses: { horses: makeHorses(), isLoading: false, error: null },
+              race: { state: { kind: PHASE_READY, program: [], rng: () => 0.5, seed: 1 } },
+            },
+          }),
+        ],
+      },
+    })
+    const { useRaceStore } = await import('../../stores/race')
+    const race = useRaceStore()
+    await wrapper.find('[data-testid="btn-start"]').trigger('click')
+    expect(race.start).toHaveBeenCalledOnce()
+    expect(race.generateProgram).not.toHaveBeenCalled()
+  })
+
+  it('does not dispatch generateProgram when Generate is disabled (sad — stub firing anyway would fail)', async () => {
+    const restingUntil = Date.now() + 5000
+    const wrapper = mount(RaceControls, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            initialState: {
+              horses: { horses: makeHorses(), isLoading: false, error: null },
+              race: { state: { kind: PHASE_RESTING, restingUntil } },
+            },
+          }),
+        ],
+      },
+    })
+    const { useRaceStore } = await import('../../stores/race')
+    const race = useRaceStore()
+    await wrapper.find('[data-testid="btn-generate"]').trigger('click')
+    expect(race.generateProgram).not.toHaveBeenCalled()
   })
 })
