@@ -942,3 +942,19 @@ All eight steps of sub-phase 12.1 (per-race form variance) are now landed:
 ### Next action
 
 Sub-phase 12.2 — runtime sim-speed control. Step 9: `useRaceStore.simSpeedMultiplier` with `increase/decreaseSimSpeed` actions clamped to [0.5, 4] in 0.5 steps; default 2. Pure store change, no UI yet.
+
+## 2026-05-15 — Session 41: Phase 12.2 Step 9 — simSpeedMultiplier store
+
+### What landed
+
+- `src/domain/constants.ts` — `SIM_SPEED_DEFAULT=2`, `SIM_SPEED_MIN=0.5`, `SIM_SPEED_MAX=4`, `SIM_SPEED_STEP=0.5`.
+- `src/stores/race.ts` — `simSpeedMultiplier` ref (default 2) + `increaseSimSpeed` / `decreaseSimSpeed` actions. Both go through `snapToStep` which clamps to [MIN, MAX] *and* snaps to the SIM_SPEED_STEP grid — guards against floating-point drift if a future caller stuffs an off-grid value into the ref.
+- `src/stores/__tests__/race.test.ts` — three flavors: happy (default), edge (bounds saturate at MIN/MAX, no-ops past the bound), sad (every reachable value lands exactly on the SIM_SPEED_STEP grid — catches FP drift).
+
+### Test count
+
+225 tests (30 files), all green (+3 new store tests).
+
+### Next action
+
+Step 10 — multiply the rAF accumulator's wall-clock by `simSpeedMultiplier` inside `useRaceSimulation`. Must preserve determinism: at multiplier=1 the seeded output stays byte-identical to today.

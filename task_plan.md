@@ -257,7 +257,7 @@ Two coupled revisions ship together: (a) runtime `SIM_SPEED_MULTIPLIER` so revie
 Exit: per-race form active, suite green, 45-vs-55 races flip outcomes across seeds. **DONE 2026-05-15.**
 
 #### Sub-phase 12.2 — Runtime sim-speed control
-- [ ] Step 9 — `useRaceStore.simSpeedMultiplier` + `increase/decreaseSimSpeed` clamped to [0.5, 4] in 0.5 steps; default 2.
+- [x] Step 9 — `useRaceStore.simSpeedMultiplier` + `increase/decreaseSimSpeed` clamped to [0.5, 4] in 0.5 steps; default 2.
 - [ ] Step 10 — `useRaceSimulation` accumulator scales by multiplier (multiplier=1 ≡ baseline byte-identical).
 - [ ] Step 11 — `RaceTrack.vue` renders `[−] 2.0× [+]` row above lanes; disabled at bounds; BEM `.race-track__speed-control`.
 - [ ] Step 12 — Playwright e2e: start → click + twice → race finishes faster.

@@ -14,6 +14,10 @@ import {
   REST_DURATION_MS,
   ROUND_COUNT,
   ROUND_DISTANCES,
+  SIM_SPEED_DEFAULT,
+  SIM_SPEED_MAX,
+  SIM_SPEED_MIN,
+  SIM_SPEED_STEP,
 } from '../../domain/constants'
 import { InvalidTransitionError, NotEnoughFitHorsesError } from '../../domain/errors'
 import { createRng } from '../../domain/rng'
@@ -649,5 +653,58 @@ describe('useRaceStore — derived gates (canGenerate / canStart / canRest / fit
     expect(loadingRace.canGenerate).toBe(false)
     expect(loadingRace.canStart).toBe(false)
     expect(loadingRace.canRest).toBe(false)
+  })
+})
+
+describe('useRaceStore — simSpeedMultiplier (Phase 12.2)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  it('defaults to SIM_SPEED_DEFAULT (happy)', () => {
+    const race = useRaceStore()
+    expect(race.simSpeedMultiplier).toBe(SIM_SPEED_DEFAULT)
+  })
+
+  it('increaseSimSpeed adds SIM_SPEED_STEP, decreaseSimSpeed subtracts SIM_SPEED_STEP, clamped to [SIM_SPEED_MIN, SIM_SPEED_MAX] (edge — bounds)', () => {
+    const race = useRaceStore()
+    race.decreaseSimSpeed()
+    expect(race.simSpeedMultiplier).toBe(SIM_SPEED_DEFAULT - SIM_SPEED_STEP)
+    race.increaseSimSpeed()
+    race.increaseSimSpeed()
+    expect(race.simSpeedMultiplier).toBe(SIM_SPEED_DEFAULT + SIM_SPEED_STEP)
+
+    // Saturate to max
+    for (let count = 0; count < 20; count += 1) race.increaseSimSpeed()
+    expect(race.simSpeedMultiplier).toBe(SIM_SPEED_MAX)
+    // Further increases are no-ops at the bound
+    race.increaseSimSpeed()
+    expect(race.simSpeedMultiplier).toBe(SIM_SPEED_MAX)
+
+    // Saturate to min
+    for (let count = 0; count < 20; count += 1) race.decreaseSimSpeed()
+    expect(race.simSpeedMultiplier).toBe(SIM_SPEED_MIN)
+    race.decreaseSimSpeed()
+    expect(race.simSpeedMultiplier).toBe(SIM_SPEED_MIN)
+  })
+
+  it('snaps to the SIM_SPEED_STEP grid — every reachable value is an exact integer multiple of the step (sad — floating-point drift would fail)', () => {
+    const race = useRaceStore()
+    const observed = new Set<number>([race.simSpeedMultiplier])
+    for (let step = 0; step < 20; step += 1) {
+      race.increaseSimSpeed()
+      observed.add(race.simSpeedMultiplier)
+    }
+    for (let step = 0; step < 20; step += 1) {
+      race.decreaseSimSpeed()
+      observed.add(race.simSpeedMultiplier)
+    }
+    for (const value of observed) {
+      // value / step should be an integer to within rounding
+      const ratio = value / SIM_SPEED_STEP
+      expect(Math.abs(ratio - Math.round(ratio))).toBeLessThan(1e-9)
+      expect(value).toBeGreaterThanOrEqual(SIM_SPEED_MIN)
+      expect(value).toBeLessThanOrEqual(SIM_SPEED_MAX)
+    }
   })
 })

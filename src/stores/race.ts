@@ -10,6 +10,10 @@ import {
   PHASE_READY,
   PHASE_RESTING,
   ROUND_COUNT,
+  SIM_SPEED_DEFAULT,
+  SIM_SPEED_MAX,
+  SIM_SPEED_MIN,
+  SIM_SPEED_STEP,
 } from '../domain/constants'
 import { assertEnoughFitHorses, countFitHorses } from '../domain/conditionMutation'
 import { InvalidTransitionError } from '../domain/errors'
@@ -36,6 +40,23 @@ export type RaceState =
 
 export const useRaceStore = defineStore('race', () => {
   const state = ref<RaceState>({ kind: PHASE_INITIAL })
+
+  // Reviewer-facing sim-speed control (Phase 12.2). Scales the rAF accumulator
+  // in useRaceSimulation; never touches inter-round pauses or server-driven rest.
+  const simSpeedMultiplier = ref<number>(SIM_SPEED_DEFAULT)
+
+  function snapToStep(value: number): number {
+    const clamped = Math.min(SIM_SPEED_MAX, Math.max(SIM_SPEED_MIN, value))
+    return Math.round(clamped / SIM_SPEED_STEP) * SIM_SPEED_STEP
+  }
+
+  function increaseSimSpeed(): void {
+    simSpeedMultiplier.value = snapToStep(simSpeedMultiplier.value + SIM_SPEED_STEP)
+  }
+
+  function decreaseSimSpeed(): void {
+    simSpeedMultiplier.value = snapToStep(simSpeedMultiplier.value - SIM_SPEED_STEP)
+  }
 
   const phase = computed(() => state.value.kind)
   const program = computed<Program | null>(() =>
@@ -206,6 +227,9 @@ export const useRaceStore = defineStore('race', () => {
     canGenerate,
     canStart,
     canRest,
+    simSpeedMultiplier,
+    increaseSimSpeed,
+    decreaseSimSpeed,
     generateProgram,
     start,
     rest,
