@@ -308,6 +308,21 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 16: Phase 6 cycle 3 (HorseSprite)
+
+### What landed
+
+- `src/components/HorseSprite.vue` — pure presentational SVG with three props (`color`, `progress: 0..1`, `condition: number`). Horizontal position bound via CSS custom property `--horse-progress`, so positioning is data-driven and free of inline math in the template. Condition rendered as plain numeric text above the SVG per BUSINESS_LOGIC.md §3.9 / decision #27 — no threshold logic, no sprite variants.
+- `src/components/__tests__/HorseSprite.test.ts` — 3 tests (happy/edge/sad): SVG present, fill color matches prop, condition text visible; setting `progress` to 0 then 1 updates the `--horse-progress` CSS var; setting `condition` from MIN to MAX swaps the rendered number (sad: stub ignoring the prop would fail).
+
+### Test count
+
+154 tests (18 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 6 cycle 4 — `RaceLane.vue`: lane wrapper that derives `LANE_COLORS[laneIndex]`, converts `positionM / distanceM → progress`, mounts `HorseSprite`.
+
 ## 2026-05-15 — Session 15: Phase 6 cycle 2 (HorseListItem)
 
 ### What landed
