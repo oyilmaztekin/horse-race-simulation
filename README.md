@@ -6,7 +6,7 @@
 
 - **`CLAUDE.md`** — the *discipline*. Engineering ruleset every contributor (human or AI) follows to keep the codebase consistent: no hardcoded literals, BEM class names, full-word parameter names, mandatory Red→Green→Commit cycle, three-flavor test coverage. If a rule needs to change, the doc changes first.
 
-**Workflow.** Every domain rule was designed and locked in `BUSINESS_LOGIC.md` *before* a line of production code was written. Implementation then went rule-by-rule under strict Red→Green TDD: failing test first, minimum code to pass, commit; never a behavior bundled into two cycles, never code without a prior failing test. The decision logs (`BUSINESS_LOGIC.md` §5, `ARCHITECTURE.md` §12) and `progress.md` are the audit trail.
+**Workflow.** Every domain rule was designed and locked in `BUSINESS_LOGIC.md` *before* a line of production code was written. Implementation then went rule-by-rule under strict Red→Green TDD: failing test first, minimum code to pass, commit; never a behavior bundled into two cycles, never code without a prior failing test. The decision logs (`BUSINESS_LOGIC.md` §5, `ARCHITECTURE.md` §12) are the audit trail.
 
 ## Run it
 
