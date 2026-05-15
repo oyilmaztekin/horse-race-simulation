@@ -308,6 +308,27 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 25: Envelope carries server-computed remainingRestMs
+
+### What landed
+
+- `src/domain/types.ts` — `HorsesEnvelope` gains `remainingRestMs: number | null`. Server-computed at response time so the client renders the deadline without any local time math.
+- `server/routes/horses.ts` — `readEnvelopeAndMaybeBump` + `startRestIfIdle` populate `remainingRestMs`: `null` when no rest is active or lazy-bump just cleared it; `restingUntil − now` while a rest is in flight.
+- `server/__tests__/horses.test.ts` — 3 new tests (happy: matches `restingUntil − now` while resting; edge: null when no rest; sad: null after lazy-bump — a stub returning a number would fail).
+- Test fixtures in `useRaceApi`, `useRestPolling`, `horses.store` updated for the wider envelope shape; typecheck clean.
+
+### Why this shape (user-driven decision)
+
+The previous client-side 250ms `setInterval` made `RaceControls` *look* like it owned the countdown, even though the server owned `restingUntil`. User flagged this as ambiguous to readers and asked for a clearly server-driven version. With `remainingRestMs` in the envelope, each 1s poll brings a fresh server-computed countdown; the client renders it verbatim. No `Date.now()` in the view.
+
+### Test count
+
+183 tests (23 files), all green. Typecheck clean.
+
+### Next action
+
+Cycle B — refactor `RaceControls` to render `race.restingMsRemaining` directly; drop the local interval. (Race store + `useRestPolling` need to wire the polled value onto state.)
+
 ## 2026-05-15 — Session 24: Phase 7 cycles 4+5 (RaceControls countdown + rest dispatch) — RaceControls complete
 
 ### What landed

@@ -41,7 +41,7 @@ describe('useHorsesStore', () => {
 
   describe('fetchAll', () => {
     it('populates horses and clears isLoading/error on success (happy path)', async () => {
-      const envelope: HorsesEnvelope = { horses: [horse1, horse2], restingUntil: null }
+      const envelope: HorsesEnvelope = { horses: [horse1, horse2], restingUntil: null, remainingRestMs: null }
       mockGetHorses.mockResolvedValue(envelope)
 
       const store = useHorsesStore()
@@ -54,7 +54,7 @@ describe('useHorsesStore', () => {
 
     it('calls race.resumeRestFromBoot with the timestamp when envelope has non-null restingUntil (edge)', async () => {
       const futureMs = Date.now() + 8_000
-      const envelope: HorsesEnvelope = { horses: [horse1], restingUntil: futureMs }
+      const envelope: HorsesEnvelope = { horses: [horse1], restingUntil: futureMs, remainingRestMs: 8_000 }
       mockGetHorses.mockResolvedValue(envelope)
 
       const store = useHorsesStore()

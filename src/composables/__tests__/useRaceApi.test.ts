@@ -4,7 +4,11 @@ import { ApiError } from '../../domain/errors'
 import type { Horse, HorsesEnvelope } from '../../domain/types'
 
 const SAMPLE_HORSE: Horse = { number: 1, name: 'Lightning', condition: 80 }
-const ENVELOPE: HorsesEnvelope = { horses: [SAMPLE_HORSE], restingUntil: null }
+const ENVELOPE: HorsesEnvelope = {
+  horses: [SAMPLE_HORSE],
+  restingUntil: null,
+  remainingRestMs: null,
+}
 
 function jsonResponse(body: unknown, init: ResponseInit = {}): Response {
   return new Response(JSON.stringify(body), {

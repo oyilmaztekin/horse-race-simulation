@@ -28,11 +28,16 @@ async function readEnvelopeAndMaybeBump(db: PrismaClient): Promise<HorsesEnvelop
         ),
       )
       await transaction.appState.update({ where: { id: 1 }, data: { restingUntil: null } })
-      return { horses: bumped, restingUntil: null }
+      return { horses: bumped, restingUntil: null, remainingRestMs: null }
     }
 
     const horses = await transaction.horse.findMany({ orderBy: { number: 'asc' } })
-    return { horses, restingUntil: meta?.restingUntil?.getTime() ?? null }
+    const restingUntilMs = meta?.restingUntil?.getTime() ?? null
+    return {
+      horses,
+      restingUntil: restingUntilMs,
+      remainingRestMs: restingUntilMs === null ? null : restingUntilMs - now,
+    }
   })
 }
 
@@ -43,7 +48,8 @@ async function startRestIfIdle(db: PrismaClient): Promise<HorsesEnvelope> {
 
     if (meta?.restingUntil && meta.restingUntil.getTime() > now) {
       const horses = await transaction.horse.findMany({ orderBy: { number: 'asc' } })
-      return { horses, restingUntil: meta.restingUntil.getTime() }
+      const restingUntilMs = meta.restingUntil.getTime()
+      return { horses, restingUntil: restingUntilMs, remainingRestMs: restingUntilMs - now }
     }
 
     const restingUntil = new Date(now + REST_DURATION_MS)
@@ -53,6 +59,10 @@ async function startRestIfIdle(db: PrismaClient): Promise<HorsesEnvelope> {
       create: { id: 1, restingUntil },
     })
     const horses = await transaction.horse.findMany({ orderBy: { number: 'asc' } })
-    return { horses, restingUntil: restingUntil.getTime() }
+    return {
+      horses,
+      restingUntil: restingUntil.getTime(),
+      remainingRestMs: restingUntil.getTime() - now,
+    }
   })
 }

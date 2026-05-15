@@ -20,10 +20,14 @@ export interface Horse {
 }
 
 // GET /api/horses and POST /api/horses/rest both return this shape (ARCHITECTURE.md §6 / decision #29).
-// restingUntil is epoch-millis; null means no rest is active.
+// restingUntil is the server-set deadline (epoch-millis); remainingRestMs is the
+// server-computed countdown at the moment the response was generated. Both null
+// when no rest is active. The client renders remainingRestMs directly — the
+// server is the source of the displayed countdown (BUSINESS_LOGIC.md §4.7).
 export interface HorsesEnvelope {
   horses: Horse[]
   restingUntil: number | null
+  remainingRestMs: number | null
 }
 
 export interface Round {

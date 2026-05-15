@@ -38,6 +38,38 @@ describe('GET /api/horses', () => {
     expect(body.restingUntil).toBe(future.getTime())
   })
 
+  it('returns remainingRestMs equal to restingUntil - now during a rest (happy)', async () => {
+    const future = new Date(Date.now() + REST_DURATION_MS)
+    const db = createMockDb(makeHorses(), future)
+    const before = Date.now()
+
+    const res = await makeApp(db).request('/api/horses')
+    const body: HorsesEnvelope = await res.json()
+
+    expect(body.remainingRestMs).not.toBeNull()
+    expect(body.remainingRestMs).toBeGreaterThan(REST_DURATION_MS - 100)
+    expect(body.remainingRestMs).toBeLessThanOrEqual(future.getTime() - before)
+  })
+
+  it('returns remainingRestMs = null when no rest is active (edge)', async () => {
+    const db = createMockDb(makeHorses(), null)
+    const res = await makeApp(db).request('/api/horses')
+    const body: HorsesEnvelope = await res.json()
+
+    expect(body.remainingRestMs).toBeNull()
+  })
+
+  it('returns remainingRestMs = null after lazy-bump clears the rest (sad — stub returning a number would fail)', async () => {
+    const past = new Date(Date.now() - 1)
+    const db = createMockDb(makeHorses(20), past)
+
+    const res = await makeApp(db).request('/api/horses')
+    const body: HorsesEnvelope = await res.json()
+
+    expect(body.restingUntil).toBeNull()
+    expect(body.remainingRestMs).toBeNull()
+  })
+
   it('lazy-bumps unfit horses and clears restingUntil when timer has elapsed', async () => {
     const unfitHorses = makeHorses(20)
     const past = new Date(Date.now() - 1)
