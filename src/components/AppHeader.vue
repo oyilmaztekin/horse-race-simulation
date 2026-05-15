@@ -17,17 +17,20 @@ const race = useRaceStore()
 .app-header {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e0e0e0;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  background: var(--color-header);
+  color: var(--color-header-text);
+  border-bottom: 1px solid var(--color-border);
 }
 .app-header__title {
-  margin: 0;
-  font-size: 1.25rem;
+  font-size: var(--font-size-xl);
+  font-weight: 600;
 }
 .app-header__phase {
-  font-family: monospace;
-  font-size: 0.875rem;
-  color: #666;
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  opacity: 0.75;
+  margin-right: auto;
 }
 </style>

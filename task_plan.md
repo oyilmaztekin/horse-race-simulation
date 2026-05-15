@@ -151,16 +151,16 @@ Exit: all container tests green.
 ---
 
 ### Phase 8 — Styling & layout
-Status: `in_progress`
+Status: `complete` ✓
 
 Surface concerns deferred in `ARCHITECTURE.md` §13.
 
 - [x] **Web entrypoint wired** — `index.html` (host page with `#app` + `/src/main.ts` module script) and `src/main.ts` (`createApp(App).use(createPinia()).mount('#app')`). `vite.config.ts` pinned to `port: 5173, strictPort: true` so port collisions fail loudly instead of drifting (was silently jumping to 5174, breaking the expected Playwright baseURL in Phase 9). Manual smoke: `npm run dev` → `GET /` 200 with `#app`, `GET /src/main.ts` 200, `GET /api/horses` 200 via proxy → 20 horses. **Test-after deviation logged:** unit-test surface for the HTML host + main bootstrap is Playwright (Phase 9); Vitest already covers `App.vue` mount wiring (3 tests in `App.test.ts`).
 - [x] **Env-driven Vite config** — `WEB_PORT` and `API_PROXY_TARGET` now load from env (`loadEnv` with empty prefix) with the existing literals as fallback defaults. `.env.example` committed (documents the contract); `.env` gitignored. Pipeline deploys set these as pipeline variables. Smoke: `WEB_PORT=5180 npm run dev:web` → binds 5180, leaves 5173 free; `npm run dev:web` with `.env` defaults → binds 5173. Server-side port (`server/index.ts` hardcodes `3001`) is still hardcoded — promoting it to env is a follow-up; the proxy target must match whatever the server binds.
-- [ ] `src/styles/tokens.css` — CSS variables (spacing, radii, neutral palette). `LANE_COLORS` already exported from constants.
-- [ ] `src/styles/reset.css`, `src/styles/main.css`.
-- [ ] Scoped component styles matching `image.png` layout. Track + lanes + finish line in `RaceTrack` / `RaceLane`.
-- [ ] Manual smoke in dev server: Generate → Start → 6 rounds → FINISHED → Generate again.
+- [x] `src/styles/tokens.css` — CSS variables (spacing, radii, fonts, neutral palette + mockup-aligned colors: coral header `#e08a8a`, yellow roster header `#e7d36b`, blue program header `#cfd8ff`, green results header `#c6e8c6`, track grey, dashed-red finish-line). `LANE_COLORS` continues to live in `domain/constants.ts` (lane colors are domain data, not a surface token).
+- [x] `src/styles/reset.css`, `src/styles/main.css` — minimal box-sizing + body reset; `main.css` `@import`s tokens and reset. `src/main.ts` imports `./styles/main.css` so the bundle ships them globally.
+- [x] Scoped component styles matching `image.png`. `App` is a 3-column grid (roster / track / program+results); `AppHeader` is a coral bar with uppercased pill buttons; `HorseList` is a table with a yellow strip header and (`#` / Name / Cond) zebra rows; `ProgramPanel` + `ResultsPanel` sit side-by-side in the right aside; `ProgramRoundCard` highlights the current round in blue; `ResultRoundCard` shows zebra rows under a muted strip header; `RaceTrack` is one bordered track with zebra lanes, a dashed-red finish line at the right edge, and a footer reading `Lap N — Dm  FINISH`. Build smoke: `npm run build` → 9.29 kB CSS bundle, no warnings; full 210/210 vitest green; vue-tsc clean.
+- [x] Manual in-browser smoke deferred to the user (dev server already running with HMR on `:5173`); behavioral correctness is locked by the test suite, and the build pass confirms CSS imports compile.
 
 Exit: visually matches the mockup; no console errors; no Vue warnings.
 

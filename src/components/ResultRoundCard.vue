@@ -33,16 +33,23 @@ defineProps<{
 
 <style scoped>
 .result-round-card {
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+  background: var(--color-surface);
+  overflow: hidden;
 }
-.result-round-card__list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.result-round-card__header {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
 }
 .result-round-card__row {
-  display: flex;
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+}
+.result-round-card__row:nth-child(even) {
+  background: var(--color-surface-muted);
 }
 </style>

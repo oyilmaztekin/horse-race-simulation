@@ -39,10 +39,12 @@ const roundKey = computed(() => race.currentRoundIndex)
           :key="roundKey"
           :data-round-key="roundKey"
         />
-        <ProgramPanel v-if="hasProgram" />
       </section>
       <aside class="app__results">
-        <ResultsPanel />
+        <div class="app__panels">
+          <ProgramPanel v-if="hasProgram" class="app__panel app__panel--program" />
+          <ResultsPanel class="app__panel app__panel--results" />
+        </div>
       </aside>
     </main>
   </div>
@@ -52,20 +54,35 @@ const roundKey = computed(() => race.currentRoundIndex)
 .app {
   display: flex;
   flex-direction: column;
-  height: 100vh;
+  min-height: 100vh;
+  background: var(--color-bg);
 }
 .app__main {
   display: grid;
-  grid-template-columns: minmax(220px, 1fr) 2fr minmax(280px, 1fr);
-  gap: 1rem;
-  padding: 1rem;
+  grid-template-columns: minmax(240px, 1fr) minmax(0, 2.4fr) minmax(360px, 1.4fr);
+  gap: var(--space-4);
+  padding: var(--space-4);
   flex: 1;
-  overflow: hidden;
+  min-height: 0;
 }
 .app__roster,
 .app__center,
 .app__results {
   min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.app__roster,
+.app__results {
   overflow: auto;
+}
+.app__panels {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+}
+.app__panel {
+  min-width: 0;
 }
 </style>

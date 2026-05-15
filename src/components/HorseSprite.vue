@@ -8,7 +8,7 @@ defineProps<{
 
 <template>
   <div class="horse-sprite" :style="{ '--horse-progress': progress }">
-    <span class="horse-sprite__condition">{{ condition }}</span>
+    <span class="horse-sprite__condition"><small>condition</small>: <b>{{ condition }}</b></span>
     <svg
       class="horse-sprite__svg"
       viewBox="0 0 32 16"

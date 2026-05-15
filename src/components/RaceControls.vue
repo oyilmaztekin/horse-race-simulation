@@ -80,3 +80,47 @@ function onGenerate(): void {
     </p>
   </div>
 </template>
+
+<style scoped>
+.race-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.race-controls__button {
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-2);
+  font-weight: 600;
+  font-size: var(--font-size-sm);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+.race-controls__button:hover:not(:disabled) {
+  background: var(--color-surface-muted);
+}
+.race-controls__button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.race-controls__button--rest {
+  background: var(--color-warning-bg);
+  border-color: var(--color-warning-border);
+}
+.race-controls__warning {
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  background: var(--color-warning-bg);
+  border: 1px solid var(--color-warning-border);
+  border-radius: var(--radius-2);
+  font-size: var(--font-size-sm);
+}
+.race-controls__countdown {
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+</style>

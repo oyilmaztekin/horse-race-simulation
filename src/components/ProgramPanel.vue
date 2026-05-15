@@ -39,13 +39,39 @@ const cards = computed<CardProps[]>(() => {
 
 <template>
   <section class="program-panel">
-    <ProgramRoundCard
-      v-for="card in cards"
-      :key="card.roundNumber"
-      :round-number="card.roundNumber"
-      :distance="card.distance"
-      :entries="card.entries"
-      :is-current="card.isCurrent"
-    />
+    <header class="program-panel__header">Program</header>
+    <div class="program-panel__list">
+      <ProgramRoundCard
+        v-for="card in cards"
+        :key="card.roundNumber"
+        :round-number="card.roundNumber"
+        :distance="card.distance"
+        :entries="card.entries"
+        :is-current="card.isCurrent"
+      />
+    </div>
   </section>
 </template>
+
+<style scoped>
+.program-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+  overflow: hidden;
+}
+.program-panel__header {
+  padding: var(--space-2) var(--space-3);
+  font-weight: 600;
+  background: var(--color-program-header);
+  border-bottom: 1px solid var(--color-border);
+}
+.program-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+</style>

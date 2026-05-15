@@ -46,7 +46,6 @@ watch(
 
 <template>
   <section class="race-track">
-    <header class="race-track__header">Round {{ roundNumber }} — {{ round.distance }} m</header>
     <div class="race-track__lanes">
       <RaceLane
         v-for="lane in lanes"
@@ -56,34 +55,56 @@ watch(
         :position-m="lane.positionM"
         :distance-m="lane.distanceM"
       />
+      <div class="race-track__finish-line" aria-hidden="true" />
     </div>
-    <div class="race-track__finish-line" aria-hidden="true" />
+    <footer class="race-track__footer">
+      <span>Lap {{ roundNumber }} — {{ round.distance }} m</span>
+      <span class="race-track__finish-label">FINISH</span>
+    </footer>
   </section>
 </template>
 
 <style scoped>
 .race-track {
-  position: relative;
-}
-.race-track__header {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-.race-track__lanes {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  background: var(--color-track);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+  overflow: hidden;
+  flex: 1;
+  min-height: 0;
+}
+.race-track__lanes {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 .race-track__finish-line {
   position: absolute;
   right: 0;
-  top: 2rem;
+  top: 0;
   bottom: 0;
-  width: 2px;
+  width: 3px;
   background: repeating-linear-gradient(
     to bottom,
-    #000 0 8px,
-    #fff 8px 16px
+    var(--color-finish) 0 8px,
+    var(--color-surface) 8px 16px
   );
+  pointer-events: none;
+}
+.race-track__footer {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--font-size-sm);
+  color: var(--color-finish);
+  font-weight: 600;
+  background: var(--color-track-lane-alt);
+  border-top: 1px solid var(--color-border);
+}
+.race-track__finish-label {
+  letter-spacing: 0.1em;
 }
 </style>

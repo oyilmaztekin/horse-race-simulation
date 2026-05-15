@@ -46,12 +46,38 @@ const cards = computed<CardProps[]>(() =>
 
 <template>
   <section class="results-panel">
-    <ResultRoundCard
-      v-for="card in cards"
-      :key="card.roundNumber"
-      :round-number="card.roundNumber"
-      :distance="card.distance"
-      :entries="card.entries"
-    />
+    <header class="results-panel__header">Results</header>
+    <div class="results-panel__list">
+      <ResultRoundCard
+        v-for="card in cards"
+        :key="card.roundNumber"
+        :round-number="card.roundNumber"
+        :distance="card.distance"
+        :entries="card.entries"
+      />
+    </div>
   </section>
 </template>
+
+<style scoped>
+.results-panel {
+  display: flex;
+  flex-direction: column;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+  overflow: hidden;
+}
+.results-panel__header {
+  padding: var(--space-2) var(--space-3);
+  font-weight: 600;
+  background: var(--color-results-header);
+  border-bottom: 1px solid var(--color-border);
+}
+.results-panel__list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+}
+</style>

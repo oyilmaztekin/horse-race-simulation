@@ -28,13 +28,24 @@ const progress = computed(() => props.positionM / props.distanceM)
 .race-lane {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  height: 2rem;
+  gap: var(--space-2);
+  flex: 1;
+  min-height: 2.25rem;
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--color-border);
+}
+.race-lane:nth-child(even) {
+  background: var(--color-track-lane-alt);
+}
+.race-lane__index {
+  width: 1.25rem;
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
+  text-align: right;
 }
 .race-lane__track {
   position: relative;
   flex: 1;
   height: 100%;
-  border-bottom: 1px dashed #d0d0d0;
 }
 </style>

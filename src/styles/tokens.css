@@ -1,0 +1,39 @@
+:root {
+  --color-bg: #fafafa;
+  --color-surface: #ffffff;
+  --color-surface-muted: #f3f3f3;
+  --color-border: #d0d0d0;
+  --color-border-strong: #999;
+  --color-text: #222;
+  --color-text-muted: #666;
+
+  --color-header: #e08a8a;
+  --color-header-text: #2a1a1a;
+  --color-roster-header: #e7d36b;
+  --color-program-header: #cfd8ff;
+  --color-results-header: #c6e8c6;
+  --color-track: #d8d4cd;
+  --color-track-lane-alt: #cfcbc4;
+  --color-current: #0072b2;
+  --color-current-bg: #f4f9ff;
+  --color-warning-bg: #fff3cd;
+  --color-warning-border: #ffe69c;
+  --color-finish: #d63838;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.5rem;
+
+  --radius-1: 2px;
+  --radius-2: 4px;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --font-size-sm: 0.8rem;
+  --font-size-base: 0.9rem;
+  --font-size-lg: 1.1rem;
+  --font-size-xl: 1.35rem;
+}

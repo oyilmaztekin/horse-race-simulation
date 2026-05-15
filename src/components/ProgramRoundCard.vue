@@ -30,21 +30,38 @@ defineProps<{
 
 <style scoped>
 .program-round-card {
-  border: 1px solid #d0d0d0;
-  border-radius: 4px;
-  padding: 0.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+  background: var(--color-surface);
+  overflow: hidden;
 }
 .program-round-card--current {
-  border-color: #0072b2;
-  background: #f4f9ff;
+  border-color: var(--color-current);
+  background: var(--color-current-bg);
 }
-.program-round-card__list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
+.program-round-card__header {
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  background: var(--color-surface-muted);
+  border-bottom: 1px solid var(--color-border);
+}
+.program-round-card--current .program-round-card__header {
+  background: var(--color-current);
+  color: var(--color-surface);
 }
 .program-round-card__entry {
-  display: flex;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: 1.5rem 1fr;
+  gap: var(--space-2);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--font-size-sm);
+}
+.program-round-card__entry:nth-child(even) {
+  background: var(--color-surface-muted);
+}
+.program-round-card__lane {
+  font-family: var(--font-mono);
+  color: var(--color-text-muted);
 }
 </style>

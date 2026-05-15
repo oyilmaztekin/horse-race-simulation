@@ -1,5 +1,22 @@
 # Progress Log
 
+## 2026-05-15 — Session 37: Phase 8 — styling & layout (Phase 8 complete)
+
+**Behavior added:** the app now renders the mockup layout. Coral header bar with uppercased pill controls; left aside is a `Horse List (1 – 20)` table with `#` / Name / Cond columns and zebra rows; center is the single bordered race track with zebra lanes, a dashed-red finish line at the right edge, and a `Lap N — Dm  FINISH` footer; right aside is Program + Results stacked side-by-side, each as a card whose strip header matches the mockup (blue for Program, green for Results) and whose round cards show zebra rows under a muted strip header. The currently-running round in Program is highlighted blue.
+
+**Files added:**
+- `src/styles/tokens.css` — design tokens (spacing, radii, font stack, mockup-aligned palette). `LANE_COLORS` deliberately stays in `domain/constants.ts` because lane colors are domain data, not a surface token.
+- `src/styles/reset.css` — minimal `box-sizing: border-box`, body/html height + font defaults, list/button resets.
+- `src/styles/main.css` — `@import`s tokens and reset; imported once from `src/main.ts` so the bundle ships them globally.
+
+**Files touched (scoped styles only — no behavior change):** `src/App.vue` (3-col grid + right-aside 2-col panel grid), `src/components/AppHeader.vue` (coral bar), `src/components/RaceControls.vue` (pill buttons + warning/countdown styling — first scoped style block on this component), `src/components/HorseList.vue` (header + column row, table container), `src/components/HorseListItem.vue` (grid row, now renders `horse.number` alongside name + condition), `src/components/ProgramPanel.vue` / `ResultsPanel.vue` (card containers with strip headers — first scoped styles), `src/components/ProgramRoundCard.vue` (current-round blue accent), `src/components/ResultRoundCard.vue` (zebra rows), `src/components/RankingRow.vue` (grid alignment for position/swatch/name), `src/components/RaceTrack.vue` (single bordered track + dashed-red finish line + footer), `src/components/RaceLane.vue` (zebra rows + lane index).
+
+**Test discipline:** styling is non-behavioral; the test suite already locks the contract (210/210 vitest + vue-tsc green throughout). `npm run build` produces a 9.29 kB CSS bundle with no warnings — proof that the new `@import` graph compiles cleanly and that no scoped-style block broke parsing. Manual in-browser smoke is the user's gate (dev server is already running on `:5173` with HMR).
+
+**Suite:** 210/210 vitest tests green; typecheck clean; production build clean.
+
+**Next:** Phase 9 — Playwright happy path. With the seeded `0xDECAF` roster (10 of 20 horses below 40), the first Generate surfaces the fit-gate warning; the spec walks Generate → Rest → wait 10s → Generate → Start → 6 result cards → FINISHED. Playwright `webServer` runs `npm run dev`; baseURL `http://localhost:5173`.
+
 ## 2026-05-15 — Session 36: Phase 8 — env-driven Vite config
 
 **Behavior added:** `vite.config.ts` reads `WEB_PORT` and `API_PROXY_TARGET` from the process environment via Vite's `loadEnv(mode, cwd, '')` (empty prefix so non-`VITE_*` server-config keys are visible). Existing literals (`5173`, `http://localhost:3001`) demoted to `DEFAULT_*` fallbacks. Port parsing guards against `NaN` and non-positive values. Deploy pipelines now set these as pipeline variables; nothing in the repo encodes the deployment target.
