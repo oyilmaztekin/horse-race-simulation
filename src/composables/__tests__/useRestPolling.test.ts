@@ -103,6 +103,23 @@ describe('useRestPolling', () => {
     wrapper.unmount()
   })
 
+  it('clears its interval handle on unmount (sad: leaked interval is a rejection-worthy bug)', async () => {
+    mockGetHorses.mockResolvedValue({
+      horses: makeRoster(20),
+      restingUntil: FIXED_NOW_MS + REST_DURATION_MS,
+    } satisfies HorsesEnvelope)
+    const clearSpy = vi.spyOn(globalThis, 'clearInterval')
+    const wrapper = mountPollingHost()
+    await enterResting(FIXED_NOW_MS + REST_DURATION_MS)
+    await vi.waitFor(() => expect(mockGetHorses).toHaveBeenCalledTimes(1))
+    wrapper.unmount()
+    expect(clearSpy).toHaveBeenCalled()
+    const callsAtUnmount = mockGetHorses.mock.calls.length
+    await vi.advanceTimersByTimeAsync(REST_POLL_INTERVAL_MS * 5)
+    expect(mockGetHorses).toHaveBeenCalledTimes(callsAtUnmount)
+    clearSpy.mockRestore()
+  })
+
   it('tolerates a failed GET without crashing and keeps polling (sad)', async () => {
     mockGetHorses.mockRejectedValueOnce(new Error('boom'))
     mockGetHorses.mockResolvedValueOnce({

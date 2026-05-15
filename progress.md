@@ -308,6 +308,21 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 18: Phase 6 cycle 5 (ProgramRoundCard)
+
+### What landed
+
+- `src/components/ProgramRoundCard.vue` — `<section>` with header "Round N — D m" and an ordered list of LANE_COUNT entries (lane number + horse name). `--current` modifier class flips with `isCurrent` prop. Pure props per ARCHITECTURE.md §14.3; no store access.
+- `src/components/__tests__/ProgramRoundCard.test.ts` — 3 tests (happy/edge/sad): all entries render in lane order with header text; `isCurrent` toggles class; reversed entries prop re-renders in new order (sad: a stub iterating a captured snapshot would fail).
+
+### Test count
+
+161 tests (20 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 6 cycle 6 — `ResultRoundCard.vue`: finish-order rendering with swatches from `laneIndex`.
+
 ## 2026-05-15 — Session 17: Phase 6 cycle 4 (RaceLane)
 
 ### What landed
@@ -383,6 +398,24 @@ Phase 6 cycle 2 — `HorseListItem.vue`: render `horse.name` + `horse.condition`
 ### Next action
 
 Cycle 5 — `start()` action: READY → RACING with `currentRoundIndex = 0`, `results = []`; throws `InvalidTransitionError` from non-READY phases.
+
+## 2026-05-15 — Session N: Phase 5 audit fix (1/3) — useRestPolling unmount cleanup
+
+### What landed
+
+- `src/composables/__tests__/useRestPolling.test.ts` — new sad-flavor test spies on `globalThis.clearInterval`, mounts the host, enters RESTING, waits for the immediate tick, unmounts, then asserts (a) `clearInterval` was called and (b) no further `getHorses` calls fire after advancing the fake timer `REST_POLL_INTERVAL_MS * 5`. Verified red by commenting out `onUnmounted(stop)` in `useRestPolling.ts` — the new test failed; restoring the line returned to green.
+
+### Why
+
+Phase 5 audit found the `onUnmounted(stop)` branch in `useRestPolling.ts:51` had no test coverage. A regression that dropped that line would leak a polling interval across HMR / route unmount and survive the existing 3-test suite. `useRaceSimulation.test.ts:79-86` already locks down the symmetric `cancelAnimationFrame` cleanup; this brings rest polling to parity.
+
+### Test count
+
+159 tests (19 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 5 audit fix (2/3) — `useRestPolling` mid-rest branch: assert `horses.applyServerUpdate` is called while `restingUntil !== null`.
 
 
 
