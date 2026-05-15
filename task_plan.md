@@ -116,7 +116,7 @@ Exit: composables tests green.
 ---
 
 ### Phase 6 — Presentational components
-Status: `in_progress`
+Status: `complete` ✓
 
 All 7 pure-prop components. Each gets one `@vue/test-utils` mount test: prop in → expected text/class out. No store access, no emits.
 
@@ -126,7 +126,7 @@ All 7 pure-prop components. Each gets one `@vue/test-utils` mount test: prop in 
 - [x] `RaceLane.vue` + test — 3 tests (happy/edge/sad): mounts `HorseSprite` with `LANE_COLORS[laneIndex]` color and forwarded `horse.condition`; `progress = positionM / distanceM` (0 / 0.5 / 1 at midpoint+finish); different `laneIndex` yields a different color (sad: stub returning a fixed color would fail).
 - [x] `ProgramRoundCard.vue` + test — 3 tests (happy/edge/sad): renders round header + every entry in lane order; `program-round-card--current` class toggles iff `isCurrent`; reordered entries re-render in new order.
 - [x] `ResultRoundCard.vue` + test — 3 tests (happy/edge/sad): renders header + LANE_COUNT rows in finish order; one ColorSwatch per entry colored by `LANE_COLORS[laneIndex]`; reordered entries rerender (sad).
-- [ ] `RankingRow.vue` + test
+- [x] `RankingRow.vue` + test — 3 tests (happy/edge/sad): renders position + name + ColorSwatch with `LANE_COLORS[laneIndex]`; position prop renders verbatim across rank range; swatch color updates on `laneIndex` change (sad).
 
 Exit: presentational tests green.
 

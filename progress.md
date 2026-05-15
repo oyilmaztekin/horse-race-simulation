@@ -308,6 +308,21 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 20: Phase 6 cycle 7 (RankingRow) — Phase 6 complete
+
+### What landed
+
+- `src/components/RankingRow.vue` — renders `position` + `ColorSwatch(LANE_COLORS[laneIndex])` + `horse.name`. Pure props per ARCHITECTURE.md §14.3; no emits.
+- `src/components/__tests__/RankingRow.test.ts` — 3 tests (happy/edge/sad): all three slots render; positions 1 and 10 both render verbatim; lane change re-colors the swatch (sad: stub ignoring `laneIndex` would fail).
+
+### Test count
+
+167 tests (22 files), all green. Typecheck clean. **Phase 6 (presentational components) is COMPLETE.**
+
+### Next action
+
+Phase 7 — container components. Start with `RaceControls` (most behavior; surfaces fit-gate warning, Rest reveal, countdown).
+
 ## 2026-05-15 — Session 19: Phase 6 cycle 6 (ResultRoundCard)
 
 ### What landed
