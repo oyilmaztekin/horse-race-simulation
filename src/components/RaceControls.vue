@@ -25,7 +25,7 @@ function onGenerate(): void {
     lastWarning.value = null;
   } catch (error: unknown) {
     if (error instanceof NotEnoughFitHorsesError) {
-      lastWarning.value = `Cannot generate: only ${error.fitCount} of ${error.required} horses are fit to race.`;
+      lastWarning.value = `Cannot generate: Only ${error.fitCount} of ${error.required} horses' conditions are fit for the race. Horses should rest`;
       return;
     }
     throw error;

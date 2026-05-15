@@ -25,3 +25,10 @@ playwright-report
 .env
 .env.local
 .env.*.local
+
+# LLM
+.claude
+graphify-out/.graphify_root
+graphify-out/.graphify_uncached.txt
+graphify-out/manifest.json
+graphify-out/cache/*

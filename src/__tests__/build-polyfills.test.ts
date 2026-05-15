@@ -11,7 +11,7 @@ const POLYFILLS_CHUNK_PATTERN = /polyfills-legacy-[A-Za-z0-9_-]+\.js$/
 const MODERN_CHUNK_PATTERN = /^(?!.*-legacy-).*\.js$/
 
 async function buildToTempDir(): Promise<string[]> {
-  const outDir = mkdtempSync(join(tmpdir(), 'beygir-build-'))
+  const outDir = mkdtempSync(join(tmpdir(), 'horse-build-'))
   try {
     await build({
       logLevel: 'silent',

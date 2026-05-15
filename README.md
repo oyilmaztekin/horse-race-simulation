@@ -1,8 +1,12 @@
 # Horse Racing Simulation
 
-This README is written for reviewers. The goal isn't to advertise what the app does — that's `BUSINESS_LOGIC.md`. The goal is to show **how the design was reasoned about**: which constraints were chosen, what was deliberately left out, and where the seams are.
+- **`BUSINESS_LOGIC.md`** — the *what*. Domain rules (roster of 20, six rounds at fixed distances, weighted-by-condition selection, rest/cap eligibility, fatigue + recovery, fit-gate + Rest mechanism), application flow (5 phases: INITIAL / RESTING / READY / RACING / FINISHED), and a decision log (#1–#29) covering every locked rule with alternatives considered. Non-goals (pause, DNF, per-horse identity colors, mid-meeting rest) are explicit, not implied.
 
-If you have 15 minutes, read this file, then skim `BUSINESS_LOGIC.md` §5 (decision log) and `ARCHITECTURE.md` §12 (decision log). Those three documents are the source of truth — the code follows them, never the other way around.
+- **`ARCHITECTURE.md`** — the *how*. Tech stack, two-store layout (`horses` snapshot + `race` orchestrator), domain types, REST contract, server architecture, component inventory, testing strategy (rAF faking, three-flavor coverage), and decision log (#1–#29) covering every implementation choice. Tuning constants and patterns live here so they never leak into code as magic literals.
+
+- **`CLAUDE.md`** — the *discipline*. Engineering ruleset every contributor (human or AI) follows to keep the codebase consistent: no hardcoded literals, BEM class names, full-word parameter names, mandatory Red→Green→Commit cycle, three-flavor test coverage. If a rule needs to change, the doc changes first.
+
+**Workflow.** Every domain rule was designed and locked in `BUSINESS_LOGIC.md` *before* a line of production code was written. Implementation then went rule-by-rule under strict Red→Green TDD: failing test first, minimum code to pass, commit; never a behavior bundled into two cycles, never code without a prior failing test. The decision logs (`BUSINESS_LOGIC.md` §5, `ARCHITECTURE.md` §12) and `progress.md` are the audit trail.
 
 ## Run it
 
@@ -17,37 +21,12 @@ npm run test:e2e       # playwright happy path (~3.3 min wall clock — real tim
 
 `db:migrate` is required before `dev` — the API reads from `dev.db`, and migration auto-invokes `db:seed` (`prisma.seed` in `package.json`). The seed is idempotent (`deleteMany` → `createMany` under a fixed RNG seed), so re-running resets the roster to a known state.
 
-## Decision log — three choices that show the thinking
+## Decision log — four choices that shape the codebase
 
-### 1. Server-authoritative roster, condition, and rest
-
-**Problem.** Where does horse condition live? If the client owns it, the simulation is trivially testable but the system has no integrity — a refresh, a second tab, or a debugger console wipes state. If the server owns it, every behavior needs an API and the client becomes a renderer.
-
-**Options.** (a) Client-owned with localStorage; (b) hybrid — server seeds, client mutates; (c) server-owned end-to-end.
-
-**Chosen.** (c). The server owns the roster, applies fatigue/recovery at round boundaries, and computes rest deadlines as wall-clock timestamps (`restingUntil`). The client renders.
-
-**Why.** The assessment is small but the *shape* matters: an asymmetric truth boundary is the most common source of bugs in interactive apps, and pretending it doesn't exist for an MVP teaches the wrong instincts. The cost paid is two stores instead of one (`horses` = cached snapshot, `race` = orchestrator) and a deliberate convention that client variables for server-derived countdowns are named for what they *display* (`secondsUntilEligible`), never for what they appear to own (`countdown`, `timer`). See `ARCHITECTURE.md` §4.
-
-### 2. Pure domain layer with injected RNG and clock
-
-**Problem.** The race must be **deterministic for tests** (same seed → identical finish order) and **non-deterministic for users** (every Generate click feels fresh). Most simulators tangle these by reaching for `Math.random()` and `performance.now()` inline.
-
-**Options.** (a) Mock `Math.random` per test; (b) global seedable singleton; (c) injection seam — every domain function takes `rng` and (where relevant) `dt` as arguments.
-
-**Chosen.** (c). `src/domain/` has zero imports from Vue, Pinia, fetch, or the DOM. `createRng(seed)` returns a mulberry32 PRNG; the server reseeds per "Generate Program" click and threads the RNG through `generateRoster`, `generateProgram`, and `simulation.step`. The `useRaceSimulation` composable runs a fixed-tick accumulator (`SIM_TICK_MS ≈ 16.67`) decoupled from `requestAnimationFrame`, so simulation cadence is independent of display refresh rate.
-
-**Why.** Determinism becomes a property of the *type signature*, not of test setup. The trade-off is verbosity at every call site — but that verbosity is the documentation. See `BUSINESS_LOGIC.md` decision #16 (fixed cadence) and #25 (per-meeting reseed), `ARCHITECTURE.md` §9.
-
-### 3. Domain literals live in code; backend-owned data does not
-
-**Problem.** Where do "horse names" go? They're data, but they're also a fixed editorial list of 20 strings. A naive answer is `const HORSE_NAMES = [...]` in `domain/`.
-
-**Options.** (a) Hardcoded array in `domain/`; (b) JSON next to the seed script, loaded once at seed time; (c) admin UI / CMS.
-
-**Chosen.** (b). `prisma/horseNames.json` is read by the seed script and written to SQLite. After seeding, the DB is the source of truth. The pure domain function `generateRoster(rng, lookupName)` takes the name-lookup as a **DI argument** — the function itself stays content-free and stubbable. The frontend bundle never carries truth-state it doesn't need.
-
-**Why.** Editorial changes (rename, retheme, localise) become JSON edits + a reseed, not a code change. Tests pass a fake `lookupName` and never need to know the real list. Three different concerns — *what's content*, *what's structure*, *what's a pure transform* — get three different homes. See `BUSINESS_LOGIC.md` decision #18, `ARCHITECTURE.md` decision #24.
+- **Server-authoritative roster, condition, and rest.** The server owns the roster, applies fatigue/recovery at round boundaries, and computes rest deadlines as wall-clock timestamps (`restingUntil`). The client renders. Two stores fall out (`horses` snapshot, `race` orchestrator); client variables for server-derived countdowns are named for what they *display* (`secondsUntilEligible`). See `ARCHITECTURE.md` §4.
+- **Pure domain layer with injected RNG and clock.** `src/domain/` has zero imports from Vue, Pinia, fetch, or the DOM. `createRng(seed)` returns a mulberry32 PRNG; the server reseeds per Generate click and threads it through `generateRoster`, `generateProgram`, `simulation.step`. `useRaceSimulation` runs a fixed-tick accumulator (`SIM_TICK_MS ≈ 16.67`) decoupled from `requestAnimationFrame`. See `BUSINESS_LOGIC.md` #16, #25, `ARCHITECTURE.md` §9.
+- **Backend-owned data lives as JSON, never in code.** `prisma/horseNames.json` is read by the seed script and written to SQLite; after seeding, the DB is the source of truth. `generateRoster(rng, lookupName)` takes the name-lookup as a DI argument and stays content-free. Frontend bundle ships zero name strings. See `BUSINESS_LOGIC.md` #18, `ARCHITECTURE.md` #24.
+- **Dual-bundle polyfilling via `@vitejs/plugin-legacy`.** `vite.config.ts` emits a modern `type="module"` bundle, a `nomodule` legacy bundle, and a `polyfills-legacy-*.js` core-js chunk. Modern browsers skip the legacy payload; older browsers get the shims. Guarded by `src/__tests__/build-polyfills.test.ts` (happy / edge / sad).
 
 ## Constraint-based design — what was deliberately left out
 
@@ -59,6 +38,14 @@ The MVP scope is enforced by **explicit non-goals**. Each one removes a category
 - **No per-horse identity colors.** Colors are per-lane (`LANE_COLORS[laneIndex]`), not per-horse — the same horse in lane 3 of round 1 and lane 7 of round 4 is a different color. This is counterintuitive at first glance, which is exactly why it's documented: it keeps the eye on *the race*, not on tracking individuals across rounds.
 
 Each of these is one line in `BUSINESS_LOGIC.md` §6. Adding any of them is a doc change first, then a code change — never the reverse.
+
+## State management — Pinia today, XState the natural next step
+
+The race is, formally, a finite state machine: `INITIAL → RESTING → INITIAL`, `INITIAL → READY → RACING → FINISHED → READY`, with a locked button-enablement matrix per phase (`BUSINESS_LOGIC.md` §4.3). That's textbook **XState** territory — typed transitions, hierarchical states, guards, exhaustiveness over events, visualizable in the XState inspector. For a long-lived production app that's almost certainly the right tool: a chart you can hand to a designer, one source of truth for both code and docs, and no hand-rolled `assertRacing` / `mutateRacing` guards.
+
+This repo deliberately doesn't use it. The state machine is implemented as a Pinia store with a discriminated-union `RaceState` (`{ kind: 'INITIAL' } | { kind: 'READY', ... } | …`) and `switch (state.kind)` transitions guarded by TypeScript's exhaustiveness checking (`ARCHITECTURE.md` §16.10). It's the same shape — typed transitions, no `paused` flags, no impossible states — expressed in the framework everyone in the Vue ecosystem already reads fluently.
+
+The reasoning is **preventing overengineering** and **following the popular tools already common in the reviewer's codebase** — not technical preference. With only four phases and a locked transition matrix, a second library would add a dependency and a mental model that buy nothing the union type doesn't already give. The current shape will refactor cleanly into XState.
 
 ## Layering
 

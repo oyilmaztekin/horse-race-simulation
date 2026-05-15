@@ -34,7 +34,7 @@
 ## 2. Repository layout
 
 ```
-beygir-yarisi/
+horse-race/
 ├── BUSINESS_LOGIC.md             # rules contract (§1 in source-of-truth chain)
 ├── ARCHITECTURE.md               # this doc (§2)
 ├── CLAUDE.md                     # engineering discipline (§3)
