@@ -233,7 +233,7 @@ Reviewer-facing artifact. Runs only after Phase 9 (Playwright happy path) is gre
 Exit: container boots, SPA loads, `/api/horses` returns 20 rows, volume persists.
 
 #### Sub-phase 11.2 — Fly.io deploy (manual, first push)
-- [x] User: `flyctl auth login` (one-time, documented in DEPLOYMENT.md). Already authed as `yilmaztekin.ozer@gmail.com`.
+- [x] User: `flyctl auth login` (one-time, documented in DEPLOYMENT.md).
 - [x] `fly.toml` written directly (skipped `flyctl launch --copy-config` since the manifest fields are already known). App = `beygir-yarisi`, region `fra`, `[build] dockerfile = "Dockerfile"`, `[[mounts]] source = "data", destination = "/app/prisma"`, `[http_service] internal_port = 80, force_https = true, auto_stop_machines = "stop", min_machines_running = 0`, `[[http_service.checks]]` GET `/api/horses`, `[[vm]]` shared 1 CPU + 256 MB. **No `[deploy] release_command`** — `deploy/docker-entrypoint.sh` already runs `prisma migrate deploy` + conditional `prisma db seed` idempotently with the volume mounted, so duplicating it as a release_command in an ephemeral release machine without the volume would seed a doomed DB.
 - [ ] **User action required:** `flyctl apps create beygir-yarisi` + `flyctl volumes create data --size 1 --region fra --yes` + `flyctl deploy --remote-only` from local — first push.
 - [ ] **User action required:** browser smoke at `https://beygir-yarisi.fly.dev`.
