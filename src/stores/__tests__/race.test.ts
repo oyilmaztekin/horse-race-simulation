@@ -3,11 +3,14 @@ import { createPinia, setActivePinia } from 'pinia'
 import {
   HORSE_COUNT,
   LANE_COUNT,
+  MIN_FIT_HORSES_FOR_PROGRAM,
+  MIN_RACEABLE_CONDITION,
   PHASE_INITIAL,
   PHASE_READY,
   ROUND_COUNT,
   ROUND_DISTANCES,
 } from '../../domain/constants'
+import { NotEnoughFitHorsesError } from '../../domain/errors'
 import type { Horse } from '../../domain/types'
 import { useHorsesStore } from '../horses'
 
@@ -38,6 +41,14 @@ function makeFitRoster(): Horse[] {
     number: index + 1,
     name: `Horse ${index + 1}`,
     condition: FIT_CONDITION,
+  }))
+}
+
+function makeRosterWithFitCount(fitCount: number): Horse[] {
+  return Array.from({ length: HORSE_COUNT }, (_, index: number) => ({
+    number: index + 1,
+    name: `Horse ${index + 1}`,
+    condition: index < fitCount ? FIT_CONDITION : MIN_RACEABLE_CONDITION - 1,
   }))
 }
 
@@ -103,6 +114,24 @@ describe('useRaceStore — generateProgram (happy path)', () => {
     race.generateProgram()
 
     expect(race.seed).toBe(FIXED_NOW_MS)
+  })
+
+  it('rethrows NotEnoughFitHorsesError from the domain guard and stays in INITIAL', () => {
+    const horses = useHorsesStore()
+    const fitCount = MIN_FIT_HORSES_FOR_PROGRAM - 1
+    horses.applyServerUpdate(makeRosterWithFitCount(fitCount))
+
+    const race = useRaceStore()
+    let thrown: unknown
+    try {
+      race.generateProgram(KNOWN_SEED)
+    } catch (caught) {
+      thrown = caught
+    }
+
+    expect(thrown).toBeInstanceOf(NotEnoughFitHorsesError)
+    expect((thrown as NotEnoughFitHorsesError).fitCount).toBe(fitCount)
+    expect(race.state.kind).toBe(PHASE_INITIAL)
   })
 
   it('produces different programs for different seeds (sad: a constant-RNG stub would fail)', () => {

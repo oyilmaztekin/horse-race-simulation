@@ -1,23 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { ApiError, InvalidTransitionError, NotEnoughFitHorsesError } from '../errors'
+import { PHASE_INITIAL, PHASE_RACING, PHASE_FINISHED } from '../constants'
 
 describe('InvalidTransitionError', () => {
   it('stores kind and action on the instance (happy)', () => {
-    const err = new InvalidTransitionError('INITIAL', 'completeRound')
-    expect(err.kind).toBe('INITIAL')
+    const err = new InvalidTransitionError(PHASE_INITIAL, 'completeRound')
+    expect(err.kind).toBe(PHASE_INITIAL)
     expect(err.action).toBe('completeRound')
   })
 
   it('is an Error with name "InvalidTransitionError" (edge — instanceof + name)', () => {
-    const err = new InvalidTransitionError('RACING', 'generateProgram')
+    const err = new InvalidTransitionError(PHASE_RACING, 'generateProgram')
     expect(err).toBeInstanceOf(Error)
     expect(err).toBeInstanceOf(InvalidTransitionError)
     expect(err.name).toBe('InvalidTransitionError')
   })
 
   it('message includes both kind and action (sad — a stub that only stored fields would leave message blank)', () => {
-    const err = new InvalidTransitionError('FINISHED', 'start')
-    expect(err.message).toContain('FINISHED')
+    const err = new InvalidTransitionError(PHASE_FINISHED, 'start')
+    expect(err.message).toContain(PHASE_FINISHED)
     expect(err.message).toContain('start')
   })
 })

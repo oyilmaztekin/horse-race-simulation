@@ -6,6 +6,7 @@ import {
   PHASE_READY,
   PHASE_RESTING,
 } from '../domain/constants'
+import { assertEnoughFitHorses } from '../domain/conditionMutation'
 import { generateProgram as generateProgramFn } from '../domain/programGenerator'
 import { createRng } from '../domain/rng'
 import type { Program, Ranking, Rng, RoundResult } from '../domain/types'
@@ -55,6 +56,7 @@ export const useRaceStore = defineStore('race', () => {
 
   function generateProgram(seed: number = Date.now()): void {
     const horses = useHorsesStore()
+    assertEnoughFitHorses(horses.horses)
     const meetingRng = createRng(seed)
     const program = generateProgramFn(horses.horses, meetingRng)
     state.value = { kind: PHASE_READY, program, rng: meetingRng, seed }

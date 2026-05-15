@@ -239,6 +239,26 @@ Cycle 3b — `assertEnoughFitHorses(horses)` domain guard that throws `NotEnough
 
 Cycle 3c — wire `assertEnoughFitHorses` into `race.generateProgram` and re-add the store-level integration tests that exercise the gate.
 
+## 2026-05-15 — Session 10: Phase 4 race store, cycle 3c (wire fit-gate into store)
+
+### What landed
+
+- `src/stores/race.ts` — `generateProgram` calls `assertEnoughFitHorses(horses.horses)` at the top; on failure the domain error propagates and state stays INITIAL.
+- `src/stores/__tests__/race.test.ts` — 1 store-level integration test: below-threshold roster throws `NotEnoughFitHorsesError` carrying the right `fitCount`, and state remains `PHASE_INITIAL` afterwards. The boundary / empty-roster cases live in the domain unit tests (cycle 3b) — no duplication here.
+
+### Decision
+
+Store-level test exercises only what the store owns: the wiring + the post-throw state invariant. Domain math (off-by-one, zero-roster) is unit-tested at the source.
+
+### Test count
+
+97 tests (12 files), all green.
+
+### Next action
+
+Cycle 4 — `generateProgram` illegal-transition guard: throws `InvalidTransitionError` when called from RACING (and RESTING once that's reachable).
+
+
 
 
 
