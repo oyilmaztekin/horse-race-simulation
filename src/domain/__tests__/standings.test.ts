@@ -38,7 +38,7 @@ describe('computeStandings', () => {
     expect(standings[0]).toMatchObject({ rank: 1, wins: 2, podiums: 3, roundsRun: 3 })
     expect(standings[1]).toMatchObject({ rank: 2, wins: 1, podiums: 3, roundsRun: 3 })
     expect(standings[2]).toMatchObject({ rank: 3, wins: 0, podiums: 3, roundsRun: 3 })
-    expect(standings[0].name).toBe('Alfa')
+    expect(standings[0]!.name).toBe('Alfa')
   })
 
   it('breaks identical wins+podiums+time by horse number asc (edge)', () => {
@@ -54,7 +54,7 @@ describe('computeStandings', () => {
     expect(standings).toHaveLength(2)
     expect(standings[0]).toMatchObject({ rank: 1, horseId: 1, wins: 1, podiums: 2 })
     expect(standings[1]).toMatchObject({ rank: 2, horseId: 2, wins: 1, podiums: 2 })
-    expect(standings[0].totalFinishTimeMs).toBe(standings[1].totalFinishTimeMs)
+    expect(standings[0]!.totalFinishTimeMs).toBe(standings[1]!.totalFinishTimeMs)
   })
 
   it('returns [] for empty results and omits unknown horses (sad)', () => {
