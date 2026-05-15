@@ -803,3 +803,26 @@ Phase 7 cycle 12 — `AppHeader.vue` dedicated test (phase indicator text + nest
 ### Next action
 
 Phase 8 — styling & layout. `tokens.css`, `reset.css`, `main.css`, scoped component polish to match `image.png`. Manual smoke in dev server: Generate → Start → 6 rounds → FINISHED → Generate again.
+
+## 2026-05-15 — Session 35: Phase 12.1 Step 1 — drawForm primitive
+
+### What landed
+
+- `src/domain/constants.ts` — new `FORM_MPS = 1.0` (per-race form magnitude; reviewer-feedback brainstorm 2026-05-15).
+- `src/domain/simulation.ts` — new `drawForm(rng)` returning a uniform sample in `[-FORM_MPS, +FORM_MPS)`. Mirrors `drawJitter`'s symmetry-at-rng=0.5 so future closed-form anchors with `form=0` stay feasible. Pure addition: no existing call sites changed.
+- `src/domain/__tests__/simulation.test.ts` — new `describe('drawForm')` with three flavors: happy (rng=0.5 → 0), edge (bound check across 100 seeds × 20 draws), sad (different rng values produce different outputs).
+- `ARCHITECTURE.md` §16.2 — added `FORM_MPS` to the tuning-constants list.
+- `task_plan.md` — added Phase 12 (Race pacing revision) with Sub-phase 12.1 (form variance) and 12.2 (sim-speed control). Step 1 checkbox ticked.
+
+### Test count
+
+216 tests (30 files), all green. (+3 over Phase 7 end.)
+
+### Decisions worth recalling
+
+- Form is drawn at snapshot creation (not per tick) so it's effectively a "had a good day" race-level offset, not noise that averages out over thousands of ticks. RNG order is locked: form draws 1→10 happen *before* any per-tick jitter draws (commit pending step 3).
+- Magnitude `1.0` chosen so that the 45-vs-55 condition gap (mean speed gap 0.4 m/s) becomes a near coin-flip while 45-vs-80 (gap 1.4) stays heavily favored — see brainstorm decision log.
+
+### Next action
+
+Step 2 — change `computeSpeed` signature to `(condition, form, jitter)` and update the 3 existing call sites + tests. Existing closed-form anchor (cond=MAX, jitter=0 → BASE_SPEED_MPS_MAX) stays exact once form=0 is wired in.

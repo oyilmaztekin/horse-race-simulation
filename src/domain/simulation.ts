@@ -1,4 +1,4 @@
-import { BASE_SPEED_MPS_MAX, BASE_SPEED_MPS_MIN, CONDITION_MAX, JITTER_MPS } from './constants'
+import { BASE_SPEED_MPS_MAX, BASE_SPEED_MPS_MIN, CONDITION_MAX, FORM_MPS, JITTER_MPS } from './constants'
 import type { HorseId, LanePosition, Rng, Round, SimulationSnapshot } from './types'
 
 type ConditionLookup = (horseId: HorseId) => number
@@ -19,6 +19,13 @@ export function computeSpeed(condition: number, jitter: number): number {
 // closed-form finish-time test (cond=MAX, jitter=0) feasible.
 export function drawJitter(rng: Rng): number {
   return (rng() - 0.5) * 2 * JITTER_MPS
+}
+
+// One rng draw → uniform sample in [-FORM_MPS, +FORM_MPS). Drawn once per
+// lane at snapshot creation; the result lives on the LanePosition for the
+// whole race. Symmetry around rng()=0.5 keeps closed-form anchors feasible.
+export function drawForm(rng: Rng): number {
+  return (rng() - 0.5) * 2 * FORM_MPS
 }
 
 // Per BUSINESS_LOGIC.md §3.4 / decision #14: advance one lane by speed*dt;

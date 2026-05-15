@@ -4,13 +4,14 @@ import {
   BASE_SPEED_MPS_MIN,
   CONDITION_MAX,
   CONDITION_MIN,
+  FORM_MPS,
   JITTER_MPS,
   LANE_COUNT,
   ROUND_DISTANCES,
   SIM_TICK_MS,
 } from '../constants'
 import { createRng } from '../rng'
-import { advanceLane, computeSpeed, createSnapshot, drawJitter, step } from '../simulation'
+import { advanceLane, computeSpeed, createSnapshot, drawForm, drawJitter, step } from '../simulation'
 import type { HorseId, LanePosition, Round, SimulationSnapshot } from '../types'
 
 describe('computeSpeed', () => {
@@ -65,6 +66,40 @@ describe('drawJitter', () => {
     const rng = createRng(42)
     const first = drawJitter(rng)
     const second = drawJitter(rng)
+    expect(first).not.toBe(second)
+  })
+})
+
+describe('drawForm', () => {
+  // Per-race "form" offset (BUSINESS_LOGIC.md §3.4, decision Phase-9): one draw
+  // per lane at snapshot creation, held constant across the race. Same mapping
+  // shape as drawJitter — only the magnitude constant differs.
+  const constantRng = (value: number) => () => value
+
+  it('returns 0 exactly when rng() === 0.5 (happy — symmetry anchor)', () => {
+    expect(drawForm(constantRng(0.5))).toBe(0)
+  })
+
+  it('maps [0, 1) onto [-FORM_MPS, +FORM_MPS) (edge — boundary values)', () => {
+    expect(drawForm(constantRng(0))).toBe(-FORM_MPS)
+    expect(drawForm(constantRng(0.9999999))).toBeLessThan(FORM_MPS)
+    expect(drawForm(constantRng(0.9999999))).toBeGreaterThan(FORM_MPS - 1e-5)
+
+    for (let seed = 1; seed <= 100; seed += 1) {
+      const rng = createRng(seed)
+      for (let draw = 0; draw < 20; draw += 1) {
+        const formOffset = drawForm(rng)
+        expect(formOffset).toBeGreaterThanOrEqual(-FORM_MPS)
+        expect(formOffset).toBeLessThan(FORM_MPS)
+      }
+    }
+  })
+
+  it('different rng values produce different form offsets (sad — stub returning 0 would fail)', () => {
+    expect(drawForm(constantRng(0.25))).not.toBe(drawForm(constantRng(0.75)))
+    const rng = createRng(7)
+    const first = drawForm(rng)
+    const second = drawForm(rng)
     expect(first).not.toBe(second)
   })
 })

@@ -238,6 +238,34 @@ Exit: reviewer reads `DEPLOYMENT.md` in under 5 minutes and grasps the deploy st
 
 ---
 
+### Phase 12 — Race pacing revision (reviewer feedback 2026-05-15)
+
+Status: in progress (Step 1 landed).
+
+Two coupled revisions ship together: (a) runtime `SIM_SPEED_MULTIPLIER` so reviewers can speed up boring real-time races, (b) per-race "form" offset so close-condition pairs become real coin-flips while big gaps stay lopsided. Brainstorm + decision log captured in this session.
+
+#### Sub-phase 12.1 — Per-race form variance (domain)
+- [x] Step 1 — `drawForm(rng)` + `FORM_MPS = 1.0` constant. Three flavors (happy / edge / sad) in `simulation.test.ts`. (commit pending)
+- [ ] Step 2 — `computeSpeed(condition, form, jitter)` 3-arg signature; updated formula adds `form` term; existing 2-arg tests rebaselined.
+- [ ] Step 3 — `LanePosition.form` field; `createSnapshot(round, n, rng)` draws form per lane in lane-order 1→10.
+- [ ] Step 4 — `step()` passes persistent `lane.form` into `computeSpeed`; no extra rng for form per tick.
+- [ ] Step 5 — Closed-form anchor tests independent of seed (cond=MAX/MIN, form=0, jitter=0; sensitivity per arg).
+- [ ] Step 6 — Rebaseline remaining seeded simulation tests + composable test fixtures.
+- [ ] Step 7 — Variance-shape behavior tests (cond=80 always beats cond=45 with forms=0; cond=45 can beat cond=55 with form rigged).
+- [ ] Step 8 — `JITTER_MPS` 1.5 → 0.5 (visual jiggle only; form now owns outcome variance).
+
+Exit: per-race form active, suite green, 45-vs-55 races flip outcomes across seeds.
+
+#### Sub-phase 12.2 — Runtime sim-speed control
+- [ ] Step 9 — `useRaceStore.simSpeedMultiplier` + `increase/decreaseSimSpeed` clamped to [0.5, 4] in 0.5 steps; default 2.
+- [ ] Step 10 — `useRaceSimulation` accumulator scales by multiplier (multiplier=1 ≡ baseline byte-identical).
+- [ ] Step 11 — `RaceTrack.vue` renders `[−] 2.0× [+]` row above lanes; disabled at bounds; BEM `.race-track__speed-control`.
+- [ ] Step 12 — Playwright e2e: start → click + twice → race finishes faster.
+
+Exit: reviewer can speed/slow the simulation live during any race.
+
+---
+
 ## Errors encountered
 
 | Phase | Error | Attempt | Resolution |

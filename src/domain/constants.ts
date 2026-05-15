@@ -45,6 +45,11 @@ export const BASE_SPEED_MPS_MIN = 14
 export const BASE_SPEED_MPS_MAX = 18
 export const JITTER_MPS = 1.5
 
+// Per-race "form" magnitude (BUSINESS_LOGIC.md §3.4 / Phase 9 revision). One
+// draw per lane at snapshot creation, held constant across the race. Lets
+// close-condition pairs flip without making big-gap upsets common.
+export const FORM_MPS = 1.0
+
 // Per BUSINESS_LOGIC.md §3.7 / decision #10: each raced horse loses
 // FATIGUE_PER_RACE; each rested horse gains RECOVERY_PER_REST. Clamped to
 // [CONDITION_MIN, CONDITION_MAX] by `applyRoundEffects`.

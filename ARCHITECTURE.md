@@ -1246,6 +1246,7 @@ Surfaced by the 2026-05-14 brainstorm (`BUSINESS_LOGIC.md` decisions #26–#29).
 
 - `BASE_SPEED_MPS_MIN`, `BASE_SPEED_MPS_MAX` — slow vs. fast horse baseline m/s.
 - `JITTER_MPS` — per-tick noise magnitude.
+- `FORM_MPS` — per-race form magnitude (Phase 9 revision). Drawn once per lane at snapshot creation; `drawForm(rng)` returns a uniform sample in `[-FORM_MPS, +FORM_MPS)` with the same symmetry-at-0.5 property as `drawJitter`.
 - `CONDITION_WEIGHT` — how condition (1..100) maps onto the m/s range.
 
 Numbers TBD in a short follow-up. They only need to produce believable, reproducible races, not realistic ones.
