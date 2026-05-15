@@ -14,7 +14,7 @@
 npm install
 npm run db:migrate     # creates dev.db, applies schema, auto-seeds 20 horses (seed = 0xDECAF)
 npm run dev            # Vite :5173 + Hono :3001
-npm test               # vitest, 248 unit/component tests (~7s)
+npm test               # vitest, 248 tests across 33 files (~23s — includes a real Vite build)
 npx playwright install # one-time chromium fetch
 npm run test:e2e       # playwright happy path (~3.3 min wall clock — real timers)
 ```
@@ -85,6 +85,24 @@ Per-layer:
 - `components/` — `@vue/test-utils` smoke tests only; the happy path belongs to Playwright.
 - Playwright — one happy path per top-level action (Generate → Start → results), no more.
 
+### Coverage today
+
+`npm test` — **248 tests across 33 files**, ~23 s wall clock (includes a real Vite build for `src/__tests__/build-polyfills.test.ts`).
+
+`npx vitest run --coverage` — **98.29 % statements, 95.30 % branches, 95.71 % functions, 98.29 % lines** over the production tree.
+
+Per-layer coverage at a glance:
+
+| Layer | Stmts | Branch |
+|---|---|---|
+| `src/domain/` (pure rules + RNG + simulation) | 98.44 % | 98.41 % |
+| `src/stores/` (`horses`, `race`) | 100 % | 98.82 % |
+| `src/composables/` (`useRaceApi`, `useRaceSimulation`, `useRestPolling`) | 97.39 % | 95.12 % |
+| `src/components/` (Vue SFCs) | 99.52 % | 87.5 % |
+| `server/routes/` (Hono handlers) | 100 % | 100 % |
+
+The few uncovered branches are deliberate: cosmetic guards (`v-if` on already-narrowed unions), one error-rethrow in `RaceControls.onGenerate`, and one unreachable dead-arm in `simulation.step` kept for type exhaustiveness. Numbers are a side effect, not the target — coverage shape (happy / edge / sad per behavior) is what the suite is engineered for.
+
 ## End-to-end testing
 
 Playwright asserts what only a real browser can: state machine reaches `FINISHED`, server-authoritative conditions reach the DOM, button-enablement matrix holds. One happy path, real timers (~3 min wall clock). Everything cheaper is covered upstream.
@@ -114,11 +132,6 @@ graphify explain "Business Logic & Domain Decisions"        # node + neighborhoo
 
 Per `CLAUDE.md`, exploration in this repo is graphify-first, grep-last — relationships beat string matches by ~70x in token cost, and "where is X used" returns *meaning*, not just file paths.
 
-## What I'd do differently
-
-- **Two stores is the right call for this MVP, but the `race` store's discriminated-union state machine has grown enough that a tiny state-charts library (xstate) would be cheaper than the hand-rolled `assertRacing` / `mutateRacing` guards in `ARCHITECTURE.md` §16.10.** Worth it the next time a new phase appears.
-- **The `useRaceSimulation` fake-timer pattern (§15.5) is correct but painful** — every test needs `vi.useFakeTimers({ toFake: [..., 'requestAnimationFrame', 'cancelAnimationFrame'] })`. A custom matcher (`expectSimulationToFinish`) would absorb that.
-- **The graphify output is regenerated manually.** A pre-commit hook that fails when docs change but the graph hasn't would close the loop.
 
 ## Files worth opening in order
 
