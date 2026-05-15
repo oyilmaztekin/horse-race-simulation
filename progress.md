@@ -487,3 +487,22 @@ Resume Phase 6 component scaffolding (parallel work in progress on `ProgramRound
 
 
 
+
+## 2026-05-15 — Session N+1: Phase 6 audit fix — collapse ResultRoundCard row into RankingRow
+
+### What landed
+
+- `src/components/ResultRoundCard.vue` — each result row now delegates to `<RankingRow>` instead of inlining `position + ColorSwatch + name`. `ColorSwatch` import + `colorFor` helper + `__position`/`__name` element styles deleted from this component.
+- `src/components/__tests__/ResultRoundCard.test.ts` — edge test rewritten: asserts `findAllComponents(RankingRow)` has `LANE_COUNT` rows and every row receives the matching `{position, horse, laneIndex}` props. Verified red by running before the refactor (`expected [] to have a length of 10`). After the refactor, 170/170 green; vue-tsc clean.
+
+### Why
+
+`RankingRow` and `ResultRoundCard`'s inlined row were duplicate definitions of "one ranked finisher row" — same trio (position + LANE_COLORS swatch + name). Phase 7's `ResultsPanel` only consumes `ResultRoundCard`, leaving `RankingRow` orphaned. Collapsing the inline row into the component makes `RankingRow` the single source of truth for that shape (open/closed: a future variant — bold winner, time delta — changes one file), eliminates the duplicate CSS, and keeps every Phase-6 component with a real consumer before Phase 7 wiring lands on top.
+
+### Test count
+
+170 tests (23 files), all green.
+
+### Next action
+
+Begin Phase 7 — start with `App.vue` + `useRestPolling()` mount-once wiring per `ARCHITECTURE.md` §11 step 3.

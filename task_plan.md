@@ -125,8 +125,8 @@ All 7 pure-prop components. Each gets one `@vue/test-utils` mount test: prop in 
 - [x] `HorseSprite.vue` + test — 3 tests (happy/edge/sad): SVG colored by `color` + condition text visible; horizontal position driven by `--horse-progress` CSS var from `progress` prop (0 → 0, 1 → 1); condition text re-renders on prop change.
 - [x] `RaceLane.vue` + test — 3 tests (happy/edge/sad): mounts `HorseSprite` with `LANE_COLORS[laneIndex]` color and forwarded `horse.condition`; `progress = positionM / distanceM` (0 / 0.5 / 1 at midpoint+finish); different `laneIndex` yields a different color (sad: stub returning a fixed color would fail).
 - [x] `ProgramRoundCard.vue` + test — 3 tests (happy/edge/sad): renders round header + every entry in lane order; `program-round-card--current` class toggles iff `isCurrent`; reordered entries re-render in new order.
-- [x] `ResultRoundCard.vue` + test — 3 tests (happy/edge/sad): renders header + LANE_COUNT rows in finish order; one ColorSwatch per entry colored by `LANE_COLORS[laneIndex]`; reordered entries rerender (sad).
-- [x] `RankingRow.vue` + test — 3 tests (happy/edge/sad): renders position + name + ColorSwatch with `LANE_COLORS[laneIndex]`; position prop renders verbatim across rank range; swatch color updates on `laneIndex` change (sad).
+- [x] `ResultRoundCard.vue` + test — 3 tests (happy/edge/sad): renders header + LANE_COUNT rows in finish order; **delegates each row to `<RankingRow>` with matching `{position, horse, laneIndex}` props** (edge, hardened 2026-05-15 — inline row collapsed into `RankingRow`, eliminating duplicate definitions and giving `RankingRow` a real consumer ahead of Phase 7); reordered entries rerender (sad).
+- [x] `RankingRow.vue` + test — 3 tests (happy/edge/sad): renders position + name + ColorSwatch with `LANE_COLORS[laneIndex]`; position prop renders verbatim across rank range; swatch color updates on `laneIndex` change (sad). Consumed by `ResultRoundCard` (single source of truth for one ranked finisher row).
 
 Exit: presentational tests green.
 

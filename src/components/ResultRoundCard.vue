@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import ColorSwatch from './ColorSwatch.vue'
-import { LANE_COLORS } from '../domain/constants'
+import RankingRow from './RankingRow.vue'
 import type { Horse } from '../domain/types'
 
 defineProps<{
@@ -8,8 +7,6 @@ defineProps<{
   distance: number
   entries: { position: number; horse: Horse; laneIndex: number }[]
 }>()
-
-const colorFor = (laneIndex: number): string => LANE_COLORS[laneIndex] ?? LANE_COLORS[0] ?? '#000'
 </script>
 
 <template>
@@ -24,9 +21,11 @@ const colorFor = (laneIndex: number): string => LANE_COLORS[laneIndex] ?? LANE_C
         data-test="result-row"
         class="result-round-card__row"
       >
-        <span class="result-round-card__position">{{ entry.position }}</span>
-        <ColorSwatch :color="colorFor(entry.laneIndex)" />
-        <span class="result-round-card__name">{{ entry.horse.name }}</span>
+        <RankingRow
+          :position="entry.position"
+          :horse="entry.horse"
+          :lane-index="entry.laneIndex"
+        />
       </li>
     </ol>
   </section>
@@ -45,7 +44,5 @@ const colorFor = (laneIndex: number): string => LANE_COLORS[laneIndex] ?? LANE_C
 }
 .result-round-card__row {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
 }
 </style>

@@ -1,8 +1,8 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import ResultRoundCard from '../ResultRoundCard.vue'
-import ColorSwatch from '../ColorSwatch.vue'
-import { LANE_COLORS, LANE_COUNT } from '../../domain/constants'
+import RankingRow from '../RankingRow.vue'
+import { LANE_COUNT } from '../../domain/constants'
 import type { Horse } from '../../domain/types'
 
 const buildEntries = (): { position: number; horse: Horse; laneIndex: number }[] =>
@@ -26,15 +26,17 @@ describe('ResultRoundCard', () => {
     expect(rows[LANE_COUNT - 1]?.text()).toContain(String(LANE_COUNT))
   })
 
-  it('renders one ColorSwatch per entry using LANE_COLORS[laneIndex] (edge)', () => {
+  it('delegates each row to RankingRow with matching position, horse, and laneIndex (edge)', () => {
     const entries = buildEntries()
     const wrapper = mount(ResultRoundCard, {
       props: { roundNumber: 1, distance: 1200, entries },
     })
-    const swatches = wrapper.findAllComponents(ColorSwatch)
-    expect(swatches).toHaveLength(LANE_COUNT)
+    const rows = wrapper.findAllComponents(RankingRow)
+    expect(rows).toHaveLength(LANE_COUNT)
     entries.forEach((entry, index) => {
-      expect(swatches[index]?.props('color')).toBe(LANE_COLORS[entry.laneIndex])
+      expect(rows[index]?.props('position')).toBe(entry.position)
+      expect(rows[index]?.props('horse')).toEqual(entry.horse)
+      expect(rows[index]?.props('laneIndex')).toBe(entry.laneIndex)
     })
   })
 
