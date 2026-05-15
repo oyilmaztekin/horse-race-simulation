@@ -435,6 +435,24 @@ Audit found the mid-rest arm of `tick()` had no observable assertion. The previo
 
 Phase 5 audit fix (3/3) — `useRaceSimulation`: tighten finish-order test to assert horseId uniqueness across the LANE_COUNT-long ranking.
 
+## 2026-05-15 — Session N: Phase 5 audit fix (3/3) — useRaceSimulation horseId uniqueness
+
+### What landed
+
+- `src/composables/__tests__/useRaceSimulation.test.ts` — the edge test (`fills finishOrder and flips done`) now also asserts (a) the finishOrder horseIds form a set of size `LANE_COUNT` and (b) the sorted horseIds equal `ROUND.lanes`. Verified red by mutating the composable to emit `horseId: 1` for every entry — the uniqueness assertion failed (and the deterministic-across-seeds test also caught the collapsed mapping). Restoring `horseId: lane.horseId` returned to green.
+
+### Why
+
+The pre-existing assertion only checked that ranks were `[1..10]`. A regression that duplicated a horseId across two lanes — or dropped one — would have left the rank shape intact and slipped past the suite. Adding a `Set` size check + sorted-equality against the input lane assignment locks down the per-horse identity guarantee that downstream `RaceTrack` → `race.completeRound(finishOrder)` depends on.
+
+### Test count
+
+164 tests (21 files), all green.
+
+### Next action
+
+Resume Phase 6 component scaffolding (parallel work in progress on `ProgramRoundCard.vue` / `ResultRoundCard.vue`). Smaller Phase 5 audit residuals (rng `lastRealTs` sentinel cleanup, narrowed catch in `useRestPolling`, log `useRaceApi` test-after deviation to Errors table) tracked for a later sweep.
+
 
 
 

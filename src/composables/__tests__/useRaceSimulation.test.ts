@@ -53,6 +53,9 @@ describe('useRaceSimulation', () => {
     expect(exposed.finishOrder.value.map((ranking) => ranking.rank)).toEqual(
       Array.from({ length: LANE_COUNT }, (_, index) => index + 1),
     )
+    const horseIds = exposed.finishOrder.value.map((ranking) => ranking.horseId)
+    expect(new Set(horseIds).size).toBe(LANE_COUNT)
+    expect([...horseIds].sort((a, b) => a - b)).toEqual(ROUND.lanes)
     wrapper.unmount()
   })
 
