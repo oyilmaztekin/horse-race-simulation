@@ -81,6 +81,27 @@ describe('useRestPolling', () => {
     wrapper.unmount()
   })
 
+  it('writes envelope.remainingRestMs onto the race store on every mid-rest tick (sad — polling that ignored the field would fail)', async () => {
+    const race = useRaceStore()
+    mockGetHorses.mockResolvedValueOnce({
+      horses: makeRoster(20),
+      restingUntil: FIXED_NOW_MS + REST_DURATION_MS,
+      remainingRestMs: 7_500,
+    } satisfies HorsesEnvelope)
+    mockGetHorses.mockResolvedValueOnce({
+      horses: makeRoster(20),
+      restingUntil: FIXED_NOW_MS + REST_DURATION_MS,
+      remainingRestMs: 6_500,
+    } satisfies HorsesEnvelope)
+    const wrapper = mountPollingHost()
+    await enterResting(FIXED_NOW_MS + REST_DURATION_MS)
+
+    await vi.waitFor(() => expect(race.restingMsRemaining).toBe(7_500))
+    await vi.advanceTimersByTimeAsync(REST_POLL_INTERVAL_MS)
+    await vi.waitFor(() => expect(race.restingMsRemaining).toBe(6_500))
+    wrapper.unmount()
+  })
+
   it('calls race.completeRest and stops polling when envelope clears (edge: rest complete)', async () => {
     const race = useRaceStore()
     const horses = useHorsesStore()

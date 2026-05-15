@@ -17,11 +17,14 @@ export function useRestPolling() {
   async function tick() {
     try {
       const envelope = await api.getHorses()
-      if (envelope.restingUntil === null) {
+      if (!envelope.restingUntil) {
         race.completeRest(envelope.horses)
         return
       }
       horses.applyServerUpdate(envelope.horses)
+      if (envelope?.remainingRestMs) {
+        race.applyRestObservation(envelope.remainingRestMs)
+      }
     } catch {
       // Polling failures are non-fatal — next tick retries. A persistent
       // failure surfaces via horses.error on the next GET that succeeds.
@@ -29,7 +32,7 @@ export function useRestPolling() {
   }
 
   function stop() {
-    if (handle !== null) {
+    if (handle) {
       clearInterval(handle)
       handle = null
     }

@@ -308,6 +308,21 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 27: useRestPolling forwards remainingRestMs to the store
+
+### What landed
+
+- `src/composables/useRestPolling.ts` — after each successful GET, calls `race.applyRestObservation(envelope.remainingRestMs)` when the field is non-null (still resting). The `restingUntil === null` early return switched to truthy `!envelope.restingUntil` per the new style note. `remainingRestMs !== null` retained because `0` is a meaningfully different signal from `null` (server reports 0 briefly before the next poll clears the rest entirely).
+- `src/composables/__tests__/useRestPolling.test.ts` — 1 new test (sad — polling that ignored the field would fail): two queued envelopes with `remainingRestMs: 7500` then `6500`; the store's `restingMsRemaining` flips to each value as the polls land.
+
+### Test count
+
+187 tests (23 files), all green.
+
+### Next action
+
+Cycle D — refactor `RaceControls.vue` to render `race.restingMsRemaining` directly; remove `setInterval` + `displayNowMs` + the local computed. The countdown UX is now driven entirely by the 1s polling heartbeat.
+
 ## 2026-05-15 — Session 26: Race store carries server-polled remainingRestMs
 
 ### What landed
