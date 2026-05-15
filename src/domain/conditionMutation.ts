@@ -2,9 +2,11 @@ import {
   CONDITION_MAX,
   CONDITION_MIN,
   FATIGUE_PER_RACE,
+  MIN_FIT_HORSES_FOR_PROGRAM,
   MIN_RACEABLE_CONDITION,
   RECOVERY_PER_REST,
 } from './constants'
+import { NotEnoughFitHorsesError } from './errors'
 import type { Horse, HorseId } from './types'
 
 // Per BUSINESS_LOGIC.md §3.8: a horse is fit when condition ≥ MIN_RACEABLE_CONDITION.
@@ -16,6 +18,16 @@ export function isFit(horse: Horse): boolean {
 // Used by `race.canRest`, `race.fitCount`, and the `assertEnoughFitHorses` guard.
 export function countFitHorses(horses: Horse[]): number {
   return horses.filter((horse: Horse) => isFit(horse)).length
+}
+
+// Per BUSINESS_LOGIC.md §3.8 / decision #26: meeting-start guard. Throws
+// NotEnoughFitHorsesError if fewer than MIN_FIT_HORSES_FOR_PROGRAM horses
+// clear the fit threshold. Called by `race.generateProgram` before building.
+export function assertEnoughFitHorses(horses: Horse[]): void {
+  const fitCount = countFitHorses(horses)
+  if (fitCount < MIN_FIT_HORSES_FOR_PROGRAM) {
+    throw new NotEnoughFitHorsesError(fitCount, MIN_FIT_HORSES_FOR_PROGRAM)
+  }
 }
 
 // Per BUSINESS_LOGIC.md §3.8 / decision #27: bump every unfit horse to exactly

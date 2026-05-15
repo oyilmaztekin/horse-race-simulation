@@ -3,15 +3,18 @@ import {
   CONDITION_MAX,
   CONDITION_MIN,
   FATIGUE_PER_RACE,
+  MIN_FIT_HORSES_FOR_PROGRAM,
   MIN_RACEABLE_CONDITION,
   RECOVERY_PER_REST,
 } from '../constants'
 import {
   applyRestEffects,
   applyRoundEffects,
+  assertEnoughFitHorses,
   countFitHorses,
   isFit,
 } from '../conditionMutation'
+import { NotEnoughFitHorsesError } from '../errors'
 import type { Horse } from '../types'
 
 const horse = (number: number, condition: number, name = `H${number}`): Horse => ({
@@ -137,5 +140,37 @@ describe('countFitHorses', () => {
       horse(2, MIN_RACEABLE_CONDITION - 1),
     ]
     expect(countFitHorses(horses)).toBe(0)
+  })
+})
+
+describe('assertEnoughFitHorses', () => {
+  function makeFitRoster(fitCount: number): Horse[] {
+    const total = Math.max(fitCount, MIN_FIT_HORSES_FOR_PROGRAM)
+    return Array.from({ length: total }, (_unused, index: number) =>
+      horse(index + 1, index < fitCount ? MIN_RACEABLE_CONDITION : MIN_RACEABLE_CONDITION - 1),
+    )
+  }
+
+  it('throws NotEnoughFitHorsesError carrying the actual and required counts (happy: error path)', () => {
+    const fitCount = MIN_FIT_HORSES_FOR_PROGRAM - 1
+    const roster = makeFitRoster(fitCount)
+    let thrown: unknown
+    try {
+      assertEnoughFitHorses(roster)
+    } catch (caught) {
+      thrown = caught
+    }
+    expect(thrown).toBeInstanceOf(NotEnoughFitHorsesError)
+    expect((thrown as NotEnoughFitHorsesError).fitCount).toBe(fitCount)
+    expect((thrown as NotEnoughFitHorsesError).required).toBe(MIN_FIT_HORSES_FOR_PROGRAM)
+  })
+
+  it('throws on an empty roster (edge: zero fit)', () => {
+    expect(() => assertEnoughFitHorses([])).toThrow(NotEnoughFitHorsesError)
+  })
+
+  it('passes at exactly MIN_FIT_HORSES_FOR_PROGRAM (sad: an off-by-one `<` vs `<=` would fail)', () => {
+    const roster = makeFitRoster(MIN_FIT_HORSES_FOR_PROGRAM)
+    expect(() => assertEnoughFitHorses(roster)).not.toThrow()
   })
 })

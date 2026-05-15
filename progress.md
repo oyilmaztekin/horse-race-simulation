@@ -224,5 +224,21 @@ Decomposed the fit-gate into pure domain functions. `isFit` was already there; `
 
 Cycle 3b — `assertEnoughFitHorses(horses)` domain guard that throws `NotEnoughFitHorsesError` when the count is below threshold.
 
+## 2026-05-15 — Session 9: Phase 4 race store, cycle 3b (assertEnoughFitHorses)
+
+### What landed
+
+- `src/domain/conditionMutation.ts` — `assertEnoughFitHorses(horses)` guard: calls `countFitHorses`, throws `NotEnoughFitHorsesError(fitCount, MIN_FIT_HORSES_FOR_PROGRAM)` if the count falls short, returns void otherwise.
+- 3 unit tests (happy / edge / sad): below-threshold throws with correct counts; empty roster throws (zero fit); exactly `MIN_FIT_HORSES_FOR_PROGRAM` passes without throwing — guards against `<` vs `<=` off-by-ones.
+
+### Test count
+
+96 tests (12 files), all green.
+
+### Next action
+
+Cycle 3c — wire `assertEnoughFitHorses` into `race.generateProgram` and re-add the store-level integration tests that exercise the gate.
+
+
 
 
