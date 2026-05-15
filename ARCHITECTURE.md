@@ -1221,6 +1221,10 @@ Implementation work that surfaces during TDD but isn't a *design* decision — c
 
 **Resolved by `BUSINESS_LOGIC.md` decision #25 (per-meeting timestamped seed).** The seed is now an optional parameter on `generateProgram(seed?: number)`; production defaults to `Date.now()`, tests pass an explicit `KNOWN_SEED`. The seed becomes a meeting-local value carried on the `RaceState` union — no module-level globals, no test-only setters, no factory-argument trickery. See §4.2 store code and §9 for the locked pattern.
 
+### 16.1c Phase-name constants *(landed 2026-05-15)*
+
+Phase string literals (`'INITIAL' | 'RESTING' | 'READY' | 'RACING' | 'FINISHED'`) appear in the `RaceState` union, the state machine guards, the button-enablement matrix, and the tests that exercise every transition. Per `CLAUDE.md` §1, that's more than one use; they are exported as value-level constants `PHASE_INITIAL` / `PHASE_RESTING` / `PHASE_READY` / `PHASE_RACING` / `PHASE_FINISHED` from `src/domain/constants.ts`. The type-level union `RacePhase` (in `src/domain/types.ts`) remains the type-system view and is unchanged.
+
 ### 16.1b Rest-mechanism constants and errors *(blocker for Phase 1)*
 
 Surfaced by the 2026-05-14 brainstorm (`BUSINESS_LOGIC.md` decisions #26–#29). Required exports:

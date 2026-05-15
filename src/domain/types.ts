@@ -1,10 +1,17 @@
+import { PHASE_FINISHED, PHASE_INITIAL, PHASE_READY, PHASE_RESTING, PHASE_RACING } from './constants'
+
 export type Rng = () => number
 
 export type HorseId = number
 
 // Race phase names — BUSINESS_LOGIC.md §4.2. Single source of truth for the
 // store's discriminated union and InvalidTransitionError's `kind` field.
-export type RacePhase = 'INITIAL' | 'RESTING' | 'READY' | 'RACING' | 'FINISHED'
+export type RacePhase =
+  | typeof PHASE_INITIAL
+  | typeof PHASE_RESTING
+  | typeof PHASE_READY
+  | typeof PHASE_RACING
+  | typeof PHASE_FINISHED
 
 export interface Horse {
   number: HorseId

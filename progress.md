@@ -172,3 +172,20 @@ failing test per behavior).
 ### Next action
 
 Write `src/stores/__tests__/race.test.ts` (RED), then implement full `src/stores/race.ts` (GREEN). This completes Phase 4.
+
+## 2026-05-15 — Session 6: Phase 4 race store, cycle 1 (initial state)
+
+### What landed
+
+- `src/stores/__tests__/race.test.ts` — 3 tests (happy/edge/sad) covering the INITIAL skeleton: `state.kind === PHASE_INITIAL`, `phase` computed mirrors it, neutral derivations (`program === null`, `currentRound === null`, `currentRoundIndex === -1`, `results === []`, `restingUntil === null`, `seed === null`, `currentRng === null`).
+- `src/stores/race.ts` — replaced stub with full `RaceState` discriminated union (5 variants) and INITIAL-only behavior: state ref, all read-side computed derivations, `resumeRestFromBoot` / `completeRound` left as stubs for later cycles.
+- `src/domain/constants.ts` — added `PHASE_INITIAL`, `PHASE_RESTING`, `PHASE_READY`, `PHASE_RACING`, `PHASE_FINISHED` value-level constants. Tests and store now import these instead of inlining the strings (CLAUDE.md §1).
+
+### Test count
+
+87 tests (12 files), all green.
+
+### Next action
+
+Cycle 2 — `generateProgram` happy path from INITIAL → READY (fit-gate passes, fresh RNG carried on the union).
+

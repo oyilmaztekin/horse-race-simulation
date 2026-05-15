@@ -1,9 +1,73 @@
-// Stub — full implementation driven by src/stores/__tests__/race.test.ts (Phase 4).
-// Exported here so horses.ts can import the type without a circular-at-test-time error.
+import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import {
+  PHASE_INITIAL,
+  PHASE_RACING,
+  PHASE_RESTING,
+} from '../domain/constants'
+import type { Program, Ranking, Rng, RoundResult } from '../domain/types'
 
-// eslint-disable-next-line @typescript-eslint/no-empty-function
+export type RaceState =
+  | { kind: typeof PHASE_INITIAL }
+  | { kind: typeof PHASE_RESTING; restingUntil: number }
+  | { kind: 'READY'; program: Program; rng: Rng; seed: number }
+  | {
+      kind: typeof PHASE_RACING
+      program: Program
+      rng: Rng
+      seed: number
+      currentRoundIndex: number
+      results: RoundResult[]
+    }
+  | { kind: 'FINISHED'; program: Program; seed: number; results: RoundResult[] }
+
 export const useRaceStore = defineStore('race', () => {
-  function resumeRestFromBoot(_restingUntil: number): void {}
-  return { resumeRestFromBoot }
+  const state = ref<RaceState>({ kind: PHASE_INITIAL })
+
+  const phase = computed(() => state.value.kind)
+  const program = computed<Program | null>(() =>
+    'program' in state.value ? state.value.program : null,
+  )
+  const currentRound = computed(() =>
+    state.value.kind === PHASE_RACING
+      ? state.value.program[state.value.currentRoundIndex]
+      : null,
+  )
+  const currentRoundIndex = computed(() =>
+    state.value.kind === PHASE_RACING ? state.value.currentRoundIndex : -1,
+  )
+  const results = computed<RoundResult[]>(() =>
+    'results' in state.value ? state.value.results : [],
+  )
+  const restingUntil = computed<number | null>(() =>
+    state.value.kind === PHASE_RESTING ? state.value.restingUntil : null,
+  )
+  const seed = computed<number | null>(() =>
+    'seed' in state.value ? state.value.seed : null,
+  )
+  const currentRng = computed<Rng | null>(() =>
+    state.value.kind === PHASE_RACING ? state.value.rng : null,
+  )
+
+  function resumeRestFromBoot(_restingUntil: number): void {
+    // wired in a later cycle
+  }
+
+  function completeRound(_rankings: Ranking[]): Promise<void> {
+    return Promise.resolve()
+  }
+
+  return {
+    state,
+    phase,
+    program,
+    currentRound,
+    currentRoundIndex,
+    results,
+    restingUntil,
+    seed,
+    currentRng,
+    resumeRestFromBoot,
+    completeRound,
+  }
 })

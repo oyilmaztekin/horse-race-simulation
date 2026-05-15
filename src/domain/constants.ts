@@ -76,3 +76,13 @@ export const REST_POLL_INTERVAL_MS = 1_000
 
 // Pause between rounds (BUSINESS_LOGIC.md §4.4).
 export const INTER_ROUND_DELAY_MS = 1500
+
+// Phase name constants — BUSINESS_LOGIC.md §4.2. The string-literal union
+// `RacePhase` (in types.ts) is the type-level view; these are the value-level
+// view. Every reference in stores/composables/components must import these
+// rather than inlining the string literal (CLAUDE.md §1: no duplicate literals).
+export const PHASE_INITIAL = 'INITIAL'
+export const PHASE_RESTING = 'RESTING'
+export const PHASE_READY = 'READY'
+export const PHASE_RACING = 'RACING'
+export const PHASE_FINISHED = 'FINISHED'
