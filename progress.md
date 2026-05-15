@@ -308,6 +308,25 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 30: Phase 7 — ProgramPanel container
+
+### What landed
+
+- `src/components/ProgramPanel.vue` — renders one `ProgramRoundCard` per round in `race.program`. Computes `{ roundNumber, distance, entries: { laneIndex, horse }, isCurrent }` per card; resolves horseIds via `horses.byId` with a defensive `'—'/CONDITION_MIN` placeholder for a missing horse (decision #20 + §4.3 roster-readiness gate guarantee the roster is loaded when a program exists, so the placeholder is belt-and-braces only). `isCurrent` is `race.currentRoundIndex === index`, so only RACING flips a card on.
+- `src/components/__tests__/ProgramPanel.test.ts` — 3 tests using `createTestingPinia({ stubActions: false })` (see note below): happy (6 cards mount, first card resolves horse 1 with seeded name + condition), edge (currentRoundIndex=3 in RACING → `isCurrent` array is `[F,F,F,T,F,F]`), sad (round-2 lanes 11..20 distinct from round-1; a stub returning a single fixed card would fail both rounds' entries).
+
+### Decision (saved as memory)
+
+`createTestingPinia` defaults to `stubActions: true`, which replaces every function returned from a setup store — including pure read-helpers like `byId` — with a no-op `vi.fn()`. The happy test failed initially because `horses.byId(1)` returned `undefined` and the placeholder fired. Adding `stubActions: false` fixes it. Memo: `feedback_testing_pinia_actions.md` so future container tests that exercise `byId` / `conditionLookup` skip this trap.
+
+### Test count
+
+194 tests (25 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 7 cycle 9 — `ResultsPanel.vue`: pre-render six headers from `ROUND_DISTANCES`; rounds fill in as `race.results` grows.
+
 ## 2026-05-15 — Session 29: Phase 7 — HorseList container
 
 ### What landed
