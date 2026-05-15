@@ -12,6 +12,9 @@ type HorseUpdateCall = { where: { number: number }; data: { condition: number } 
 function makeApp(db: ReturnType<typeof createMockDb>) {
   const app = new Hono()
   app.route('/api/rounds', createRoundsRouter(db as unknown as PrismaClient))
+  // Suppress Hono's default error logger in tests — rejection-propagation
+  // tests intentionally throw, and the stderr noise hides real failures.
+  app.onError((_error, context) => context.text('Internal Server Error', 500))
   return app
 }
 
