@@ -59,7 +59,9 @@ beforeEach(() => {
 })
 
 describe('useRestPolling', () => {
-  it('polls GET /api/horses on entering RESTING and again every interval (happy)', async () => {
+  it('polls GET /api/horses on entering RESTING, dispatches applyServerUpdate while still resting, and re-polls every interval (happy)', async () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeRoster(5))
     mockGetHorses.mockResolvedValue({
       horses: makeRoster(20),
       restingUntil: FIXED_NOW_MS + REST_DURATION_MS,
@@ -67,6 +69,9 @@ describe('useRestPolling', () => {
     const wrapper = mountPollingHost()
     await enterResting(FIXED_NOW_MS + REST_DURATION_MS)
     await vi.waitFor(() => expect(mockGetHorses).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() =>
+      expect(horses.horses.every((horse) => horse.condition === 20)).toBe(true),
+    )
     await vi.advanceTimersByTimeAsync(REST_POLL_INTERVAL_MS)
     expect(mockGetHorses).toHaveBeenCalledTimes(2)
     await vi.advanceTimersByTimeAsync(REST_POLL_INTERVAL_MS)

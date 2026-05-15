@@ -417,6 +417,24 @@ Phase 5 audit found the `onUnmounted(stop)` branch in `useRestPolling.ts:51` had
 
 Phase 5 audit fix (2/3) — `useRestPolling` mid-rest branch: assert `horses.applyServerUpdate` is called while `restingUntil !== null`.
 
+## 2026-05-15 — Session N: Phase 5 audit fix (2/3) — useRestPolling mid-rest applyServerUpdate
+
+### What landed
+
+- `src/composables/__tests__/useRestPolling.test.ts` — the happy test now seeds the `horses` store with `condition: 5`, lets the immediate rest-poll fire with an envelope of `condition: 20` + non-null `restingUntil`, then asserts every horse in the store flipped to `condition: 20`. Verified red by commenting out `horses.applyServerUpdate(envelope.horses)` in `useRestPolling.ts:24` — the new assertion failed; restoring the line returned to green.
+
+### Why
+
+Audit found the mid-rest arm of `tick()` had no observable assertion. The previous happy test only counted `getHorses` calls, so a regression that dropped `applyServerUpdate` would have left UI roster stale while still passing all three pre-existing tests. The store-state assertion is the cheapest reliable witness — no extra spy, no double-mocking.
+
+### Test count
+
+161 tests (20 files), all green.
+
+### Next action
+
+Phase 5 audit fix (3/3) — `useRaceSimulation`: tighten finish-order test to assert horseId uniqueness across the LANE_COUNT-long ranking.
+
 
 
 
