@@ -33,23 +33,14 @@ defineProps<{
 
 <style scoped>
 .result-round-card {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2);
-  background: var(--color-surface);
-  overflow: hidden;
+  @apply border border-border rounded bg-surface-muted overflow-hidden;
 }
 .result-round-card__header {
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  background: var(--color-surface-muted);
+  @apply py-s2 px-s3 text-xs font-racing uppercase tracking-widest text-text-muted;
+  background: var(--color-surface-elevated);
   border-bottom: 1px solid var(--color-border);
 }
 .result-round-card__row {
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-sm);
-}
-.result-round-card__row:nth-child(even) {
-  background: var(--color-surface-muted);
+  @apply py-s1 px-s3 text-sm font-body even:bg-surface;
 }
 </style>

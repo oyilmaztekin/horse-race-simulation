@@ -32,37 +32,23 @@ const horses = useHorsesStore()
 
 <style scoped>
 .horse-list {
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2);
-  overflow: hidden;
+  @apply flex flex-col min-h-0 bg-surface border border-border rounded-lg overflow-hidden shadow-panel;
 }
 .horse-list__header {
-  padding: var(--space-2) var(--space-3);
-  font-weight: 600;
-  background: var(--color-roster-header);
-  border-bottom: 1px solid var(--color-border);
+  @apply py-s3 px-s4 font-racing uppercase tracking-widest text-sm;
+  color: var(--color-roster-header);
+  background: linear-gradient(180deg, rgba(251, 191, 36, 0.12) 0%, transparent 100%);
+  border-bottom: 1px solid rgba(251, 191, 36, 0.35);
 }
 .horse-list__columns {
-  display: grid;
-  grid-template-columns: 2rem 1fr 3rem;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--color-text-muted);
+  @apply grid gap-s2 py-s2 px-s4 text-xs text-text-muted uppercase tracking-wider border-b border-border;
   background: var(--color-surface-muted);
-  border-bottom: 1px solid var(--color-border);
+  grid-template-columns: 2.5rem 1fr 3.5rem;
 }
 .horse-list__items {
-  overflow: auto;
-  flex: 1;
+  @apply overflow-auto flex-1;
 }
 .horse-list__skeleton {
-  padding: var(--space-3);
-  color: var(--color-text-muted);
-  font-style: italic;
+  @apply p-s4 text-text-muted italic font-body;
 }
 </style>

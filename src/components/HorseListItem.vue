@@ -14,21 +14,22 @@ defineProps<{ horse: Horse }>()
 
 <style scoped>
 .horse-list-item {
-  display: grid;
-  grid-template-columns: 2rem 1fr 3rem;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-3);
-  border-bottom: 1px solid var(--color-border);
+  @apply grid gap-s2 py-s2 px-s4 border-b border-border even:bg-surface-muted text-sm;
+  grid-template-columns: 2.5rem 1fr 3.5rem;
+  transition: background-color 150ms ease;
 }
-.horse-list-item:nth-child(even) {
-  background: var(--color-surface-muted);
+.horse-list-item:hover {
+  background: var(--color-surface-elevated);
 }
 .horse-list-item__number {
-  color: var(--color-text-muted);
-  font-family: var(--font-mono);
+  @apply font-mono;
+  color: var(--color-current);
+}
+.horse-list-item__name {
+  @apply font-body;
 }
 .horse-list-item__condition {
-  text-align: right;
-  font-family: var(--font-mono);
+  @apply text-right font-mono font-bold;
+  color: var(--color-success);
 }
 </style>

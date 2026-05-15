@@ -1,5 +1,50 @@
 # Progress Log
 
+## 2026-05-15 — Session 38: Phase 8.5 — Tailwind + dark-mode gaming redesign (Phase 8.5 complete)
+
+### What landed
+
+Tailwind v3 wired in alongside the existing scoped-CSS + BEM contract, and the whole surface re-skinned from the pastel mockup palette to a trackside-at-night gaming look. Zero behavior changes; no test files touched; templates byte-identical so every `wrapper.classes()` and `wrapper.attributes('style')` assertion still passes.
+
+- **Tailwind v3 + PostCSS** (`tailwindcss@^3.4`, `postcss`, `autoprefixer`) — `postcss.config.js` at repo root; `src/styles/main.css` now ends with `@tailwind base; @tailwind components; @tailwind utilities;`.
+- **`tailwind.config.ts`** maps every `--color-*` and `--space-*` token to a named utility class (`bg-bg`, `text-text-muted`, `gap-s3`, `font-racing`, `shadow-current`, etc.). `preflight: false` because our own `reset.css` handles normalization — but a `*` rule in `reset.css` now sets `border-width:0; border-style:solid` so Tailwind's `border-*` utilities actually render (key gotcha when disabling preflight). Display-font theme key is `racing`, not `display`, to avoid the `font-display` descriptor-name collision.
+- **`src/styles/tokens.css`** rewritten for the trackside-at-night palette: deep-navy bg (`#060912`), charcoal panels, gold/cyan/emerald section headers, amber `#fbbf24` accent for the live round + glow `box-shadow`, neon-red `#f43f5e` dashed finish line with halo. Added font-family tokens (`--font-racing` = Russo One, `--font-body` = Chakra Petch, `--font-mono` = JetBrains Mono), font-size xs/2xl, radii lg/pill, shadow tokens panel/current/finish/focus.
+- **`index.html`** preconnects + loads the three Google Fonts in one `<link>` with `display=swap`.
+- **`src/styles/reset.css`** upgraded: dark body bg via tokens, headings use `--font-racing`, `:focus-visible` ring, amber `::selection`, `prefers-reduced-motion` blanket transition kill.
+- **Every `<style scoped>` block** converted from raw CSS to `@apply` + tokens, then re-skinned for the new aesthetic: app radial-vignette, gold-gradient Russo One title with text-glow, cyan mono phase pill, section-tinted panel headers with linear-gradient + colored bottom border, amber-glow `--current` round card, turf-dark track with 10%-step vertical distance guides + neon-red finish line, mono ranking positions in amber, gradient-gold primary buttons with inset highlight + amber outer glow on hover, cyan-ghost Rest button.
+
+### Files added
+
+- `postcss.config.js`
+- `tailwind.config.ts`
+
+### Files modified
+
+- `index.html` — Google Fonts link
+- `package.json` / `package-lock.json` — dev dependencies
+- `src/styles/tokens.css` / `reset.css` / `main.css` — full token rewrite + tailwind layers
+- `src/App.vue` + all 14 components — scoped style blocks rewritten with `@apply` + the new aesthetic. Templates and BEM class names unchanged.
+
+### Docs
+
+- `ARCHITECTURE.md` §1 — Styling row mentions Tailwind v3 (`@apply` inside scoped CSS) + BEM preserved.
+- `ARCHITECTURE.md` §12 decision #31 — Tailwind+BEM hybrid + tradeoffs (template-utility approach rejected because it would have renamed every element's class string and broken component tests).
+- `ARCHITECTURE.md` §12 decision #32 — Trackside-at-night palette + gaming typography + accessibility notes.
+- `ARCHITECTURE.md` §13 — "Styling system / design tokens" and "CSS architecture" struck through (resolved here).
+- `task_plan.md` — Phase 8 marked superseded; new Phase 8.5 section with the full checklist ticked.
+
+### Test count
+
+- `npx vitest run --exclude '**/simulation.test.ts'` → 195/195 green across 29 files. Templates and BEM class names unchanged, so every component test stayed green by construction.
+- `npx vitest run` → 213 / 215 (the 3 failures in `simulation.test.ts` are pre-existing Phase 12.1 red-state TDD tests on uncommitted `simulation.ts` work — unrelated to this session).
+- `npm run build` → 23.07 kB CSS bundle (gzip 4.54 kB). Up from 9.29 kB because Tailwind now emits the utility classes referenced via `@apply`.
+
+### Next action
+
+Phase 9 — Playwright happy path. The redesign doesn't change any test surface, so the `:focus-visible` ring + amber accent makes the keyboard nav verifiable, and the neon FINISH label is easier to assert against than the muted pastel original.
+
+---
+
 ## 2026-05-15 — Session 37: Phase 8 — styling & layout (Phase 8 complete)
 
 **Behavior added:** the app now renders the mockup layout. Coral header bar with uppercased pill controls; left aside is a `Horse List (1 – 20)` table with `#` / Name / Cond columns and zebra rows; center is the single bordered race track with zebra lanes, a dashed-red finish line at the right edge, and a `Lap N — Dm  FINISH` footer; right aside is Program + Results stacked side-by-side, each as a card whose strip header matches the mockup (blue for Program, green for Results) and whose round cards show zebra rows under a muted strip header. The currently-running round in Program is highlighted blue.

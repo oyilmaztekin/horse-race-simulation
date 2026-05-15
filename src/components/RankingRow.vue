@@ -23,13 +23,14 @@ const color = computed(() => LANE_COLORS[props.laneIndex] ?? LANE_COLORS[0] ?? '
 
 <style scoped>
 .ranking-row {
-  display: grid;
-  grid-template-columns: 1.5rem 0.75rem 1fr;
-  align-items: center;
-  gap: var(--space-2);
+  @apply grid items-center gap-s3;
+  grid-template-columns: 1.75rem 0.75rem 1fr;
 }
 .ranking-row__position {
-  font-family: var(--font-mono);
-  color: var(--color-text-muted);
+  @apply font-mono font-bold;
+  color: var(--color-current);
+}
+.ranking-row__name {
+  @apply font-body;
 }
 </style>

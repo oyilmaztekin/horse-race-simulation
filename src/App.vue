@@ -52,37 +52,28 @@ const roundKey = computed(() => race.currentRoundIndex)
 
 <style scoped>
 .app {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background: var(--color-bg);
+  @apply flex flex-col min-h-screen bg-bg text-text;
+  background-image:
+    radial-gradient(1200px 600px at 15% -10%, rgba(251, 191, 36, 0.06), transparent 60%),
+    radial-gradient(900px 500px at 110% 10%, rgba(34, 211, 238, 0.05), transparent 60%);
 }
 .app__main {
-  display: grid;
+  @apply grid gap-s4 p-s4 flex-1 min-h-0;
   grid-template-columns: minmax(240px, 1fr) minmax(0, 2.4fr) minmax(360px, 1.4fr);
-  gap: var(--space-4);
-  padding: var(--space-4);
-  flex: 1;
-  min-height: 0;
 }
 .app__roster,
 .app__center,
 .app__results {
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-3);
+  @apply min-h-0 flex flex-col gap-s3;
 }
 .app__roster,
 .app__results {
-  overflow: auto;
+  @apply overflow-auto;
 }
 .app__panels {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: var(--space-3);
+  @apply grid grid-cols-2 gap-s3;
 }
 .app__panel {
-  min-width: 0;
+  @apply min-w-0;
 }
 </style>

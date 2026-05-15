@@ -26,26 +26,17 @@ const progress = computed(() => props.positionM / props.distanceM)
 
 <style scoped>
 .race-lane {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex: 1;
-  min-height: 2.25rem;
-  padding: 0 var(--space-2);
-  border-bottom: 1px solid var(--color-border);
+  @apply flex items-center gap-s3 flex-1 px-s3 border-b;
+  border-color: var(--color-track-line);
 }
 .race-lane:nth-child(even) {
-  background: var(--color-track-lane-alt);
+  background: rgba(255, 255, 255, 0.02);
 }
 .race-lane__index {
-  width: 1.25rem;
-  font-family: var(--font-mono);
-  color: var(--color-text-muted);
-  text-align: right;
+  @apply w-6 font-mono text-right font-bold;
+  color: var(--color-current);
 }
 .race-lane__track {
-  position: relative;
-  flex: 1;
-  height: 100%;
+  @apply relative flex-1 h-full;
 }
 </style>

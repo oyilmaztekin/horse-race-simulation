@@ -55,23 +55,15 @@ const cards = computed<CardProps[]>(() => {
 
 <style scoped>
 .program-panel {
-  display: flex;
-  flex-direction: column;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2);
-  overflow: hidden;
+  @apply flex flex-col bg-surface border border-border rounded-lg overflow-hidden shadow-panel;
 }
 .program-panel__header {
-  padding: var(--space-2) var(--space-3);
-  font-weight: 600;
-  background: var(--color-program-header);
-  border-bottom: 1px solid var(--color-border);
+  @apply py-s3 px-s4 font-racing uppercase tracking-widest text-sm;
+  color: var(--color-program-header);
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.12) 0%, transparent 100%);
+  border-bottom: 1px solid rgba(34, 211, 238, 0.35);
 }
 .program-panel__list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-2);
+  @apply flex flex-col gap-s2 p-s3;
 }
 </style>

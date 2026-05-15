@@ -83,44 +83,54 @@ function onGenerate(): void {
 
 <style scoped>
 .race-controls {
-  display: flex;
-  align-items: center;
-  gap: var(--space-2);
-  flex-wrap: wrap;
+  @apply flex items-center gap-s2 flex-wrap;
 }
 .race-controls__button {
-  padding: var(--space-2) var(--space-4);
-  background: var(--color-surface);
-  color: var(--color-text);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-2);
-  font-weight: 600;
-  font-size: var(--font-size-sm);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  cursor: pointer;
+  @apply py-s2 px-s5 rounded font-racing text-sm uppercase cursor-pointer tracking-widest;
+  background: linear-gradient(180deg, #fcd34d 0%, var(--color-current) 100%);
+  color: var(--color-primary-text);
+  border: 1px solid var(--color-current);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.35) inset,
+    0 8px 18px rgba(251, 191, 36, 0.18);
+  transition: transform 150ms ease, box-shadow 200ms ease, filter 200ms ease;
 }
 .race-controls__button:hover:not(:disabled) {
-  background: var(--color-surface-muted);
+  filter: brightness(1.08);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset,
+    0 0 0 1px var(--color-current),
+    0 8px 28px rgba(251, 191, 36, 0.45);
+}
+.race-controls__button:active:not(:disabled) {
+  transform: translateY(1px);
 }
 .race-controls__button:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+  @apply cursor-not-allowed;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
+  border-color: var(--color-border);
+  box-shadow: none;
 }
 .race-controls__button--rest {
-  background: var(--color-warning-bg);
-  border-color: var(--color-warning-border);
+  background: linear-gradient(180deg, rgba(34, 211, 238, 0.15) 0%, rgba(34, 211, 238, 0.05) 100%);
+  color: var(--color-program-header);
+  border-color: rgba(34, 211, 238, 0.55);
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.25) inset;
+}
+.race-controls__button--rest:hover:not(:disabled) {
+  filter: none;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.6) inset,
+    0 0 24px rgba(34, 211, 238, 0.35);
 }
 .race-controls__warning {
-  width: 100%;
-  padding: var(--space-2) var(--space-3);
+  @apply w-full py-s2 px-s3 rounded text-sm font-body;
   background: var(--color-warning-bg);
   border: 1px solid var(--color-warning-border);
-  border-radius: var(--radius-2);
-  font-size: var(--font-size-sm);
+  color: var(--color-warning-text);
 }
 .race-controls__countdown {
-  font-family: var(--font-mono);
-  font-size: var(--font-size-sm);
+  @apply font-mono text-sm py-s1 px-s3 rounded-pill;
+  background: rgba(251, 191, 36, 0.1);
+  color: var(--color-current);
+  border: 1px solid rgba(251, 191, 36, 0.35);
 }
 </style>

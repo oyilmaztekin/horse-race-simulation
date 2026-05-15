@@ -8,9 +8,8 @@ defineProps<{ color: string }>()
 
 <style scoped>
 .color-swatch {
-  display: inline-block;
-  width: 0.75rem;
-  height: 0.75rem;
-  border-radius: 2px;
+  @apply inline-block w-3 h-3 rounded-sm;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.4),
+    0 0 0 2px rgba(255, 255, 255, 0.06);
 }
 </style>

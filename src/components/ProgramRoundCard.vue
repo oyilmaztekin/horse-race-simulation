@@ -30,38 +30,30 @@ defineProps<{
 
 <style scoped>
 .program-round-card {
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2);
-  background: var(--color-surface);
-  overflow: hidden;
+  @apply border border-border rounded bg-surface-muted overflow-hidden;
+  transition: box-shadow 200ms ease, border-color 200ms ease, transform 200ms ease;
 }
 .program-round-card--current {
   border-color: var(--color-current);
   background: var(--color-current-bg);
+  box-shadow: var(--shadow-current);
 }
 .program-round-card__header {
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-sm);
-  font-weight: 600;
-  background: var(--color-surface-muted);
+  @apply py-s2 px-s3 text-xs font-racing uppercase tracking-widest text-text-muted;
+  background: var(--color-surface-elevated);
   border-bottom: 1px solid var(--color-border);
 }
 .program-round-card--current .program-round-card__header {
-  background: var(--color-current);
-  color: var(--color-surface);
+  background: linear-gradient(180deg, var(--color-current) 0%, #f59e0b 100%);
+  color: var(--color-primary-text);
+  border-bottom-color: var(--color-current);
 }
 .program-round-card__entry {
-  display: grid;
-  grid-template-columns: 1.5rem 1fr;
-  gap: var(--space-2);
-  padding: var(--space-1) var(--space-2);
-  font-size: var(--font-size-sm);
-}
-.program-round-card__entry:nth-child(even) {
-  background: var(--color-surface-muted);
+  @apply grid gap-s2 py-s1 px-s3 text-sm font-body even:bg-surface;
+  grid-template-columns: 1.75rem 1fr;
 }
 .program-round-card__lane {
-  font-family: var(--font-mono);
-  color: var(--color-text-muted);
+  @apply font-mono;
+  color: var(--color-current);
 }
 </style>

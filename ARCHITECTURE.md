@@ -23,7 +23,7 @@
 | Backend framework | Hono (Node.js) |
 | ORM | Prisma |
 | Database | SQLite (one file: `prisma/dev.db`) |
-| Styling | Plain CSS (scoped) + CSS variables in `tokens.css` |
+| Styling | Tailwind v3 (`@apply` inside scoped CSS) + CSS variables in `tokens.css`; BEM class names preserved on every element |
 | Unit testing | Vitest + `@vue/test-utils` |
 | E2E testing | Playwright |
 | Lint / format | ESLint (`@typescript-eslint`, `eslint-plugin-vue`), Prettier, `vue-tsc` |
@@ -875,17 +875,19 @@ export function wait(ms: number): Promise<void> {
 | 28 | **`AppState` single-row Prisma table; lazy-bump-on-poll inside `db.$transaction`.** Both `GET /api/horses` and `POST /api/horses/rest` route through a shared transactional read. | In-memory module variable (lost on restart). `RestSession` audit table (overkill). Per-horse `restingUntil` column (20 copies). Background job / cron-style scheduler (extra moving parts; not justified). Single-row meta-table is restart-safe, observable via Prisma Studio, and extensible if a future global flag is needed. Mirrors `BUSINESS_LOGIC.md` decision #29. |
 | 29 | **Envelope shape: `GET /api/horses` returns `{ horses, restingUntil }` (object) instead of `Horse[]` (array).** Breaking change to the contract; not yet shipped to any consumer. | Add a sibling `/api/rest-status` endpoint — two GETs per poll; coordination logic on the client. Encode rest state in an HTTP header — fragile across proxies / tests. Keep the flat array and store `restingUntil` only on the client — server is no longer the source of truth. The envelope makes rest state a first-class part of the roster snapshot; one endpoint, one source of truth. Mirrors `BUSINESS_LOGIC.md` decision #29. |
 | 30 | **The Rest button is rendered by `RaceControls`, not by a new `RestButton.vue` container.** The warning banner + Rest button + `lastWarning` ref all live in `RaceControls`. | Separate `RestButton.vue` (and possibly `RestWarning.vue`) — splits two pieces of one UX moment into two files; raises the file count without earning anything. Keeping them in `RaceControls` matches the "two-button surface" framing of `BUSINESS_LOGIC.md` §4.1 (the Rest button only exists when the warning is active; co-locating keeps the conditional reveal tight). |
+| 31 | **Tailwind v3 with `@apply` inside scoped CSS, BEM class names unchanged on every element.** `tailwind.config.ts` maps CSS-variable tokens (`bg-bg`, `text-text-muted`, `gap-s3`, `font-racing`, `shadow-current`, etc.) so utilities reference `tokens.css` rather than hardcoded values. Preflight disabled — our own `reset.css` already covers it, plus a `*` rule sets `border-width:0; border-style:solid; border-color: var(--color-border)` so Tailwind's `border-*` utilities actually render. | Tailwind utilities sprinkled in templates would have renamed every element's class string and broken `wrapper.classes()` assertions (e.g. `program-round-card--current`). `@apply` inside the existing scoped blocks keeps templates byte-identical and tests green, while letting us layer utilities + tokens + light hand-written CSS for gradients/shadows/finish-line stripes. CSS-var-backed theme keeps `tokens.css` as the single editorial surface for color/spacing/typography; theme key `racing` (not `display`) avoids collision with the `font-display` descriptor name. |
+| 32 | **Trackside-at-night palette + Russo One / Chakra Petch / JetBrains Mono typography.** Deep-navy bg (`#060912`), charcoal panels, section-tinted headers (gold roster / cyan program / emerald results), amber accent (`#fbbf24`) for the live round with `box-shadow` glow, neon-red dashed finish line with shadow halo. Display font (Russo One) on headings + CTAs, body (Chakra Petch) on prose, mono (JetBrains Mono) on numbers and the phase pill. | Original pastel palette (coral header, yellow/blue/green strip headers on a white bg) read like a spreadsheet, not a racing game. Sportsbook / arcade-HUD vibe via dark mode + glow + bold display type signals "competitive sim" without going full cyberpunk. WCAG: text colors verified ≥ 4.5:1 against the navy surface; `:focus-visible` ring uses the amber accent for keyboard nav; `prefers-reduced-motion` neutralizes transitions in `reset.css`. |
 
 ---
 
 ## 13. Deferred to future design sessions
 
 - **Concrete speed-formula tuning constants** — m/s range, jitter magnitude, on-screen scale (`SPEED_SCALE` etc.).
-- **Lane visual styling** — track layout, lane heights, finish-line styling.
+- ~~**Lane visual styling**~~ *(resolved Phase 8.5: dark turf bg, 10%-step vertical guides, neon-red dashed finish line)*
 - **Specific `LANE_COLORS` hex values** — chosen for contrast and color-blind friendliness.
 - **Milestones inside MVP** — what ships first (e.g., static layout) vs. last (e.g., E2E green bar).
-- **Styling system / design tokens** — CSS variable naming, spacing scale, typography.
-- **CSS architecture** — scoped styles, BEM-ish naming inside scoped, etc.
+- ~~**Styling system / design tokens**~~ *(resolved Phase 8.5: see §12 decisions #31–#32 and `src/styles/tokens.css`)*
+- ~~**CSS architecture**~~ *(resolved Phase 8.5: Tailwind `@apply` inside scoped `<style>` blocks, BEM class names preserved on every element)*
 - **Error UI** — how `horses.error` and `ApiError` surface to the user.
 - **`package.json` scripts** — `dev`, `build`, `test`, `test:e2e`, `db:seed`, `db:migrate`.
 

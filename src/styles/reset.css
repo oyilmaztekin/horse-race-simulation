@@ -2,6 +2,9 @@
 *::before,
 *::after {
   box-sizing: border-box;
+  border-width: 0;
+  border-style: solid;
+  border-color: var(--color-border);
 }
 
 html,
@@ -13,11 +16,13 @@ body,
 }
 
 body {
-  font-family: var(--font-sans);
+  font-family: var(--font-body);
   font-size: var(--font-size-base);
+  line-height: 1.5;
   color: var(--color-text);
   background: var(--color-bg);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 h1,
@@ -31,6 +36,15 @@ ol {
   padding: 0;
 }
 
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-racing);
+  font-weight: 400;
+  letter-spacing: 0.02em;
+}
+
 ul,
 ol {
   list-style: none;
@@ -39,4 +53,26 @@ ol {
 button {
   font: inherit;
   color: inherit;
+  background: transparent;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+  border-radius: var(--radius-1);
+}
+
+::selection {
+  background: var(--color-current);
+  color: var(--color-primary-text);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }

@@ -19,6 +19,7 @@ const { positions, finishOrder, done } = useRaceSimulation(
   roundNumber,
   horses.conditionLookup,
   rng,
+  () => race.simSpeedMultiplier,
 )
 
 const placeholderHorse: Horse = { number: 0, name: '—', condition: CONDITION_MIN }
@@ -66,45 +67,35 @@ watch(
 
 <style scoped>
 .race-track {
-  display: flex;
-  flex-direction: column;
-  background: var(--color-track);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-2);
-  overflow: hidden;
-  flex: 1;
-  min-height: 0;
+  @apply flex flex-col bg-track border border-border rounded-lg overflow-hidden flex-1 min-h-0 shadow-panel;
+  background-image:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(10% - 1px),
+      var(--color-track-line) calc(10% - 1px) 10%
+    );
 }
 .race-track__lanes {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+  @apply relative flex flex-col flex-[0.25_1_0%];
 }
 .race-track__finish-line {
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 3px;
+  @apply absolute right-0 top-0 bottom-0 pointer-events-none;
+  width: 4px;
   background: repeating-linear-gradient(
     to bottom,
-    var(--color-finish) 0 8px,
-    var(--color-surface) 8px 16px
+    var(--color-finish) 0 10px,
+    #ffffff 10px 20px
   );
-  pointer-events: none;
+  box-shadow: var(--shadow-finish);
 }
 .race-track__footer {
-  display: flex;
-  justify-content: space-between;
-  padding: var(--space-2) var(--space-3);
-  font-size: var(--font-size-sm);
-  color: var(--color-finish);
-  font-weight: 600;
-  background: var(--color-track-lane-alt);
-  border-top: 1px solid var(--color-border);
+  @apply flex justify-between items-center py-s2 px-s4 text-xs font-racing uppercase tracking-widest border-t border-border;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
 }
 .race-track__finish-label {
-  letter-spacing: 0.1em;
+  @apply font-racing tracking-[0.3em];
+  color: var(--color-finish);
+  text-shadow: 0 0 12px var(--color-finish-glow);
 }
 </style>

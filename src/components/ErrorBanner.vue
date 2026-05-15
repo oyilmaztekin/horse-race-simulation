@@ -33,17 +33,18 @@ function onRetry() {
 
 <style scoped>
 .error-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  background: #fff3cd;
-  border: 1px solid #ffe69c;
-  border-radius: 4px;
+  @apply flex items-center justify-between gap-s4 py-s3 px-s5 mx-s4 mt-s3 rounded font-body text-sm;
+  background: var(--color-warning-bg);
+  color: var(--color-warning-text);
+  border: 1px solid var(--color-warning-border);
 }
 .error-banner__retry {
-  padding: 0.25rem 0.75rem;
-  cursor: pointer;
+  @apply py-s1 px-s4 cursor-pointer font-racing uppercase tracking-widest text-xs rounded-pill;
+  background: var(--color-warning-border);
+  color: var(--color-primary-text);
+  transition: filter 150ms ease;
+}
+.error-banner__retry:hover {
+  filter: brightness(1.1);
 }
 </style>

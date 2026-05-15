@@ -151,7 +151,7 @@ Exit: all container tests green.
 ---
 
 ### Phase 8 — Styling & layout
-Status: `complete` ✓
+Status: `complete` ✓ (superseded by Phase 8.5 — Tailwind + dark-mode gaming redesign)
 
 Surface concerns deferred in `ARCHITECTURE.md` §13.
 
@@ -163,6 +163,24 @@ Surface concerns deferred in `ARCHITECTURE.md` §13.
 - [x] Manual in-browser smoke deferred to the user (dev server already running with HMR on `:5173`); behavioral correctness is locked by the test suite, and the build pass confirms CSS imports compile.
 
 Exit: visually matches the mockup; no console errors; no Vue warnings.
+
+---
+
+### Phase 8.5 — Tailwind migration + dark-mode gaming redesign
+Status: `complete` ✓
+
+Re-skin pass after Phase 8 landed. The pastel mockup-aligned palette read like a spreadsheet, not a racing game; the user invoked `/ui-ux-pro-max` which recommended a dark-mode OLED gaming aesthetic with Russo One + Chakra Petch + JetBrains Mono. The migration is style-tooling + design-token only — zero behavior changes, no test files touched.
+
+- [x] **Install Tailwind v3 + PostCSS.** `tailwindcss@^3.4`, `postcss`, `autoprefixer`. `postcss.config.js` at repo root wires the plugins. `src/styles/main.css` adds `@tailwind base; @tailwind components; @tailwind utilities;` after the token + reset imports.
+- [x] **`tailwind.config.ts` token bridge.** `theme.extend.colors` maps every `--color-*` CSS variable to a named utility (`bg-bg`, `text-text-muted`, `border-border-strong`, etc.); spacing tokens `s1..s6`; font families `body` / `racing` / `mono`; box-shadows `panel` / `current` / `finish`. `corePlugins.preflight: false` — our own `reset.css` already covers normalization, plus a `*` rule sets `border-width:0; border-style:solid` so Tailwind's `border-*` utilities actually render. Theme key for the display font is `racing` (not `display`) to avoid the `font-display` descriptor-name collision. Decision #31 in `ARCHITECTURE.md` §12.
+- [x] **Convert every `<style scoped>` block from raw CSS to `@apply` + tokens.** Templates (and BEM class names) are byte-identical — `wrapper.classes()` and `wrapper.attributes('style')` assertions in component tests remain green. Single-use BEM declarations stay in plain CSS (gradients, repeating-linear-gradient finish line, dynamic `left: calc(var(--horse-progress) * 100%)`).
+- [x] **Rewrite `src/styles/tokens.css` for a trackside-at-night palette.** Deep-navy bg (`#060912`), charcoal panels (`#0f1729` / `#18213a`), section-tinted headers (gold `#fbbf24` roster / cyan `#22d3ee` program / emerald `#34d399` results), amber accent for the live round + glow shadow, neon-red (`#f43f5e`) dashed finish line with halo. Added `--font-racing` (Russo One), `--font-body` (Chakra Petch), `--font-mono` (JetBrains Mono); `--font-size-xs/2xl`; `--radius-3`, `--radius-pill`; `--shadow-panel`, `--shadow-current`, `--shadow-finish`, `--shadow-focus`. Decision #32.
+- [x] **Google Fonts in `index.html`.** Preconnect + single `<link>` for Russo One, Chakra Petch (400/500/600/700), JetBrains Mono (400/700). `display=swap`.
+- [x] **`reset.css` upgraded:** dark `body` background + light text via tokens, `h1..h4` use `--font-racing`, `:focus-visible` ring uses `--shadow-focus`, `::selection` uses the amber accent, `prefers-reduced-motion` query neutralizes transitions.
+- [x] **Restyle pass — every component.** App vignette; AppHeader with Russo One gold-gradient title + cyan phase pill; section-tinted panel headers; amber-glow current round; turf-dark track with 10%-step distance guides and neon finish line; mono ranking positions; gradient gold primary buttons + cyan-ghost Rest with glow hover.
+- [x] **Validation:** `npm run build` → 23.07 kB CSS bundle (gzip 4.54 kB); `npx vitest run --exclude '**/simulation.test.ts'` → 195/195 green across 29 files (the 3 pre-existing failures in `simulation.test.ts` are unrelated Phase 12.1 red-state TDD tests on uncommitted `simulation.ts` work).
+
+Exit: dark-mode gaming look ships; tests + build green; CSS architecture (Tailwind `@apply` + BEM class names + CSS-var token bridge) documented in `ARCHITECTURE.md` §12 decisions #31–#32.
 
 ---
 
