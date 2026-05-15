@@ -6,10 +6,20 @@ An interactive horse racing simulation built with Vue 3, TypeScript, Pinia, and 
 
 ```bash
 npm install
-npm run db:migrate # Create dev.db, apply migrations, seed 20 horses (auto-runs db:seed)
-npm run dev        # Start Vite + Hono together
-npm run test       # Run Vitest
-npm run e2e        # Run Playwright
+npm run db:migrate          # Create dev.db, apply migrations, seed 20 horses (auto-runs db:seed)
+npm run dev                 # Start Vite (:5173) + Hono (:3001) together
+npm test                    # Run Vitest (245 tests, ~7s)
+npx playwright install      # One-time: fetch chromium for E2E
+npm run test:e2e            # Run Playwright happy path (~3.3 min wall clock)
+```
+
+### Other useful scripts
+
+```bash
+npm run lint        # ESLint v9 flat config
+npm run typecheck   # vue-tsc --noEmit
+npm run build       # Production bundle
+npm run db:seed     # Reset roster to the deterministic 0xDECAF seed
 ```
 
 `npm run db:migrate` is required before `npm run dev` — the API queries `dev.db`, which doesn't exist until the migration runs. The migration step automatically invokes `npm run db:seed` (configured under `"prisma": { "seed": ... }` in `package.json`), so 20 deterministic horses are inserted in one shot.

@@ -26,6 +26,26 @@
 
 Phase 10 remaining bullets: README with run/test instructions; verify §4 pre-commit checklist; manual reload-during-RACING smoke (BUSINESS_LOGIC.md §6 non-goal).
 
+## 2026-05-15 — Session 47: Phase 10 — README + pre-commit checklist verification
+
+### What landed
+
+- `README.md` Quick Start fixed `npm run e2e` → `npm run test:e2e` (the actual script name in `package.json`), added `npx playwright install` one-time bootstrap for chromium, and added an "Other useful scripts" block surfacing `lint` / `typecheck` / `build` / `db:seed`. Dev-server ports (Vite 5173, Hono 3001) called out inline.
+- task_plan.md Phase 10 — three of four bullets checked off (lint/typecheck/test green for tracked code, README updated, §4 pre-commit checklist verified vacuous for this batch). The fourth bullet — manual reload-during-RACING smoke — is deferred to the user because it requires a live browser session and observable behaviour cannot be asserted from a headless run.
+
+### §4 pre-commit checklist (this session's changes)
+
+- Functions ≤20 lines, one thing, ≤2 args? **n/a** — no new production functions; only an ESLint config and test-fixture additions.
+- Intention-revealing names, no banned suffixes? **yes** — config keys are framework-mandated (`rules`, `plugins`, `languageOptions`).
+- No hidden side effects, no `null`, no flag arguments? **yes** — config is pure declarative.
+- Zero restate-comments? **yes**.
+- Failing test first? **n/a** — gate fixes, not new behavior.
+- §1 duplication? **no** — no literals duplicated.
+
+### Next action
+
+Phase 11 — Deployment (Fly.io + nginx + Docker + GitHub Actions). Requires user-side `flyctl auth login` before sub-phase 11.2, so the deploy itself is not fully autonomous.
+
 ## 2026-05-15 — Session 40c: End-of-meeting score table — Step 16 (App.vue slot swap, sub-phase 12.4 closed)
 
 - `App.vue` center slot is now phase-driven: `RaceTrack` while `isRacing`, `ScoreTable` while `isFinished`, otherwise empty (preserves the empty INITIAL/READY/RESTING slot exactly as today).
