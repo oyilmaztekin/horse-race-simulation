@@ -954,7 +954,7 @@ ColorSwatch.vue            (shared)
 
 | Layer | Component | Reads | Runs | Writes |
 |---|---|---|---|---|
-| **container** | `App` | `race.phase` (for `RaceTrack` `v-if`) | – | `horses.fetchAll()` in `onMounted` |
+| **container** | `App` | `race.phase` (for `RaceTrack` / `ScoreTable` swap), `race.currentRoundIndex` | – | `horses.fetchAll()` in `onMounted` |
 | **container** | `AppHeader` | `race.phase` | – | – |
 | **container** | `RaceControls` | `race.canGenerate`, `race.canStart`, `race.canRest`, `race.phase`, `race.restingUntil`, `race.fitCount` | – | `race.generateProgram()`, `race.start()`, `race.rest()` |
 | **container** | `HorseList` | `horses.horses`, `horses.isLoading` | – | – |

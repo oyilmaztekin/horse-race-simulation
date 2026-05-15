@@ -6,10 +6,11 @@ import HorseList from './components/HorseList.vue'
 import ProgramPanel from './components/ProgramPanel.vue'
 import RaceTrack from './components/RaceTrack.vue'
 import ResultsPanel from './components/ResultsPanel.vue'
+import ScoreTable from './components/ScoreTable.vue'
 import { useRestPolling } from './composables/useRestPolling'
 import { useHorsesStore } from './stores/horses'
 import { useRaceStore } from './stores/race'
-import { PHASE_INITIAL, PHASE_RACING } from './domain/constants'
+import { PHASE_FINISHED, PHASE_INITIAL, PHASE_RACING } from './domain/constants'
 
 const horses = useHorsesStore()
 const race = useRaceStore()
@@ -21,6 +22,7 @@ onMounted(() => {
 })
 
 const isRacing = computed(() => race.phase === PHASE_RACING)
+const isFinished = computed(() => race.phase === PHASE_FINISHED)
 const hasProgram = computed(() => race.phase !== PHASE_INITIAL)
 const roundKey = computed(() => race.currentRoundIndex)
 </script>
@@ -39,6 +41,7 @@ const roundKey = computed(() => race.currentRoundIndex)
           :key="roundKey"
           :data-round-key="roundKey"
         />
+        <ScoreTable v-else-if="isFinished" />
       </section>
       <aside class="app__results">
         <div class="app__panels">

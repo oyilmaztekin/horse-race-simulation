@@ -5,6 +5,7 @@ import { nextTick } from 'vue'
 import {
   HORSE_COUNT,
   LANE_COUNT,
+  PHASE_FINISHED,
   PHASE_INITIAL,
   PHASE_RACING,
   PHASE_READY,
@@ -20,6 +21,7 @@ const useRestPollingSpy = vi.mocked(useRestPolling)
 
 import App from '../../App.vue'
 import RaceTrack from '../RaceTrack.vue'
+import ScoreTable from '../ScoreTable.vue'
 import { useHorsesStore } from '../../stores/horses'
 
 function makeHorses(): Horse[] {
@@ -50,6 +52,7 @@ function mountApp(raceState: Record<string, unknown> = { kind: PHASE_INITIAL }) 
         ProgramPanel: true,
         ResultsPanel: true,
         RaceTrack: true,
+        ScoreTable: true,
       },
       plugins: [
         createTestingPinia({
@@ -116,6 +119,35 @@ describe('App', () => {
     const ready = { kind: PHASE_READY, program: makeProgram(), rng: () => 0.5, seed: 1 }
     const wrapper = mountApp(ready)
     expect(wrapper.findComponent(RaceTrack).exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('mounts ScoreTable in the center slot when phase === FINISHED, and not before (happy)', () => {
+    const finished = { kind: PHASE_FINISHED, program: makeProgram(), seed: 1, results: [] }
+    const wrapper = mountApp(finished)
+    expect(wrapper.findComponent(ScoreTable).exists()).toBe(true)
+    expect(wrapper.findComponent(RaceTrack).exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('center slot stays empty (no RaceTrack, no ScoreTable) during INITIAL (edge)', () => {
+    const wrapper = mountApp({ kind: PHASE_INITIAL })
+    expect(wrapper.findComponent(RaceTrack).exists()).toBe(false)
+    expect(wrapper.findComponent(ScoreTable).exists()).toBe(false)
+    wrapper.unmount()
+  })
+
+  it('does not mount ScoreTable during RACING (sad: a missing v-else-if would leak it onto the track)', () => {
+    const racing = {
+      kind: PHASE_RACING,
+      program: makeProgram(),
+      rng: () => 0.5,
+      seed: 1,
+      currentRoundIndex: 0,
+      results: [],
+    }
+    const wrapper = mountApp(racing)
+    expect(wrapper.findComponent(ScoreTable).exists()).toBe(false)
     wrapper.unmount()
   })
 })

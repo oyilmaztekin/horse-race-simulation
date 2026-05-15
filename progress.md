@@ -1,5 +1,14 @@
 # Progress Log
 
+## 2026-05-15 — Session 40c: End-of-meeting score table — Step 16 (App.vue slot swap, sub-phase 12.4 closed)
+
+- `App.vue` center slot is now phase-driven: `RaceTrack` while `isRacing`, `ScoreTable` while `isFinished`, otherwise empty (preserves the empty INITIAL/READY/RESTING slot exactly as today).
+- New `isFinished` computed reading `race.phase === PHASE_FINISHED`; existing `isRacing` untouched. Template gains a single `v-else-if="isFinished"` line.
+- Three new App-level smoke cases added to `App.test.ts`: ScoreTable mounts on FINISHED (RaceTrack absent); INITIAL leaves both absent; RACING keeps ScoreTable absent. ScoreTable stub added to `mountApp`'s stub map so the assertion is structural, not store-dependent.
+- Full suite: 245 tests across 32 files.
+- ARCHITECTURE.md §14.2: App container's `Reads` column now lists the FINISHED branch alongside RACING.
+- Sub-phase 12.4 closed. Manual smoke next: run a full meeting through to the final round and verify the center swaps from track to scoreboard at FINISHED.
+
 ## 2026-05-15 — Session 40b: End-of-meeting score table — Step 15 (ScoreTable.vue)
 
 - New `src/components/ScoreTable.vue` — container component reading `race.results` + `horses.byId`, calling `computeStandings`, rendering a BEM table (`score-table` block, `__header / __grid / __head-row / __row / __cell` elements, `__row--champion` modifier on rank 1). Plain-numeric `formatTime` for the Total (s) column.
