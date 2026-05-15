@@ -8,6 +8,7 @@ import {
   PHASE_RESTING,
 } from '../domain/constants'
 import { assertEnoughFitHorses } from '../domain/conditionMutation'
+import { InvalidTransitionError } from '../domain/errors'
 import { generateProgram as generateProgramFn } from '../domain/programGenerator'
 import { createRng } from '../domain/rng'
 import type { Program, Ranking, Rng, RoundResult } from '../domain/types'
@@ -56,6 +57,10 @@ export const useRaceStore = defineStore('race', () => {
   )
 
   function generateProgram(seed: number = Date.now()): void {
+    const currentKind = state.value.kind
+    if (currentKind === PHASE_RACING || currentKind === PHASE_RESTING) {
+      throw new InvalidTransitionError(currentKind, 'generateProgram')
+    }
     const horses = useHorsesStore()
     assertEnoughFitHorses(horses.horses)
     const meetingRng = createRng(seed)

@@ -5,12 +5,17 @@ import {
   LANE_COUNT,
   MIN_FIT_HORSES_FOR_PROGRAM,
   MIN_RACEABLE_CONDITION,
+  PHASE_FINISHED,
   PHASE_INITIAL,
+  PHASE_RACING,
   PHASE_READY,
+  PHASE_RESTING,
   ROUND_COUNT,
   ROUND_DISTANCES,
 } from '../../domain/constants'
-import { NotEnoughFitHorsesError } from '../../domain/errors'
+import { InvalidTransitionError, NotEnoughFitHorsesError } from '../../domain/errors'
+import { createRng } from '../../domain/rng'
+import { generateProgram as generateProgramFn } from '../../domain/programGenerator'
 import type { Horse } from '../../domain/types'
 import { useHorsesStore } from '../horses'
 
@@ -149,5 +154,97 @@ describe('useRaceStore — generateProgram (happy path)', () => {
     const lanesB = raceB.program!.map((round) => round.lanes.join(','))
 
     expect(lanesA).not.toEqual(lanesB)
+  })
+})
+
+describe('useRaceStore — generateProgram phase guard', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('re-rolls in place when called from READY (happy: re-roll is allowed)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+
+    const race = useRaceStore()
+    race.generateProgram(KNOWN_SEED)
+    const firstLanes = race.program!.map((round) => round.lanes.join(','))
+
+    race.generateProgram(OTHER_SEED)
+
+    expect(race.state.kind).toBe(PHASE_READY)
+    expect(race.seed).toBe(OTHER_SEED)
+    const secondLanes = race.program!.map((round) => round.lanes.join(','))
+    expect(secondLanes).not.toEqual(firstLanes)
+  })
+
+  it('transitions FINISHED → READY and clears prior results (edge: post-meeting re-generation)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+
+    const race = useRaceStore()
+    const priorRng = createRng(KNOWN_SEED)
+    const priorProgram = generateProgramFn(horses.horses, priorRng)
+    race.state = {
+      kind: PHASE_FINISHED,
+      program: priorProgram,
+      seed: KNOWN_SEED,
+      results: [{ roundNumber: 1, rankings: [] }],
+    }
+
+    race.generateProgram(OTHER_SEED)
+
+    expect(race.state.kind).toBe(PHASE_READY)
+    expect(race.seed).toBe(OTHER_SEED)
+    expect(race.results).toEqual([])
+  })
+
+  it('throws InvalidTransitionError when called from RACING (sad: meeting in flight)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+
+    const race = useRaceStore()
+    const racingRng = createRng(KNOWN_SEED)
+    const racingProgram = generateProgramFn(horses.horses, racingRng)
+    race.state = {
+      kind: PHASE_RACING,
+      program: racingProgram,
+      rng: racingRng,
+      seed: KNOWN_SEED,
+      currentRoundIndex: 2,
+      results: [],
+    }
+
+    let thrown: unknown
+    try {
+      race.generateProgram(OTHER_SEED)
+    } catch (caught) {
+      thrown = caught
+    }
+
+    expect(thrown).toBeInstanceOf(InvalidTransitionError)
+    expect((thrown as InvalidTransitionError).kind).toBe(PHASE_RACING)
+    expect((thrown as InvalidTransitionError).action).toBe('generateProgram')
+    expect(race.state.kind).toBe(PHASE_RACING)
+  })
+
+  it('throws InvalidTransitionError when called from RESTING (sad: rest in flight)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+
+    const race = useRaceStore()
+    race.state = { kind: PHASE_RESTING, restingUntil: FIXED_NOW_MS + 10_000 }
+
+    let thrown: unknown
+    try {
+      race.generateProgram(OTHER_SEED)
+    } catch (caught) {
+      thrown = caught
+    }
+
+    expect(thrown).toBeInstanceOf(InvalidTransitionError)
+    expect((thrown as InvalidTransitionError).kind).toBe(PHASE_RESTING)
+    expect(race.state.kind).toBe(PHASE_RESTING)
   })
 })

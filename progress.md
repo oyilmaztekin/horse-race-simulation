@@ -256,7 +256,22 @@ Store-level test exercises only what the store owns: the wiring + the post-throw
 
 ### Next action
 
-Cycle 4 — `generateProgram` illegal-transition guard: throws `InvalidTransitionError` when called from RACING (and RESTING once that's reachable).
+Cycle 5 — `start()` action: READY → RACING with `currentRoundIndex = 0`, `results = []`, carrying program/rng/seed; throws `InvalidTransitionError` from non-READY phases.
+
+## 2026-05-15 — Session 11: Phase 4 race store, cycle 4 (generateProgram phase guard)
+
+### What landed
+
+- `src/stores/race.ts` — `generateProgram` now reads `state.value.kind` first; if it's `PHASE_RACING` or `PHASE_RESTING` it throws `InvalidTransitionError(kind, 'generateProgram')` before touching the horses store or RNG. INITIAL / READY / FINISHED continue to transition to READY (READY re-rolls in place; FINISHED naturally clears prior results since the new READY variant has no `results` field).
+- `src/stores/__tests__/race.test.ts` — 4 tests under a new `generateProgram phase guard` describe: READY re-rolls (happy), FINISHED → READY clears results (edge), RACING throws + state unchanged (sad), RESTING throws + state unchanged (sad).
+
+### Test count
+
+109 tests (12 files), all green. Typecheck clean.
+
+### Next action
+
+Cycle 5 — `start()` action: READY → RACING with `currentRoundIndex = 0`, `results = []`; throws `InvalidTransitionError` from non-READY phases.
 
 
 
