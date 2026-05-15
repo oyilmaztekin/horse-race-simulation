@@ -61,6 +61,20 @@ export interface LanePosition {
   form: number
 }
 
+// One row of the end-of-meeting score table (ARCHITECTURE.md §6 / §14).
+// Aggregates a horse's per-round Rankings into wins (rank=1), podiums
+// (rank ≤ PODIUM_RANK_MAX), races run, and cumulative finish time.
+export interface Standing {
+  rank: number
+  horseId: HorseId
+  number: number
+  name: string
+  wins: number
+  podiums: number
+  roundsRun: number
+  totalFinishTimeMs: number
+}
+
 export interface SimulationSnapshot {
   roundNumber: number
   distance: number

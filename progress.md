@@ -1,5 +1,14 @@
 # Progress Log
 
+## 2026-05-15 — Session 40: End-of-meeting score table — Step 14 (computeStandings + Standing type)
+
+- New `Standing` type in `src/domain/types.ts` and `src/domain/standings.ts` exporting `computeStandings(results, lookupHorse): Standing[]`. Pure function: folds `RoundResult[]` into per-horse aggregates (wins, podiums, roundsRun, totalFinishTimeMs), drops horses unknown to the lookup, sorts wins desc → podiums desc → totalFinishTimeMs asc → horseId asc, assigns dense unique ranks 1..N.
+- New constant `PODIUM_RANK_MAX = 3` in `src/domain/constants.ts`.
+- Three-flavor test coverage in `src/domain/__tests__/standings.test.ts`: happy (3-horse / 3-round sort), edge (identical wins+podiums+time broken by horse number asc), sad (empty results returns `[]`; unknown horseId silently omitted).
+- BUSINESS_LOGIC.md §3.10 added; ARCHITECTURE.md §6 adds `Standing` interface.
+- Decision: rank field is derived (assigned after sort), never stored — same shape as `Ranking` in `RoundResult`, so the type stays a stable row representation regardless of how callers slice it.
+- Full suite green: 239 tests across 31 files.
+
 ## 2026-05-15 — Session 39: ProgramPanel collapse for completed rounds
 
 - `ProgramRoundCard.vue` accepts new `isCompleted: boolean` prop; when true, hides the `<ol>` list and adds `program-round-card--collapsed` modifier (opacity 0.6).

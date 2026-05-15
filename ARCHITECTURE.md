@@ -462,6 +462,19 @@ export interface SimulationSnapshot {
   lanes: LanePosition[]   // length === LANE_COUNT
 }
 
+// One row of the end-of-meeting score table (BUSINESS_LOGIC.md §3.10).
+// Produced by `computeStandings(results, lookupHorse)` from `src/domain/standings.ts`.
+export interface Standing {
+  rank: number             // 1..N, dense, unique (tiebreaker by horseId asc guarantees this)
+  horseId: HorseId
+  number: number           // horse's number, mirrored for display + tiebreak
+  name: string             // resolved at compute time via lookupHorse
+  wins: number             // count of rounds finished 1st
+  podiums: number          // count of rounds finished in top PODIUM_RANK_MAX (= 3)
+  roundsRun: number
+  totalFinishTimeMs: number
+}
+
 export type Rng = () => number   // returns a uniform value in [0, 1)
 ```
 

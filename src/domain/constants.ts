@@ -85,6 +85,10 @@ export const REST_POLL_INTERVAL_MS = 1_000
 // Pause between rounds (BUSINESS_LOGIC.md §4.4).
 export const INTER_ROUND_DELAY_MS = 1500
 
+// Top-N rank that counts as a podium for end-of-meeting standings
+// (BUSINESS_LOGIC.md §3.9 / decision #30).
+export const PODIUM_RANK_MAX = 3
+
 // Sim-speed multiplier control (Phase 12.2 — reviewer feedback 2026-05-15).
 // Default 2× so the meeting feels brisk on first impression; reviewer can
 // slow down to 0.5× to inspect or bump up to 4× to skim. Step 0.5 keeps the

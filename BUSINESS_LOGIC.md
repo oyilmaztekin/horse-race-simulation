@@ -165,6 +165,18 @@ While a round is running, each horse's **current condition** (the value the hors
 
 This is the user's signal that a low-condition horse is going to lag visibly. It appears only during `RACING`; the roster panel continues to show condition in its own way (see `HorseListItem`, `ARCHITECTURE.md` §14).
 
+### 3.10 End-of-meeting score table
+
+When the final round finishes and `state` transitions to `FINISHED`, the application surfaces an aggregate **score table** built from the `RoundResult[]` collected during the meeting. The table is the answer to "who won this meeting" — per-round breakdowns remain in `ResultsPanel`; the score table is the summary view.
+
+**Columns.** For every horse that ran ≥ 1 round: `rank`, horse number + name, `wins` (count of rounds finished 1st), `podiums` (count of rounds finished in top `PODIUM_RANK_MAX = 3`), `roundsRun`, `totalFinishTimeMs` (sum of `finishTimeMs` across the rounds the horse ran).
+
+**Sort order.** `wins desc → podiums desc → totalFinishTimeMs asc → horseId asc`. The final key by horse number guarantees dense, unique ranks `1..N` with no ties — see `Standing` (ARCHITECTURE.md §6) and `computeStandings` (`src/domain/standings.ts`).
+
+**Scope.** Only horses with `roundsRun ≥ 1` appear; horses unknown to the cached roster lookup are silently omitted (defensive — should not happen in normal flow).
+
+**Persistence.** None. The table is derived from in-memory `state.results` and disappears when the user clicks **Generate Program** again (state returns to `INITIAL` and `results` is cleared). No DB write, no localStorage. Symmetric with decision #21 (no reload-resume in MVP).
+
 ---
 
 ## 4. Application Flow

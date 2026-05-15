@@ -287,6 +287,13 @@ Exit: reviewer can speed/slow the simulation live during any race. **DONE 2026-0
 
 Exit: completed rounds collapse during/after a meeting; active round stays open. **DONE 2026-05-15.**
 
+#### Sub-phase 12.4 — End-of-meeting score table (BUSINESS_LOGIC.md §3.10)
+- [x] Step 14 — `Standing` type, `PODIUM_RANK_MAX = 3`, pure `computeStandings(results, lookupHorse)` in `src/domain/standings.ts`. Three-flavor tests: happy sort order across 3 rounds; edge tiebreaker by horse number on identical (wins, podiums, totalFinishTimeMs); sad empty results + unknown-horse omission.
+- [ ] Step 15 — `ScoreTable.vue` reads `race.results` + `horses.byId`, renders BEM table; champion row gets `score-table__row--champion`. Smoke tests: happy mount renders rows in expected order; edge empty-results renders no body rows; sad missing-horse row omitted.
+- [ ] Step 16 — `App.vue` center slot swaps `RaceTrack` (isRacing) for `ScoreTable` (phase === FINISHED). One smoke test for the swap.
+
+Exit: clicking through a full meeting ends with an aggregate Wins / Podiums / Total-time table in the center slot; clearing the meeting (Generate Program) returns the slot to empty. **Step 14 DONE 2026-05-15.**
+
 ---
 
 ## Errors encountered
