@@ -278,9 +278,9 @@ Exit: per-race form active, suite green, 45-vs-55 races flip outcomes across see
 - [x] Step 9 — `useRaceStore.simSpeedMultiplier` + `increase/decreaseSimSpeed` clamped to [0.5, 4] in 0.5 steps; default 2.
 - [x] Step 10 — `useRaceSimulation` accumulator scales by multiplier (multiplier=1 ≡ baseline byte-identical).
 - [x] Step 11 — `RaceTrack.vue` renders `[−] 2.0× [+]` row above lanes; disabled at bounds; BEM `.race-track__speed-control`.
-- [ ] Step 12 — Playwright e2e: start → click + twice → race finishes faster.
+- [ ] Step 12 — Playwright e2e: start → click + twice → race finishes faster. **Deferred** to the broader Phase 9 (Playwright happy path) bootstrap; no Playwright config or tests exist in the repo yet, so wiring one e2e for this feature would mean shipping infra alongside it. Component-level coverage in Phase 12.2 Step 11 (`RaceTrack.test.ts`) already exercises the buttons + readout + bounds via @vue/test-utils.
 
-Exit: reviewer can speed/slow the simulation live during any race.
+Exit: reviewer can speed/slow the simulation live during any race. **DONE 2026-05-15 (Step 12 deferred to Phase 9).**
 
 ---
 
