@@ -251,7 +251,7 @@ Two coupled revisions ship together: (a) runtime `SIM_SPEED_MULTIPLIER` so revie
 - [x] Step 4 — `step()` passes persistent `lane.form` into `computeSpeed`; no extra rng for form per tick.
 - [x] Step 5 — Closed-form anchor tests independent of seed (cond=MAX/MIN, form=0, jitter=0; sensitivity per arg).
 - [x] Step 6 — Rebaseline remaining seeded simulation tests + composable test fixtures. *(no-op: existing seeded tests asserted determinism, not exact positions)*
-- [ ] Step 7 — Variance-shape behavior tests (cond=80 always beats cond=45 with forms=0; cond=45 can beat cond=55 with form rigged).
+- [x] Step 7 — Variance-shape behavior tests (cond=80 always beats cond=45 with forms=0; cond=45 can beat cond=55 with form rigged; FORM_MPS boundary documented).
 - [ ] Step 8 — `JITTER_MPS` 1.5 → 0.5 (visual jiggle only; form now owns outcome variance).
 
 Exit: per-race form active, suite green, 45-vs-55 races flip outcomes across seeds.

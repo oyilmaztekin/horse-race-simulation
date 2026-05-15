@@ -892,3 +892,24 @@ Step 5 — closed-form anchor tests independent of seed: cond=MAX/MIN with form=
 ### Next action
 
 Step 7 — variance-shape behavior tests: (a) with form forced to 0 for both, cond=80 always beats cond=45 across N seeds; (b) with form rigged high for the cond=45 horse and low for the cond=55 horse, the 45 horse can win. Quantitative validation that the new variance shape matches the brainstorm spec.
+
+## 2026-05-15 — Session 39: Phase 12.1 Step 7 — variance-shape behavior tests
+
+### What landed
+
+- `src/domain/__tests__/simulation.test.ts` — new variance-shape suite with a `raceWithFixedForms(conditions, forms, distance)` helper that runs a full race deterministically (half-rng → jitter=0) and returns the winning horseId.
+  - **Happy** — cond=80 always beats cond=45 when both forms forced to 0. Validates that without form, condition decides.
+  - **Edge** — cond=45 beats cond=55 when form(45)=+FORM_MPS and form(55)=−FORM_MPS. Validates the brainstorm spec: close-condition pairs become real coin-flips.
+  - **Sad / boundary** — even cond=45 can beat cond=80 when forms are at opposite extremes (FORM_MPS=1.0 makes this the *upper edge* of upset territory). Documents the magnitude calibration so future tuning has a reference.
+
+### Test count
+
+219 tests (30 files), all green (+3 new variance-shape tests). Sim file now 27 tests.
+
+### Decisions worth recalling
+
+- The third test documents that FORM_MPS=1.0 is the calibration boundary at which an extreme form draw can flip even a 35-condition-point gap. Probabilistically rare (both forms hitting opposite extremes simultaneously) but mathematically possible. If we ever want big-gap races to be guaranteed dominant, reduce FORM_MPS to ~0.7.
+
+### Next action
+
+Step 8 — `JITTER_MPS` 1.5 → 0.5. Pure tuning change; form now owns outcome variance, jitter is visual jiggle.

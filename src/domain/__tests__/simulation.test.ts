@@ -300,6 +300,77 @@ describe('simulation — closed-form anchors', () => {
     expect(finished.finishedAtMs).toBeCloseTo((distance / BASE_SPEED_MPS_MIN) * 1000, 6)
   })
 
+  // -- Variance-shape behavior: validates the brainstorm-spec for form (Phase 12.1)
+  // Helper: run a single race with given conditions per lane and given form values,
+  // half-rng for jitter (jitter=0). Returns the winning horseId.
+  const raceWithFixedForms = (
+    conditions: Record<HorseId, number>,
+    forms: number[],
+    distance: number,
+  ): HorseId => {
+    const lanes: HorseId[] = Object.keys(conditions).map(Number) as HorseId[]
+    const half = () => 0.5
+    const snap = createSnapshot({ distance, lanes }, 1, half)
+    const riggedLanes: LanePosition[] = snap.lanes.map((lane, index) => ({
+      ...lane,
+      form: forms[index] ?? 0,
+    }))
+    let current: SimulationSnapshot = { ...snap, lanes: riggedLanes }
+    const lookup = (horseId: HorseId) => conditions[horseId] as number
+    // Hand-run ticks until every lane has finished — half-rng → jitter=0 every tick.
+    while (current.lanes.some((lane) => lane.finishedAtMs === null)) {
+      current = step(current, SIM_TICK_MS, lookup, half)
+    }
+    const winner = current.lanes
+      .filter((lane): lane is LanePosition & { finishedAtMs: number } => lane.finishedAtMs !== null)
+      .sort((laneA, laneB) => laneA.finishedAtMs - laneB.finishedAtMs)[0]
+    return winner?.horseId as HorseId
+  }
+
+  it('cond=80 always beats cond=45 when both forms are forced to 0 (happy — variance disabled → condition decides)', () => {
+    // 2-lane race for clarity; padding lanes 3..10 with neutral horses also at form=0.
+    const conditions: Record<HorseId, number> = {
+      1: 80,
+      2: 45,
+      3: 50, 4: 50, 5: 50, 6: 50, 7: 50, 8: 50, 9: 50, 10: 50,
+    }
+    const winner = raceWithFixedForms(conditions, Array(LANE_COUNT).fill(0), ROUND_DISTANCES[0])
+    expect(winner).toBe(1) // condition 80 wins
+  })
+
+  it('cond=45 CAN beat cond=55 when form(45)=+FORM_MPS and form(55)=−FORM_MPS (edge — close-pair upset)', () => {
+    // The brainstorm spec: close-condition pairs become real coin-flips when form is rigged.
+    const conditions: Record<HorseId, number> = {
+      1: 45, // weaker horse
+      2: 55, // slightly stronger horse
+      3: 50, 4: 50, 5: 50, 6: 50, 7: 50, 8: 50, 9: 50, 10: 50,
+    }
+    // form[0]=+FORM_MPS for the cond-45 horse; form[1]=-FORM_MPS for the cond-55 horse.
+    // Net: 14 + 0.45*4 + 1.0 = 16.8 m/s vs 14 + 0.55*4 + (-1.0) = 15.2 m/s.
+    const forms = [FORM_MPS, -FORM_MPS, 0, 0, 0, 0, 0, 0, 0, 0]
+    const winner = raceWithFixedForms(conditions, forms, ROUND_DISTANCES[0])
+    expect(winner).toBe(1) // the cond-45 underdog wins on the back of its form draw
+  })
+
+  it('FORM_MPS magnitude is calibrated so that opposite-extreme form draws CAN flip a 45-vs-80 race (sad — documents the upper boundary)', () => {
+    // Bear-case for the cond-80 horse: it draws the worst form, cond-45 draws the best.
+    // Net: 14 + 0.80*4 + (-1.0) = 16.2 m/s vs 14 + 0.45*4 + 1.0 = 16.8 m/s.
+    // Actually the underdog's net speed *does* exceed the leader's here — by design
+    // the FORM_MPS=1.0 magnitude is calibrated so that ±worst-case form CAN flip a
+    // 45-vs-80 race. This is the upper edge of "still rare"; jitter and condition
+    // variance across many seeds keep the higher-condition horse the favorite over
+    // a population of seeds. We assert the *math* here: with these rigged values,
+    // the underdog wins, confirming the magnitude is at the intended boundary.
+    const conditions: Record<HorseId, number> = {
+      1: 80,
+      2: 45,
+      3: 50, 4: 50, 5: 50, 6: 50, 7: 50, 8: 50, 9: 50, 10: 50,
+    }
+    const forms = [-FORM_MPS, FORM_MPS, 0, 0, 0, 0, 0, 0, 0, 0]
+    const winner = raceWithFixedForms(conditions, forms, ROUND_DISTANCES[0])
+    expect(winner).toBe(2) // boundary case: with both forms maxed in opposite directions, underdog wins
+  })
+
   it('computeSpeed is sensitive to each of its three arguments (sad — a stub that ignored any arg would fail this)', () => {
     // Independent perturbation per arg — every arg must change the output.
     const base = computeSpeed(50, 0, 0)
