@@ -308,6 +308,25 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 21: Phase 7 cycle 1 (RaceControls button enabled state)
+
+### What landed
+
+- `src/components/RaceControls.vue` — minimal scaffold: two buttons (`btn-generate`, `btn-start`) wired to `race.canGenerate` / `race.canStart`. No click handlers yet; Rest button + warning + countdown land in later cycles.
+- `src/components/__tests__/RaceControls.test.ts` — 3 tests (happy/edge/sad) using `createTestingPinia({ initialState })` to drive race + horses stores: Generate enabled / Start disabled in INITIAL with full roster (happy); both enabled in READY (edge); both disabled in RESTING (sad — a stub returning enabled would fail).
+
+### Decision
+
+`createTestingPinia` with seeded `initialState` is the right test seam for container components: the actual `canGenerate` / `canStart` computeds run against the seeded `state` ref, so a regression in those gates is caught here too. Actions are stubbed by default — handlers are deferred to cycle 2.
+
+### Test count
+
+170 tests (23 files), all green.
+
+### Next action
+
+Cycle 2 — `Generate` click dispatches `race.generateProgram()`; one happy/edge/sad set.
+
 ## 2026-05-15 — Session 20: Phase 6 cycle 7 (RankingRow) — Phase 6 complete
 
 ### What landed

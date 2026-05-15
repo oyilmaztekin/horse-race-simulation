@@ -133,13 +133,13 @@ Exit: presentational tests green.
 ---
 
 ### Phase 7 — Container components
-Status: `pending`
+Status: `in_progress` — `RaceControls` cycle 1 (button enabled state) landed; remaining cycles tracked below.
 
 Each container uses `createTestingPinia()` for store mocks. `RaceTrack` test mocks `useRaceSimulation`.
 
 - [ ] `App.vue` + test (`fetchAll` on mount; `useRestPolling()` instantiated once at app lifetime per `ARCHITECTURE.md` §11 step 3; `<RaceTrack v-if="phase==='RACING'" :key="currentRoundIndex">`)
 - [ ] `AppHeader.vue` + test
-- [ ] `RaceControls.vue` + test — three controls per `BUSINESS_LOGIC.md` §4.3: Generate Program, Start, Rest the horses. Rest is contextual-reveal (hidden until a Generate click surfaces `NotEnoughFitHorsesError`). Test cases: disabled state matches `canGenerate`/`canStart`/`canRest`; generate click dispatches `race.generateProgram`; on `NotEnoughFitHorsesError` the warning banner appears + Rest button reveals; rest click dispatches `race.rest`; RESTING phase renders countdown derived from `race.restingUntil − Date.now()` and disables all three buttons.
+- [ ] `RaceControls.vue` + test — three controls per `BUSINESS_LOGIC.md` §4.3: Generate Program, Start, Rest the horses. Rest is contextual-reveal (hidden until a Generate click surfaces `NotEnoughFitHorsesError`). Test cases: **[x] cycle 1 disabled state matches `canGenerate`/`canStart` (3 tests, INITIAL/READY/RESTING)**; [ ] generate click dispatches `race.generateProgram`; [ ] on `NotEnoughFitHorsesError` the warning banner appears + Rest button reveals; [ ] rest click dispatches `race.rest`; [ ] RESTING phase renders countdown derived from `race.restingUntil − Date.now()` and disables all three buttons.
 - [ ] `HorseList.vue` + test (iterate `horses.horses`; loading skeleton)
 - [ ] `ProgramPanel.vue` + test (mount when phase ≠ INITIAL; resolve IDs via `byId`; `isCurrent` reflects `currentRoundIndex`)
 - [ ] `ResultsPanel.vue` + test (pre-render 6 headers from `ROUND_DISTANCES`; cards fill as `results` grows)
