@@ -105,11 +105,11 @@ Exit: `src/stores/**` tests green.
 ---
 
 ### Phase 5 — Composables
-Status: `pending`
+Status: `complete` ✓
 
-- [ ] **`src/composables/useRaceApi.ts`** — `getHorses` (returns `HorsesEnvelope`), **`startRest`** (returns `HorsesEnvelope`), `completeRound`. Tests stub `globalThis.fetch`: correct URL/method/body; throws `ApiError` on non-2xx; envelope-shape assertions for getHorses and startRest.
-- [ ] **`src/composables/useRaceSimulation.ts`** — accumulator-pattern rAF loop at fixed `SIM_TICK_MS`. Cleanup on unmount. Tests use the §15.5 fake-timer harness: advance time → positions grow; `finishOrder` fills as horses cross; `done` flips at LANE_COUNT; deterministic from seed; `cancelAnimationFrame` called on unmount.
-- [ ] **`src/composables/useRestPolling.ts` (NEW, `ARCHITECTURE.md` §10):** watches `race.phase`; when it enters `'RESTING'`, polls `GET /api/horses` every `REST_POLL_INTERVAL_MS`. On `restingUntil === null` envelope, calls `race.completeRest(envelope.horses)`. Stops polling when phase leaves RESTING. Tests use fake timers + stubbed `fetch`: starts on RESTING entry, calls `completeRest` when envelope clears, stops on RESTING exit, tolerates a failed GET without crashing.
+- [x] **`src/composables/useRaceApi.ts`** — `getHorses` (returns `HorsesEnvelope`), `startRest` (returns `HorsesEnvelope`), `completeRound`. 9 tests (3 per method) stub `globalThis.fetch`: URL/method/body assertions; envelope shape preserved (incl. non-null `restingUntil`); `ApiError` carries `status` + `body` on non-2xx. Implementation pre-existed from Phase 4 bridge; tests retroactively lock the contract.
+- [x] **`src/composables/useRaceSimulation.ts`** — accumulator-pattern rAF loop at fixed `SIM_TICK_MS`. Takes `(round, roundNumber, conditionLookup, rng)`; returns `{ positions, finishOrder, done }`. Cleanup on unmount via `cancelAnimationFrame`. 4 tests mount inside a `defineComponent` host via `@vue/test-utils` and drive the loop with `vi.advanceTimersByTimeAsync`: positions grow (happy); finishOrder fills + done flips at LANE_COUNT with unique ranks 1..10 (edge); deterministic across two runs of the same seed and different from another seed (sad); `cancelAnimationFrame` spy called on unmount (sad).
+- [x] **`src/composables/useRestPolling.ts` (NEW, `ARCHITECTURE.md` §10):** watches `race.phase`; on entry to `PHASE_RESTING` starts `setInterval(tick, REST_POLL_INTERVAL_MS)` and fires an immediate tick; on exit clears the interval. `tick` calls `api.getHorses()` then either `race.completeRest(envelope.horses)` (when `restingUntil === null`) or `horses.applyServerUpdate`. Failures are swallowed so the loop keeps retrying. `tests/setup.ts` extended to fake `setInterval`/`clearInterval` so the polling loop is timer-controllable. 3 tests: keeps polling at the interval (happy); calls `completeRest` and stops on clearing envelope (edge); tolerates a rejected GET and keeps polling (sad).
 
 Exit: composables tests green.
 

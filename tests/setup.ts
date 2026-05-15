@@ -3,6 +3,8 @@ import { afterEach, beforeEach, vi } from 'vitest'
 const FAKED_GLOBALS = [
   'setTimeout',
   'clearTimeout',
+  'setInterval',
+  'clearInterval',
   'requestAnimationFrame',
   'cancelAnimationFrame',
   'performance',

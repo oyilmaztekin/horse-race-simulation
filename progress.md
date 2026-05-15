@@ -258,6 +258,25 @@ Store-level test exercises only what the store owns: the wiring + the post-throw
 
 Phase 5 — composables (`useRaceApi` real implementation, `useRaceSimulation`, `useRestPolling`).
 
+## 2026-05-15 — Session 13: Phase 5 — composables (complete)
+
+### What landed
+
+- `src/composables/__tests__/useRaceApi.test.ts` — 9 tests (3 per method × 3 methods). Happy: URL/method/body + return shape. Edge: non-null `restingUntil` envelope / empty raced list. Sad: `ApiError` carries `status` + `body` on non-2xx. `fetch` stubbed via `vi.stubGlobal` (avoids the TS variance issue with `vi.spyOn(globalThis, 'fetch')`). Implementation carried over from the Phase 4 bridge unchanged.
+- `src/composables/useRaceSimulation.ts` — accumulator-pattern rAF loop at fixed `SIM_TICK_MS`. `(round, roundNumber, conditionLookup, rng) → { positions, finishOrder, done }`. `finishOrder` re-sorts by `finishedAtMs` then `lane` (decision #15 tie-break). Cleanup via `cancelAnimationFrame` in `onUnmounted`.
+- `src/composables/__tests__/useRaceSimulation.test.ts` — 4 tests mounted inside a `defineComponent` host via `@vue/test-utils`; drive the loop with `vi.advanceTimersByTimeAsync`. Happy: positions grow after 500ms. Edge: after 120s every lane finishes, `done === true`, ranks 1..10 unique. Sad: identical seeds produce identical finish orders; different seed differs (catches a stub returning a constant). Sad: `cancelAnimationFrame` spy called on unmount.
+- `src/composables/useRestPolling.ts` — watches `race.phase`; on entering `PHASE_RESTING` kicks off `setInterval(tick, REST_POLL_INTERVAL_MS)` plus an immediate `tick()`; on exiting clears the interval. `tick` calls `api.getHorses` then either `race.completeRest(envelope.horses)` (envelope cleared) or `horses.applyServerUpdate`. Catches and swallows network errors so the loop keeps retrying.
+- `src/composables/__tests__/useRestPolling.test.ts` — 3 tests via a `defineComponent` host with a mocked `useRaceApi`. Happy: polls again every `REST_POLL_INTERVAL_MS`. Edge: envelope with `restingUntil: null` triggers `completeRest`, phase exits RESTING, polling halts (further timer advances produce no new calls). Sad: a rejected GET is swallowed; the next interval tick still fires.
+- `tests/setup.ts` — extended fake-timer list to include `setInterval`/`clearInterval` so polling loops are deterministically drivable. All pre-existing tests still green.
+
+### Test count
+
+145 tests (15 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 6 — presentational components: `ColorSwatch`, `HorseListItem`, `HorseSprite`, `RaceLane`, `ProgramRoundCard`, `ResultRoundCard`, `RankingRow`. One mount test per component (`@vue/test-utils`), pure prop-in → DOM-out.
+
 ## 2026-05-15 — Session 12: Phase 4 race store, cycles 5–10 (Phase 4 complete)
 
 Six TDD cycles landed back-to-back; Phase 4 is now complete. Phase 4 tests grew from 4 to 31 (Phase 4 contributes the bulk of the 129-total). Each cycle: red→green→one behavior at a time.
