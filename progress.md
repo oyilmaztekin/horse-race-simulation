@@ -1,5 +1,30 @@
 # Progress Log
 
+## 2026-05-15 — Session 47: Phase 11.1 (steps 2–4) — Docker + nginx + supervisord
+
+### What landed
+
+- `Dockerfile` (multi-stage):
+  - `web-build`: `node:20-alpine`, `npm ci`, copies SPA sources + Vite/Tailwind/PostCSS configs, runs `npm run build` → `/app/dist`.
+  - `server-build`: `npm ci --omit=dev` + `npm install --no-save tsx prisma` (the entrypoint script needs the `prisma` CLI at runtime), copies `prisma/`, runs `npx prisma generate` so the client is bundled into `node_modules/.prisma`.
+  - `runtime`: `node:20-alpine` + `nginx` + `supervisor` packages. Brings forward server `node_modules`, generated Prisma client, server source, `src/domain/`, root + server tsconfig (server imports `../../src/domain/*` and runs via `tsx`). SPA bundle goes to `/usr/share/nginx/html`. Defaults `HOST=127.0.0.1 PORT=3001 DATABASE_URL=file:/app/prisma/dev.db`. Exposes 80.
+- `deploy/nginx.conf` — SPA fallback at `/`, reverse-proxy `/api/` → `127.0.0.1:3001`. gzip on, logs to stdout/stderr.
+- `deploy/supervisord.conf` — `nginx -g 'daemon off;'` + `node --import tsx/esm /app/server/index.ts`. Both autorestart.
+- `deploy/docker-entrypoint.sh` — `prisma migrate deploy` (idempotent on the persistent volume), then conditionally `prisma db seed` when `horse.count() === 0`. Exec's the CMD (supervisord).
+- `.dockerignore` — keeps build context lean and excludes secrets/local DB.
+
+### Why this shape
+
+- **No server compile step.** `tsx` runs the TypeScript directly at runtime; the alternative (separate `server-build` that emits `.js`) would require duplicating `tsconfig` paths, juggling output dir aliases for `../../src/domain/*`, and adding a watchful build script — for no runtime benefit over `tsx`'s ESM loader.
+- **Entrypoint owns DB lifecycle.** `release_command` on Fly will do the same thing, but pushing it into the entrypoint means local docker runs and arbitrary host targets behave identically — the container is the contract.
+- **Single ingress = nginx on :80.** Hono binds `127.0.0.1` via Phase 11.1 step 1's `resolveBindConfig`, so the only public surface is nginx. No way to accidentally hit Hono directly from outside the container.
+
+### Next action
+
+Install docker locally and run the smoke test (Phase 11.1 step 5): `docker build -t beygir-yarisi:dev .`, `docker run -p 8080:80 -v $(pwd)/_data:/app/prisma beygir-yarisi:dev`, browser walks Generate → Start → FINISHED, container restart preserves `dev.db`.
+
+---
+
 ## 2026-05-15 — Session 47: Phase 11.1 (step 1) — env-driven server bind
 
 ### What landed

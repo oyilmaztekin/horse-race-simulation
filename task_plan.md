@@ -222,11 +222,12 @@ Reviewer-facing artifact. Runs only after Phase 9 (Playwright happy path) is gre
 - CI/CD: GitHub Actions. Push-to-main → test → build → `flyctl deploy --remote-only`.
 
 #### Sub-phase 11.1 — Container build (local smoke test only, no deploy yet)
-- [ ] `Dockerfile` — multi-stage: `web-build` (Vue → `/dist`), `server-build` (tsc over `server/` + `src/domain/` + `prisma/seed.ts` → `/server-dist`), `runtime` (alpine + nginx + nodejs + supervisor; copies dist + server-dist + `prisma/schema.prisma` + `prisma/horseNames.json`; runs `prisma generate`; exposes :80).
-- [ ] `nginx.conf`: SPA fallback at `/`; `proxy_pass` for `/api/`.
-- [ ] `supervisord.conf` — two services: nginx + node.
+- [x] `Dockerfile` — multi-stage (`web-build` Vue → `/dist`, `server-build` prod-deps + `prisma generate`, `runtime` alpine + nginx + node + supervisord). No separate TS compile for the server — `node --import tsx/esm /app/server/index.ts` keeps source-level imports working (server imports `../../src/domain/*`). `npm install --no-save tsx prisma` in `server-build` so the CLIs are available for the entrypoint's `prisma migrate deploy` + `prisma db seed`.
+- [x] `nginx.conf` (`deploy/nginx.conf`): SPA fallback at `/` via `try_files`; `proxy_pass http://hono_api` for `/api/`; gzip on for text/css/js/json/svg; access/error logs to stdout/stderr.
+- [x] `supervisord.conf` (`deploy/supervisord.conf`): two services — `nginx -g 'daemon off;'` + `node --import tsx/esm /app/server/index.ts`; both autorestart, logs to stdout/stderr. API gets `HOST=127.0.0.1 PORT=3001 DATABASE_URL=file:/app/prisma/dev.db`.
 - [x] Patch `server/index.ts` to bind `127.0.0.1:3001` via `HOST` env var (default `127.0.0.1`). New `server/bindConfig.ts` exposes `resolveBindConfig(env)` returning `{ host, port }`; defaults `127.0.0.1:3001`; throws on non-positive-integer `PORT`. Tests in `server/__tests__/bindConfig.test.ts` (3 flavors: env-driven / defaults / invalid PORT). `serve({ hostname, port })` now reads from env. Full suite 248/248 green.
-- [ ] `.dockerignore` excludes `node_modules`, `dev.db`, `dist`, `.git`, `tests/`, `*.md`.
+- [x] `.dockerignore` excludes `node_modules`, `dist`, `coverage`, `prisma/dev.db*`, `.git`, `.github`, editors, `tests/`, `*.md`, env files, `graphify-out`, planning artifacts.
+- [x] `deploy/docker-entrypoint.sh` — runs `prisma migrate deploy` on every boot (idempotent), then seeds via `prisma db seed` only when `horse.count() === 0` (cold-start vs. resumed volume). Exec's `supervisord` as PID 1.
 - [ ] Local verify: `docker build`, `docker run -p 8080:80 -v $(pwd)/_data:/app/prisma`; browser walks Generate → Start → FINISHED; restart container → `dev.db` survives.
 
 Exit: container boots, SPA loads, `/api/horses` returns 20 rows, volume persists.

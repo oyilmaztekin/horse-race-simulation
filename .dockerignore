@@ -1,0 +1,33 @@
+node_modules
+dist
+coverage
+.vite
+*.log
+
+# Local DB and Prisma scratch
+prisma/dev.db
+prisma/dev.db-journal
+
+# Repo metadata, editors, tests, docs
+.git
+.github
+.idea
+.vscode
+.DS_Store
+tests
+test-results
+playwright-report
+.playwright
+*.md
+
+# Local env files
+.env
+.env.local
+.env.*.local
+
+# Misc planning / generated
+.planning
+graphify-out
+findings.md
+image.png
+*.pdf
