@@ -308,6 +308,25 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 23: Phase 7 cycle 3 (RaceControls fit-gate warning + Rest reveal)
+
+### What landed
+
+- `src/components/RaceControls.vue` — local `lastWarning` ref + `onGenerate` handler that wraps `race.generateProgram()` in try/catch. `NotEnoughFitHorsesError` (the only expected throw) is caught locally and rendered as a `[data-testid="warning"]` paragraph; any other error rethrows. While `lastWarning !== null`, a `[data-testid="btn-rest"]` button is rendered (disabled flips via `race.canRest`).
+- `src/components/__tests__/RaceControls.test.ts` — 3 new tests under a `fit-gate warning + Rest reveal` describe (interleaved with the existing block): no warning/Rest before any click (sad — a stub that always rendered would fail); warning + Rest revealed after a thrown `NotEnoughFitHorsesError` (happy), with the rendered text checked to contain both `fitCount` and `required` so a hardcoded message would fail; a successful Generate leaves warning + Rest hidden (edge).
+
+### Decision
+
+`lastWarning` lives on the component, not the store (`ARCHITECTURE.md` decision #25/#30): the rule "fit-gate fails" is in the store, the *display* of that failure is a view concern. This keeps the store free of UX state and matches the same pattern used by the existing fit-gate tests in `src/stores/__tests__/race.test.ts`.
+
+### Test count
+
+176 tests (23 files), all green.
+
+### Next action
+
+Cycle 4 — RESTING phase renders countdown derived from `race.restingUntil − Date.now()` and disables all three buttons.
+
 ## 2026-05-15 — Session 22: Phase 7 cycle 2 (RaceControls click dispatches)
 
 ### What landed

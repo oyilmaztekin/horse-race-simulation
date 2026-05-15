@@ -3,10 +3,12 @@ import { createTestingPinia } from '@pinia/testing'
 import { describe, expect, it, vi } from 'vitest'
 import {
   HORSE_COUNT,
+  MIN_FIT_HORSES_FOR_PROGRAM,
   PHASE_INITIAL,
   PHASE_READY,
   PHASE_RESTING,
 } from '../../domain/constants'
+import { NotEnoughFitHorsesError } from '../../domain/errors'
 import type { Horse } from '../../domain/types'
 import RaceControls from '../RaceControls.vue'
 
@@ -110,6 +112,67 @@ describe('RaceControls — button click dispatches', () => {
     await wrapper.find('[data-testid="btn-start"]').trigger('click')
     expect(race.start).toHaveBeenCalledOnce()
     expect(race.generateProgram).not.toHaveBeenCalled()
+  })
+
+  it('hides warning + Rest button before any click (sad — stub that always showed would fail)', () => {
+    const wrapper = mount(RaceControls, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            initialState: {
+              horses: { horses: makeHorses(), isLoading: false, error: null },
+              race: { state: { kind: PHASE_INITIAL } },
+            },
+          }),
+        ],
+      },
+    })
+    expect(wrapper.find('[data-testid="warning"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="btn-rest"]').exists()).toBe(false)
+  })
+
+  it('shows warning + reveals Rest button after Generate throws NotEnoughFitHorsesError (happy)', async () => {
+    const wrapper = mount(RaceControls, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            initialState: {
+              horses: { horses: makeHorses(), isLoading: false, error: null },
+              race: { state: { kind: PHASE_INITIAL } },
+            },
+          }),
+        ],
+      },
+    })
+    const { useRaceStore } = await import('../../stores/race')
+    const race = useRaceStore()
+    const fitCount = MIN_FIT_HORSES_FOR_PROGRAM - 5
+    vi.mocked(race.generateProgram).mockImplementation(() => {
+      throw new NotEnoughFitHorsesError(fitCount, MIN_FIT_HORSES_FOR_PROGRAM)
+    })
+    await wrapper.find('[data-testid="btn-generate"]').trigger('click')
+    expect(wrapper.find('[data-testid="warning"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="warning"]').text()).toContain(String(fitCount))
+    expect(wrapper.find('[data-testid="warning"]').text()).toContain(String(MIN_FIT_HORSES_FOR_PROGRAM))
+    expect(wrapper.find('[data-testid="btn-rest"]').exists()).toBe(true)
+  })
+
+  it('does not surface a warning when generateProgram succeeds (edge — successful gen must not reveal Rest)', async () => {
+    const wrapper = mount(RaceControls, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            initialState: {
+              horses: { horses: makeHorses(), isLoading: false, error: null },
+              race: { state: { kind: PHASE_INITIAL } },
+            },
+          }),
+        ],
+      },
+    })
+    await wrapper.find('[data-testid="btn-generate"]').trigger('click')
+    expect(wrapper.find('[data-testid="warning"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="btn-rest"]').exists()).toBe(false)
   })
 
   it('does not dispatch generateProgram when Generate is disabled (sad — stub firing anyway would fail)', async () => {
