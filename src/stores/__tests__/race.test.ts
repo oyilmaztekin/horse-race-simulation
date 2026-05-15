@@ -1,6 +1,15 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createPinia, setActivePinia } from 'pinia'
-import { PHASE_INITIAL } from '../../domain/constants'
+import {
+  HORSE_COUNT,
+  LANE_COUNT,
+  PHASE_INITIAL,
+  PHASE_READY,
+  ROUND_COUNT,
+  ROUND_DISTANCES,
+} from '../../domain/constants'
+import type { Horse } from '../../domain/types'
+import { useHorsesStore } from '../horses'
 
 // --- module mocks (must be before store import) ---
 
@@ -18,6 +27,19 @@ vi.mock('../../composables/useRaceApi', () => ({
 
 // Import store after mocks are registered.
 import { useRaceStore } from '../race'
+
+const FIT_CONDITION = 80
+const KNOWN_SEED = 0xC0FFEE
+const OTHER_SEED = 0xBADBEEF
+const FIXED_NOW_MS = 1_700_000_000_000
+
+function makeFitRoster(): Horse[] {
+  return Array.from({ length: HORSE_COUNT }, (_, index: number) => ({
+    number: index + 1,
+    name: `Horse ${index + 1}`,
+    condition: FIT_CONDITION,
+  }))
+}
 
 describe('useRaceStore — initial state', () => {
   beforeEach(() => {
@@ -44,5 +66,59 @@ describe('useRaceStore — initial state', () => {
     expect(race.restingUntil).toBeNull()
     expect(race.seed).toBeNull()
     expect(race.currentRng).toBeNull()
+  })
+})
+
+describe('useRaceStore — generateProgram (happy path)', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    vi.clearAllMocks()
+  })
+
+  it('transitions INITIAL → READY with a full program when the roster is fit', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+
+    const race = useRaceStore()
+    race.generateProgram(KNOWN_SEED)
+
+    expect(race.state.kind).toBe(PHASE_READY)
+    expect(race.phase).toBe(PHASE_READY)
+    expect(race.seed).toBe(KNOWN_SEED)
+
+    expect(race.program).not.toBeNull()
+    expect(race.program).toHaveLength(ROUND_COUNT)
+    race.program!.forEach((round, index) => {
+      expect(round.distance).toBe(ROUND_DISTANCES[index])
+      expect(round.lanes).toHaveLength(LANE_COUNT)
+    })
+  })
+
+  it('defaults seed to Date.now() when called with no argument (edge: default arg)', () => {
+    vi.setSystemTime(FIXED_NOW_MS)
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+
+    const race = useRaceStore()
+    race.generateProgram()
+
+    expect(race.seed).toBe(FIXED_NOW_MS)
+  })
+
+  it('produces different programs for different seeds (sad: a constant-RNG stub would fail)', () => {
+    const horses = useHorsesStore()
+    horses.applyServerUpdate(makeFitRoster())
+
+    const raceA = useRaceStore()
+    raceA.generateProgram(KNOWN_SEED)
+    const lanesA = raceA.program!.map((round) => round.lanes.join(','))
+
+    setActivePinia(createPinia())
+    useHorsesStore().applyServerUpdate(makeFitRoster())
+    const raceB = useRaceStore()
+    raceB.generateProgram(OTHER_SEED)
+    const lanesB = raceB.program!.map((round) => round.lanes.join(','))
+
+    expect(lanesA).not.toEqual(lanesB)
   })
 })

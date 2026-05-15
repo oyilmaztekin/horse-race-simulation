@@ -3,14 +3,18 @@ import { defineStore } from 'pinia'
 import {
   PHASE_INITIAL,
   PHASE_RACING,
+  PHASE_READY,
   PHASE_RESTING,
 } from '../domain/constants'
+import { generateProgram as generateProgramFn } from '../domain/programGenerator'
+import { createRng } from '../domain/rng'
 import type { Program, Ranking, Rng, RoundResult } from '../domain/types'
+import { useHorsesStore } from './horses'
 
 export type RaceState =
   | { kind: typeof PHASE_INITIAL }
   | { kind: typeof PHASE_RESTING; restingUntil: number }
-  | { kind: 'READY'; program: Program; rng: Rng; seed: number }
+  | { kind: typeof PHASE_READY; program: Program; rng: Rng; seed: number }
   | {
       kind: typeof PHASE_RACING
       program: Program
@@ -49,6 +53,13 @@ export const useRaceStore = defineStore('race', () => {
     state.value.kind === PHASE_RACING ? state.value.rng : null,
   )
 
+  function generateProgram(seed: number = Date.now()): void {
+    const horses = useHorsesStore()
+    const meetingRng = createRng(seed)
+    const program = generateProgramFn(horses.horses, meetingRng)
+    state.value = { kind: PHASE_READY, program, rng: meetingRng, seed }
+  }
+
   function resumeRestFromBoot(_restingUntil: number): void {
     // wired in a later cycle
   }
@@ -67,6 +78,7 @@ export const useRaceStore = defineStore('race', () => {
     restingUntil,
     seed,
     currentRng,
+    generateProgram,
     resumeRestFromBoot,
     completeRound,
   }

@@ -189,3 +189,20 @@ Write `src/stores/__tests__/race.test.ts` (RED), then implement full `src/stores
 
 Cycle 2 — `generateProgram` happy path from INITIAL → READY (fit-gate passes, fresh RNG carried on the union).
 
+## 2026-05-15 — Session 7: Phase 4 race store, cycle 2 (generateProgram happy path)
+
+### What landed
+
+- `src/stores/__tests__/race.test.ts` — added 3 tests for `generateProgram` happy path: roster of 20 fit horses → READY with full 6-round program (each round has correct distance + LANE_COUNT lanes); seed defaults to `Date.now()` when called with no argument; different seeds produce different programs (so a constant-RNG stub would fail).
+- `src/stores/race.ts` — `generateProgram(seed = Date.now())` action: reads `horses.horses` from the horses store, builds a fresh `createRng(seed)`, runs `generateProgramFn`, sets state to `{ kind: PHASE_READY, program, rng, seed }`. Imported `generateProgram` from programGenerator as `generateProgramFn` to avoid the action-name collision.
+- READY branch of `RaceState` switched from string-literal `'READY'` to `typeof PHASE_READY`.
+
+### Test count
+
+90 tests (12 files), all green.
+
+### Next action
+
+Cycle 3 — `generateProgram` fit-gate failure: throws `NotEnoughFitHorsesError` when `count(fit) < MIN_FIT_HORSES_FOR_PROGRAM`, state stays INITIAL.
+
+
