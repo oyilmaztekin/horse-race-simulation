@@ -1,6 +1,7 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 import {
+  PHASE_FINISHED,
   PHASE_INITIAL,
   PHASE_RACING,
   PHASE_READY,
@@ -24,7 +25,7 @@ export type RaceState =
       currentRoundIndex: number
       results: RoundResult[]
     }
-  | { kind: 'FINISHED'; program: Program; seed: number; results: RoundResult[] }
+  | { kind: typeof PHASE_FINISHED; program: Program; seed: number; results: RoundResult[] }
 
 export const useRaceStore = defineStore('race', () => {
   const state = ref<RaceState>({ kind: PHASE_INITIAL })
