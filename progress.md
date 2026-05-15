@@ -717,3 +717,23 @@ Begin Phase 7 — start with `App.vue` + `useRestPolling()` mount-once wiring pe
 ### Next action
 
 Phase 7 cycle 11 — `App.vue` + test: `fetchAll` on mount, `useRestPolling()` mount-once, conditional `<RaceTrack v-if="phase === PHASE_RACING" :key="currentRoundIndex">` per `ARCHITECTURE.md` §11 step 3 / §14.5.
+
+## 2026-05-15 — Session 33: Phase 7 — App.vue root container
+
+### What landed
+
+- `src/App.vue` — root layout. Calls `horses.fetchAll()` in `onMounted` (boot step 2). Invokes `useRestPolling()` once at setup-time (boot step 3 — composable's internal watcher is dormant until phase = RESTING). Renders `AppHeader`, `HorseList`, `ProgramPanel` (when phase ≠ INITIAL), `ResultsPanel` (always), and `<RaceTrack v-if="isRacing" :key="roundKey" :data-round-key="roundKey">`. The `:data-round-key` attribute mirrors `:key` so tests can observe rekeys without poking Vue internals.
+- `src/components/AppHeader.vue` — placeholder scaffolded so the `App` import resolves (title + phase indicator + nested `RaceControls`). Its own behavioral test is the next cycle.
+- `src/components/__tests__/App.test.ts` — 3 tests with child containers stubbed and `useRestPolling` mocked. Happy: `horses.fetchAll` and `useRestPolling` each called once on mount. Edge: RACING state mounts `RaceTrack` with `data-round-key="0"`. Sad: READY state does NOT mount `RaceTrack` (a template missing the `v-if` would still render it).
+
+### Decision
+
+`vi.mock` factory needs the spy *after* hoisting — referencing a top-level `const` inside the factory throws "Cannot access before initialization". Workaround: declare `vi.mock('…', () => ({ useRestPolling: vi.fn() }))`, then import the named export and wrap with `vi.mocked(useRestPolling)` to recover a typed spy handle. Pattern saved for future container tests that mock composables.
+
+### Test count
+
+203 tests (28 files), all green. Typecheck clean.
+
+### Next action
+
+Phase 7 cycle 12 — `AppHeader.vue` dedicated test (phase indicator text + nested `RaceControls` mounts). Then error banner component (`ARCHITECTURE.md` §16.8 / decision #22) to close Phase 7.
