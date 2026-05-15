@@ -13,7 +13,7 @@ const buildEntries = (): { laneIndex: number; horse: Horse }[] =>
 describe('ProgramRoundCard', () => {
   it('renders the round number, distance, and every entry in lane order (happy)', () => {
     const wrapper = mount(ProgramRoundCard, {
-      props: { roundNumber: 2, distance: 1400, entries: buildEntries(), isCurrent: false },
+      props: { roundNumber: 2, distance: 1400, entries: buildEntries(), isCurrent: false, isCompleted: false },
     })
     expect(wrapper.text()).toContain('Round 2')
     expect(wrapper.text()).toContain('1400')
@@ -25,7 +25,7 @@ describe('ProgramRoundCard', () => {
 
   it('applies the current-round class iff isCurrent is true (edge)', async () => {
     const wrapper = mount(ProgramRoundCard, {
-      props: { roundNumber: 1, distance: 1200, entries: buildEntries(), isCurrent: true },
+      props: { roundNumber: 1, distance: 1200, entries: buildEntries(), isCurrent: true, isCompleted: false },
     })
     expect(wrapper.classes()).toContain('program-round-card--current')
 
@@ -35,7 +35,7 @@ describe('ProgramRoundCard', () => {
 
   it('reorders entries when the entries prop changes (sad — stub ignoring entries would fail)', async () => {
     const wrapper = mount(ProgramRoundCard, {
-      props: { roundNumber: 1, distance: 1200, entries: buildEntries(), isCurrent: false },
+      props: { roundNumber: 1, distance: 1200, entries: buildEntries(), isCurrent: false, isCompleted: false },
     })
     const reversed = [...buildEntries()].reverse()
     await wrapper.setProps({ entries: reversed })

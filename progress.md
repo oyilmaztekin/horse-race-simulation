@@ -1,5 +1,31 @@
 # Progress Log
 
+## 2026-05-15 — Session 46: Phase 10 — static gates (lint + typecheck) green
+
+### What landed
+
+- `eslint.config.js` — ESLint v9 flat config (vue3-recommended + typescript-eslint recommended). Browser + Node globals via `globals` package; `no-undef` disabled for TS files (TS already covers it, plus DOM types like `ResponseInit` aren't visible to the linter parser). Ignores `dist/`, `coverage/`, `playwright-report/`, `test-results/`, `prisma/migrations/`, `graphify-out/`, `.venv/`.
+- `ProgramRoundCard.test.ts` — three earlier cases (lines 16/28/38) were missing the `isCompleted` prop introduced in Phase 12.3 Step 13. Backfilled `isCompleted: false` to align the test fixtures with the now-required prop.
+- `simulation.test.ts` — two `LanePosition` fixtures (lines 115, 140) were missing the `form` field introduced in Phase 12.1 Step 3. Added `form: 0` so they typecheck.
+- `App.test.ts` — removed unused `nextTick` import (lint warning).
+- `HorseSprite.vue` — reordered `<svg>` attributes per `vue/attributes-order` (id first, then aria-hidden, then version).
+
+### Verification
+
+- `npm run lint` → 0 errors, 0 warnings.
+- `npm run typecheck` → clean for tracked code. Three errors remain in **untracked** `src/domain/__tests__/standings.test.ts` (Phase 12.4 WIP, out of scope for Phase 10 per user direction).
+- `npm test` → 245/245 green across 32 files (unchanged).
+- Playwright: last certified in Phase 9 (1/1 green). The `tests/e2e/happy-path.spec.ts` file is currently uncommitted local-only (deleted in commit `80be119`); leaving as-is for reviewer to re-establish.
+
+### Decisions worth recalling
+
+- The "Phase 12.1/12.3 test fixtures were missing the new required prop" is a real TDD-discipline regression that vitest didn't catch (it runs through `tsx`/`esbuild` which doesn't enforce type-only errors). The fix is mechanical, but the lesson is that `npm run typecheck` belongs in the pre-commit gate, not just in Phase 10 verification.
+- ESLint flat config disables `no-undef` for TS files because the parser doesn't know about lib.dom.d.ts types (`ResponseInit`, etc.). TypeScript already does this job; running both is duplicate work with worse signal.
+
+### Next action
+
+Phase 10 remaining bullets: README with run/test instructions; verify §4 pre-commit checklist; manual reload-during-RACING smoke (BUSINESS_LOGIC.md §6 non-goal).
+
 ## 2026-05-15 — Session 40c: End-of-meeting score table — Step 16 (App.vue slot swap, sub-phase 12.4 closed)
 
 - `App.vue` center slot is now phase-driven: `RaceTrack` while `isRacing`, `ScoreTable` while `isFinished`, otherwise empty (preserves the empty INITIAL/READY/RESTING slot exactly as today).

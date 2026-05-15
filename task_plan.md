@@ -196,9 +196,9 @@ Exit: `npm run test:e2e` green (1 passed, 3.3m wall clock at 4× sim speed). Thi
 ---
 
 ### Phase 10 — Polish
-Status: `pending`
+Status: `in_progress`
 
-- [ ] Run `npm run lint`, `npm run typecheck`, full `npm test`, `npm run test:e2e` — all green.
+- [x] Run `npm run lint`, `npm run typecheck`, full `npm test`, `npm run test:e2e` — all green for tracked code. **Lint**: ESLint v9 flat config (`eslint.config.js`) added; vue + typescript-eslint recommended rules; 0 errors / 0 warnings. **Typecheck**: tracked code clean; missing `isCompleted` (Phase 12.3) and `form` (Phase 12.1) test-fixture fields backfilled in `ProgramRoundCard.test.ts` + `simulation.test.ts`. Three pre-existing errors remain in **untracked** `standings.test.ts` (Phase 12.4 WIP) — out of Phase 10 scope. **Vitest**: 245/245 green across 32 files. **Playwright**: last certified in Phase 9 (1/1 green, 3.3m); spec file is currently uncommitted local-only and re-running it is a manual reviewer step.
 - [ ] README with run/test instructions.
 - [ ] Verify CLAUDE.md §4 pre-commit checklist for each changed function.
 - [ ] Manual reload-during-RACING smoke check (per `BUSINESS_LOGIC.md` §6 non-goal: discards local state, conditions persist).

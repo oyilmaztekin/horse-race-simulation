@@ -1,7 +1,6 @@
 import { mount } from '@vue/test-utils'
 import { createTestingPinia } from '@pinia/testing'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 import {
   HORSE_COUNT,
   LANE_COUNT,

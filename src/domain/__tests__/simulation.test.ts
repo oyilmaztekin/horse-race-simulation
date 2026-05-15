@@ -117,6 +117,7 @@ describe('advanceLane', () => {
     lane: 3,
     meters,
     finishedAtMs: null,
+    form: 0,
   })
 
   it('advances meters by speed*dt for a not-finished, non-crossing lane (happy)', () => {
@@ -137,7 +138,7 @@ describe('advanceLane', () => {
   })
 
   it('returns an already-finished lane untouched (sad — no movement, no overwrite)', () => {
-    const finished: LanePosition = { horseId: 7, lane: 3, meters: 1200, finishedAtMs: 60_000 }
+    const finished: LanePosition = { horseId: 7, lane: 3, meters: 1200, finishedAtMs: 60_000, form: 0 }
     const next = advanceLane(finished, 18, SIM_TICK_MS, 1200, 90_000)
     expect(next.meters).toBe(1200)
     expect(next.finishedAtMs).toBe(60_000)
