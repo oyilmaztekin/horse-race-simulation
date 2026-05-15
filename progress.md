@@ -308,6 +308,25 @@ Called from `horses.fetchAll` when envelope.restingUntil is non-null. Transition
 
 129 tests (12 files), all green. Typecheck clean. Phase 4 status: **complete**.
 
+## 2026-05-15 — Session 24: Phase 7 cycles 4+5 (RaceControls countdown + rest dispatch) — RaceControls complete
+
+### What landed
+
+- `src/components/RaceControls.vue` — added `secondsUntilRestComplete` computed (note the rename from the initially-drafted `countdownSeconds` after user feedback — name should signal *display*, not *authority*). A local `setInterval` (`DISPLAY_TICK_MS = 250`) bumps `displayNowMs` so the displayed seconds tick down between the 1s polls; an inline comment makes clear the server (`restingUntil` from POST /api/horses/rest, cleared by lazy-bump on GET /api/horses per BL §4.7 / ARCH decision #29) owns the timer. `onUnmounted` clears the interval. Countdown rendered as a `[data-testid="countdown"]` paragraph only while RESTING.
+- `src/components/__tests__/RaceControls.test.ts` — 3 countdown tests (happy: 7000ms → '7'; edge: hidden outside RESTING; sad: Generate/Start/Rest all disabled when state flips to RESTING after the warning revealed Rest) plus 1 rest-dispatch test (sad: unfit roster → `canRest === true` → click invokes `race.rest`). Together they exercise the full ARCHITECTURE.md §4.2 button-and-phase matrix.
+
+### Decision recorded as memory
+
+User flagged "countdown" as ambiguous: it could read as if the client owns the rest timer. Saved as `feedback_server_authority_naming.md` — for any client value derived from server-authoritative state, name it as a *display value* (`secondsUntilX`, `remainingY`), and comment any local interval that's only a render trigger. Applies broadly (condition mutations, race state, etc.) — not just rest.
+
+### Test count
+
+180 tests (23 files), all green.
+
+### Next action
+
+Phase 7 cycle 6 — `HorseList.vue` container: iterate `horses.horses`; loading skeleton when `isLoading`.
+
 ## 2026-05-15 — Session 23: Phase 7 cycle 3 (RaceControls fit-gate warning + Rest reveal)
 
 ### What landed

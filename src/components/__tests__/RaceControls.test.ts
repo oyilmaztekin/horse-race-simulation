@@ -175,6 +175,95 @@ describe('RaceControls — button click dispatches', () => {
     expect(wrapper.find('[data-testid="btn-rest"]').exists()).toBe(false)
   })
 
+  it('renders a countdown derived from restingUntil during RESTING (happy)', () => {
+    const restingUntil = Date.now() + 7000
+    const wrapper = mount(RaceControls, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            initialState: {
+              horses: { horses: makeHorses(), isLoading: false, error: null },
+              race: { state: { kind: PHASE_RESTING, restingUntil } },
+            },
+          }),
+        ],
+      },
+    })
+    const countdown = wrapper.find('[data-testid="countdown"]')
+    expect(countdown.exists()).toBe(true)
+    expect(countdown.text()).toContain('7')
+  })
+
+  it('hides the countdown outside RESTING (edge — stub always rendering would fail)', () => {
+    const wrapper = mount(RaceControls, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            initialState: {
+              horses: { horses: makeHorses(), isLoading: false, error: null },
+              race: { state: { kind: PHASE_INITIAL } },
+            },
+          }),
+        ],
+      },
+    })
+    expect(wrapper.find('[data-testid="countdown"]').exists()).toBe(false)
+  })
+
+  it('disables Generate, Start, and the Rest button during RESTING (sad — stub leaving Rest live would fail)', async () => {
+    const wrapper = mount(RaceControls, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            initialState: {
+              horses: { horses: makeHorses(), isLoading: false, error: null },
+              race: { state: { kind: PHASE_INITIAL } },
+            },
+          }),
+        ],
+      },
+    })
+    const { useRaceStore } = await import('../../stores/race')
+    const race = useRaceStore()
+    vi.mocked(race.generateProgram).mockImplementation(() => {
+      throw new NotEnoughFitHorsesError(MIN_FIT_HORSES_FOR_PROGRAM - 1, MIN_FIT_HORSES_FOR_PROGRAM)
+    })
+    await wrapper.find('[data-testid="btn-generate"]').trigger('click')
+    expect(wrapper.find('[data-testid="btn-rest"]').exists()).toBe(true)
+
+    race.state = { kind: PHASE_RESTING, restingUntil: Date.now() + 5000 }
+    await wrapper.vm.$nextTick()
+
+    expect(wrapper.find('[data-testid="btn-generate"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="btn-start"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="btn-rest"]').attributes('disabled')).toBeDefined()
+  })
+
+  it('dispatches race.rest on Rest button click (sad — stub ignoring @click would fail)', async () => {
+    // Roster with most horses below MIN_RACEABLE_CONDITION so canRest === true.
+    const unfitRoster = makeHorses(HORSE_COUNT, 10)
+    const wrapper = mount(RaceControls, {
+      global: {
+        plugins: [
+          createTestingPinia({
+            initialState: {
+              horses: { horses: unfitRoster, isLoading: false, error: null },
+              race: { state: { kind: PHASE_INITIAL } },
+            },
+          }),
+        ],
+      },
+    })
+    const { useRaceStore } = await import('../../stores/race')
+    const race = useRaceStore()
+    vi.mocked(race.generateProgram).mockImplementation(() => {
+      throw new NotEnoughFitHorsesError(0, MIN_FIT_HORSES_FOR_PROGRAM)
+    })
+    await wrapper.find('[data-testid="btn-generate"]').trigger('click')
+    await wrapper.find('[data-testid="btn-rest"]').trigger('click')
+    expect(race.rest).toHaveBeenCalledOnce()
+  })
+
   it('does not dispatch generateProgram when Generate is disabled (sad — stub firing anyway would fail)', async () => {
     const restingUntil = Date.now() + 5000
     const wrapper = mount(RaceControls, {

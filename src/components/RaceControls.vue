@@ -1,10 +1,29 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
+import { PHASE_RESTING } from '../domain/constants'
 import { NotEnoughFitHorsesError } from '../domain/errors'
 import { useRaceStore } from '../stores/race'
 
+// Server is authoritative for rest: `race.restingUntil` (epoch ms) is set by
+// POST /api/horses/rest and cleared by the lazy-bump on GET /api/horses
+// (see BUSINESS_LOGIC.md §4.7 / ARCHITECTURE.md decision #29). This tick is
+// purely a render trigger so the displayed remaining seconds tick down between
+// the 1s polls; it never advances or ends the rest itself.
+const DISPLAY_TICK_MS = 250
+
 const race = useRaceStore()
 const lastWarning = ref<string | null>(null)
+const displayNowMs = ref<number>(Date.now())
+const displayTickHandle = setInterval(() => {
+  displayNowMs.value = Date.now()
+}, DISPLAY_TICK_MS)
+onUnmounted(() => clearInterval(displayTickHandle))
+
+// Display value derived from server's restingUntil; null when not RESTING.
+const secondsUntilRestComplete = computed<number | null>(() => {
+  if (race.phase !== PHASE_RESTING || race.restingUntil === null) return null
+  return Math.max(0, Math.ceil((race.restingUntil - displayNowMs.value) / 1000))
+})
 
 function onGenerate(): void {
   try {
@@ -58,5 +77,12 @@ function onGenerate(): void {
     >
       Rest the horses
     </button>
+    <p
+      v-if="secondsUntilRestComplete !== null"
+      class="race-controls__countdown"
+      data-testid="countdown"
+    >
+      Resting — {{ secondsUntilRestComplete }}s
+    </p>
   </div>
 </template>
