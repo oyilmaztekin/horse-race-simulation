@@ -4,7 +4,7 @@ import RaceLane from './RaceLane.vue'
 import { useRaceSimulation } from '../composables/useRaceSimulation'
 import { useHorsesStore } from '../stores/horses'
 import { useRaceStore } from '../stores/race'
-import { CONDITION_MIN } from '../domain/constants'
+import { CONDITION_MIN, SIM_SPEED_MAX, SIM_SPEED_MIN } from '../domain/constants'
 import type { Horse, HorseId } from '../domain/types'
 
 const race = useRaceStore()
@@ -43,10 +43,42 @@ watch(
   },
   { once: true },
 )
+
+const atMin = computed<boolean>(() => race.simSpeedMultiplier <= SIM_SPEED_MIN)
+const atMax = computed<boolean>(() => race.simSpeedMultiplier >= SIM_SPEED_MAX)
+const speedReadout = computed<string>(() => `${race.simSpeedMultiplier}×`)
 </script>
 
 <template>
   <section class="race-track">
+    <div
+      class="race-track__speed-control"
+      data-testid="race-track-speed-control"
+      role="group"
+      aria-label="Race speed"
+    >
+      <button
+        type="button"
+        class="race-track__speed-control__button"
+        data-testid="race-track-speed-decrease"
+        :disabled="atMin"
+        aria-label="Decrease race speed"
+        @click="race.decreaseSimSpeed()"
+      >−</button>
+      <span
+        class="race-track__speed-control__readout"
+        data-testid="race-track-speed-readout"
+        aria-live="polite"
+      >{{ speedReadout }}</span>
+      <button
+        type="button"
+        class="race-track__speed-control__button"
+        data-testid="race-track-speed-increase"
+        :disabled="atMax"
+        aria-label="Increase race speed"
+        @click="race.increaseSimSpeed()"
+      >+</button>
+    </div>
     <div class="race-track__lanes">
       <RaceLane
         v-for="lane in lanes"
@@ -97,5 +129,26 @@ watch(
   @apply font-racing tracking-[0.3em];
   color: var(--color-finish);
   text-shadow: 0 0 12px var(--color-finish-glow);
+}
+.race-track__speed-control {
+  @apply flex items-center gap-s2 py-s2 px-s4 border-b border-border;
+  background: var(--color-surface);
+}
+.race-track__speed-control__button {
+  @apply w-8 h-8 inline-flex items-center justify-center rounded border border-border font-racing text-base;
+  background: var(--color-surface-raised);
+  color: var(--color-text);
+  cursor: pointer;
+}
+.race-track__speed-control__button:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+}
+.race-track__speed-control__button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.race-track__speed-control__readout {
+  @apply font-racing tracking-widest min-w-12 text-center;
+  color: var(--color-text);
 }
 </style>

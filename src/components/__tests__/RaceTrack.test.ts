@@ -7,6 +7,10 @@ import {
   LANE_COUNT,
   PHASE_RACING,
   ROUND_DISTANCES,
+  SIM_SPEED_DEFAULT,
+  SIM_SPEED_MAX,
+  SIM_SPEED_MIN,
+  SIM_SPEED_STEP,
 } from '../../domain/constants'
 import type {
   Horse,
@@ -60,6 +64,7 @@ function makePositions(): LanePosition[] {
     lane: index + 1,
     meters: 0,
     finishedAtMs: null,
+    form: 0,
   }))
 }
 
@@ -132,6 +137,56 @@ describe('RaceTrack', () => {
 
     expect(completeRound).toHaveBeenCalledTimes(1)
     expect(completeRound).toHaveBeenCalledWith(finishOrder.value)
+    wrapper.unmount()
+  })
+
+  it('Phase 12.2: renders a speed-control row showing the current multiplier and wired to store actions (happy)', async () => {
+    const wrapper = mountTrack()
+    const control = wrapper.find('[data-testid="race-track-speed-control"]')
+    expect(control.exists()).toBe(true)
+    const readout = wrapper.find('[data-testid="race-track-speed-readout"]')
+    expect(readout.text()).toContain(SIM_SPEED_DEFAULT.toString())
+
+    const { useRaceStore } = await import('../../stores/race')
+    const race = useRaceStore()
+    const increase = vi.fn()
+    const decrease = vi.fn()
+    race.increaseSimSpeed = increase as unknown as typeof race.increaseSimSpeed
+    race.decreaseSimSpeed = decrease as unknown as typeof race.decreaseSimSpeed
+
+    await wrapper.find('[data-testid="race-track-speed-increase"]').trigger('click')
+    expect(increase).toHaveBeenCalledTimes(1)
+    await wrapper.find('[data-testid="race-track-speed-decrease"]').trigger('click')
+    expect(decrease).toHaveBeenCalledTimes(1)
+    wrapper.unmount()
+  })
+
+  it('Phase 12.2: disables decrease at SIM_SPEED_MIN and increase at SIM_SPEED_MAX (edge — bounds)', async () => {
+    const wrapper = mountTrack()
+    const { useRaceStore } = await import('../../stores/race')
+    const race = useRaceStore()
+    // testing-pinia + stubActions:false → mutating state directly is supported.
+    race.$patch({ simSpeedMultiplier: SIM_SPEED_MIN })
+    await nextTick()
+    expect(wrapper.find('[data-testid="race-track-speed-decrease"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="race-track-speed-increase"]').attributes('disabled')).toBeUndefined()
+
+    race.$patch({ simSpeedMultiplier: SIM_SPEED_MAX })
+    await nextTick()
+    expect(wrapper.find('[data-testid="race-track-speed-increase"]').attributes('disabled')).toBeDefined()
+    expect(wrapper.find('[data-testid="race-track-speed-decrease"]').attributes('disabled')).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  it('Phase 12.2: readout reflects multiplier mutations (sad — a static display would fail)', async () => {
+    const wrapper = mountTrack()
+    const { useRaceStore } = await import('../../stores/race')
+    const race = useRaceStore()
+    race.$patch({ simSpeedMultiplier: SIM_SPEED_DEFAULT + SIM_SPEED_STEP })
+    await nextTick()
+    expect(wrapper.find('[data-testid="race-track-speed-readout"]').text()).toContain(
+      (SIM_SPEED_DEFAULT + SIM_SPEED_STEP).toString(),
+    )
     wrapper.unmount()
   })
 

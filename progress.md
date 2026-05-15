@@ -1027,3 +1027,25 @@ Step 10 — multiply the rAF accumulator's wall-clock by `simSpeedMultiplier` in
 ### Next action
 
 Step 11 — render the `[−] N× [+]` control row above the lanes in `RaceTrack.vue`. Disabled at bounds. BEM-scoped under `.race-track__speed-control`.
+
+## 2026-05-15 — Session 43: Phase 12.2 Step 11 — RaceTrack speed control row
+
+### What landed
+
+- `src/components/RaceTrack.vue`:
+  - Imports `SIM_SPEED_MIN`, `SIM_SPEED_MAX`.
+  - New computed `atMin` / `atMax` / `speedReadout`.
+  - Template gains a `.race-track__speed-control` row above `.race-track__lanes` with `[−] N× [+]` buttons; ARIA: `role="group"`, button `aria-label`s, `aria-live="polite"` on the readout.
+  - Buttons are `disabled` at the respective bound.
+  - Scoped CSS for `.race-track__speed-control{,__button,__readout}` (BEM).
+- `src/components/__tests__/RaceTrack.test.ts`:
+  - `makePositions` updated to include `form: 0` (required by `LanePosition` since Phase 12.1 Step 3).
+  - Three new tests: control row exists + clicks call store actions; bounds disable the appropriate button; readout reactively reflects multiplier mutations.
+
+### Test count
+
+231 tests (30 files), all green.
+
+### Next action
+
+Step 12 — Playwright e2e: start a race → click + twice → verify race finishes faster than baseline. Last step before Phase 12 closes.
